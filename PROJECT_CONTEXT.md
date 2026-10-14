@@ -61,6 +61,16 @@ The website introduces ZZZ Collection / Proof of Permanent Liquidity (PoPL) and 
 - Native Windows Python validation ran 84 tests: 81 passed, one Unix-permission assertion failed, and two failed because `fcntl` was unavailable. The historical Unix report is separate evidence. Foundry/Solc compilation, EVM tests, real Uniswap fork integration, production bridge transport, and an independent audit remain outstanding.
 - Before enabling real minting, activation, deposits, or claims, implement/review the intended ABI, configure deployment addresses and chain, authenticated ownership reads, valuation sources, a reorg-aware indexer, funded claim balances, token approvals, and wallet-confirmed transactions.
 
+## Public website deployment
+
+- On 2026-10-14, the user authorized deployment to their Ubuntu server and chose the server IP rather than a domain.
+- Public preview URL: http://46.225.185.212. HTTPS is not configured. The site's existing simulation boundaries still apply.
+- Ubuntu 24.04 runs Nginx on port 80. Nginx is enabled to start after a reboot. The pre-existing service on port 8443 was left alone.
+- Static document root: `/var/www/aaa-website/current`, pointing to `/var/www/aaa-website/releases/87b66e2-20261014`. Nginx site configuration: `/etc/nginx/sites-available/aaa-website`, with a `sites-enabled` symlink.
+- The release contains the nine built public files from website commit `87b66e2ef19f5564e50b45f598ea3b4b1024d8f4`. All nine returned HTTP 200 with matching SHA-256 hashes from outside the server. Source notes and Git metadata are not served.
+- There is no Node development server, Git credential, or server password in the deployed static build. Credentials must remain outside project files.
+- README setup instructions use `git clone`, relative `cd aaa-website`, and commands from the clone's root. Keep public setup instructions independent of the author's local paths and compatible with Windows, macOS, and Linux.
+
 ## Handling context and credentials
 
 `AGENTS.md` points agents to this note when working in the corresponding project directory. This does not imply global ChatGPT personal memory is enabled. Keep the copies in both projects aligned after material decisions. Do not store pasted tokens or credentials here or in Git.

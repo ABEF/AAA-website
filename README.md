@@ -4,14 +4,19 @@ A responsive website and collection application for ZZZ Collection — Proof of 
 
 ## Run locally
 
-Requires Node.js 20 or newer. No third-party dependencies or installation are needed.
+Requires Git and Node.js 20 or newer. The same commands work on Windows, macOS, and Linux. No third-party dependencies or package installation are needed.
 
-```powershell
-Set-Location 'C:\Users\Desktop\Oto\aaa-website'
+Open a terminal in the directory where you want to clone the project, then run:
+
+```sh
+git clone https://github.com/ABEF/AAA-website.git aaa-website
+cd aaa-website
 npm run dev
 ```
 
-Open `http://127.0.0.1:4173`. To use another port, set `$env:PORT = '4174'` before starting. Stop the server with Ctrl+C.
+If you already cloned the project, open a terminal in your clone's root directory (the folder containing `package.json`) and run `npm run dev` there. No particular drive, username, or parent directory is required.
+
+Open `http://127.0.0.1:4173`. Stop the server with Ctrl+C. For a different port, set the `PORT` environment variable in your shell before starting.
 
 ## Pages and interactions
 
@@ -32,14 +37,24 @@ The supplied JPEGs are displayed unchanged. The site's text identifies trading f
 
 ## Verify and build
 
-```powershell
+Run these commands from your clone's root directory on any supported operating system:
+
+```sh
 npm test
 npm run check
 npm run build
 node server.mjs --dist
 ```
 
-The dependency-free static output is written to `dist/` and can be uploaded to a static host. Hash routes work without server rewrites. No hosted deployment is made by this local website task.
+The dependency-free static output is written to `dist/` and can be uploaded to a static host. Hash routes work without server rewrites. The Node server above is for local preview; production can serve the static files directly.
+
+## Current Ubuntu deployment
+
+The public development preview is available at [http://46.225.185.212](http://46.225.185.212), deployed on 2026-10-14 using Nginx on Ubuntu 24.04. The user selected the IP address for now; HTTPS has not been configured.
+
+Nginx serves only the built static files. Its document root is `/var/www/aaa-website/current`, a symlink to `/var/www/aaa-website/releases/87b66e2-20261014`. The site configuration is `/etc/nginx/sites-available/aaa-website`, enabled through `sites-enabled`. Nginx starts automatically after a reboot. No Node process is required on the server.
+
+All nine deployed public files were verified against the local build with SHA-256 checksums. Future updates should build a new release directory, switch the `current` symlink, validate with `nginx -t`, and reload Nginx. Keep server credentials outside the repository.
 
 ## Future live integration
 
