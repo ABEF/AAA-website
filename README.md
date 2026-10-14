@@ -7,7 +7,7 @@ A responsive website and collection application for ZZZ Collection — Proof of 
 Requires Node.js 20 or newer. No third-party dependencies or installation are needed.
 
 ```powershell
-Set-Location 'C:\Users\Ali\Desktop\2.x holas\Oto\aaa-website'
+Set-Location 'C:\Users\Desktop\Oto\aaa-website'
 npm run dev
 ```
 
