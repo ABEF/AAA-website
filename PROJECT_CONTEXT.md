@@ -70,6 +70,9 @@ The website introduces ZZZ Collection / Proof of Permanent Liquidity (PoPL) and 
 - The release contains the nine built public files from website commit `87b66e2ef19f5564e50b45f598ea3b4b1024d8f4`. All nine returned HTTP 200 with matching SHA-256 hashes from outside the server. Source notes and Git metadata are not served.
 - There is no Node development server, Git credential, or server password in the deployed static build. Credentials must remain outside project files.
 - README setup instructions use `git clone`, relative `cd aaa-website`, and commands from the clone's root. Keep public setup instructions independent of the author's local paths and compatible with Windows, macOS, and Linux.
+- The user then selected `popl.0xwave.com` as the desired website hostname. DNS is managed by OVH; the existing `0xwave.com` site uses a separate server and must be preserved.
+- Nginx now recognises both `popl.0xwave.com` and the server IP. A request using the subdomain Host header returned the correct build with a matching SHA-256 hash. Before the user adds the record, OVH authoritative DNS reports the subdomain does not exist.
+- Required OVH DNS record: type A, subdomain `popl`, target `46.225.185.212`, TTL default. The agent has not edited OVH DNS; record creation is pending in the user's OVH account. HTTPS certificate issuance is pending successful public DNS verification.
 
 ## Handling context and credentials
 

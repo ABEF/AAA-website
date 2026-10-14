@@ -56,6 +56,20 @@ Nginx serves only the built static files. Its document root is `/var/www/aaa-web
 
 All nine deployed public files were verified against the local build with SHA-256 checksums. Future updates should build a new release directory, switch the `current` symlink, validate with `nginx -t`, and reload Nginx. Keep server credentials outside the repository.
 
+### Requested subdomain
+
+Nginx is also configured for `popl.0xwave.com`. Its hostname was verified against the deployed build using an HTTP Host header. As of 2026-10-14, the public DNS record has not yet been verified as published; the IP URL above remains available.
+
+In OVHcloud Manager, open **Web Cloud → Domain names → 0xwave.com → DNS zone → Add an entry** and create this record:
+
+| Type | Subdomain | Target | TTL |
+| --- | --- | --- | --- |
+| A | `popl` | `46.225.185.212` | By default |
+
+This adds a separate hostname; keep the existing records for the root domain and other services. Once DNS resolves to the server, HTTP will be accessible at `http://popl.0xwave.com`. HTTPS certificate issuance remains pending DNS verification.
+
+Provider instructions: [Editing an OVHcloud DNS zone](https://docs.ovhcloud.com/en/guides/web-cloud/domains/dns-zone-edit).
+
 ## Future live integration
 
 Before replacing the demo ledger, provide reviewed chain/deployment addresses and contract ABIs, an authenticated-by-chain ownership read path, oracle/token valuation sources, a confirmed/reorg-aware indexer API for collection totals and fee history, and funded reward balances. The requested dormant-mint-then-activate lifecycle needs an explicitly implemented and reviewed contract interface; the current vault candidate combines deposit and issuance. Activation and LP top-ups need token approvals, pool parameters, minimum liquidity, deadlines, and wallet-confirmed transactions matching the final ABI. Claims must use the actual rewards ABI and current NFT ownership. Verify those integrations against the release checklist before enabling real funds.
