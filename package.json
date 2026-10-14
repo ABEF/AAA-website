@@ -1,0 +1,14 @@
+{
+  "name": "zzz-popl-website",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ZZZ PoPL collection explorer and interactive development preview",
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "build": "node build.mjs",
+    "test": "node --test tests/domain.test.mjs",
+    "check": "node --check app.js && node --check domain.js && node --check wallet.js && node check.mjs"
+  }
+}
