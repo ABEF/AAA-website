@@ -20,7 +20,7 @@ Open `http://127.0.0.1:4173`. Stop the server with Ctrl+C. For a different port,
 
 ## Pages and interactions
 
-- Overview: explains permanent liquidity, transferable fee rights, the 50/30/10/10 allocation, architecture, and project status. Includes an interactive fee calculator and the supplied NFT illustration. The collection guide informed the native lifecycle and economic explanations; its JPEG is retained as a reference asset but is no longer displayed on the site.
+- Overview: leads with the collection's permanent-liquidity snapshot and fee figures, then explains the five-step NFT lifecycle, an interactive fee calculator, the 50/30/10/10 allocation, architecture, and project status. The supplied NFT illustration appears only on Mint. The collection guide informed the native explanations; its JPEG is retained as a reference asset but is no longer displayed on the site.
 - Collection: starts with exactly $425,000 in example LP across 100 NFTs; 20 are dormant, and three positions exceed $100,000. Shows lifetime and 24-hour gross fees, level composition, a sample activity chart, pool/status/search filters, sorting, pagination, and NFT details.
 - Mint: creates a dormant NFT with $0 LP and $0 Power. Minting increases the NFT count, never collection liquidity. In My NFTs, activate it by adding at least $500 of permanently locked LP to ZZZ/WETH or ZZZ/USDC. Holders can then add more permanent LP to the same NFT at any time. Activation and top-ups increase both its position and collection LP.
 - My NFTs: connect an injected browser wallet (EIP-1193/EIP-6963) or the demo wallet. Inspect example owned NFTs, LP, lifetime fees, 24-hour fees, individual/collective balances, and claimable rewards. Individual/bulk simulated claims update balances without reducing principal or gross fees. Dormant activation and permanent LP top-ups have separate amount forms and irreversible-lock acknowledgements.
@@ -50,25 +50,26 @@ The dependency-free static output is written to `dist/` and can be uploaded to a
 
 ## Current Ubuntu deployment
 
-The public development preview is available at [http://46.225.185.212](http://46.225.185.212), deployed on 2026-10-14 using Nginx on Ubuntu 24.04. The user selected the IP address for now; HTTPS has not been configured.
+The development preview is deployed using Nginx on Ubuntu 24.04 at `46.225.185.212`. The current public hostname targets are [popldemo.0xwave.com](https://popldemo.0xwave.com) and [www.popldemo.0xwave.com](https://www.popldemo.0xwave.com). Website positions and actions remain illustrative.
 
-Nginx serves only the built static files. Its document root is `/var/www/aaa-website/current`, a symlink to `/var/www/aaa-website/releases/87b66e2-20261014`. The site configuration is `/etc/nginx/sites-available/aaa-website`, enabled through `sites-enabled`. Nginx starts automatically after a reboot. No Node process is required on the server.
+Nginx serves only the built static files. Its document root is `/var/www/aaa-website/current`, a symlink to a release directory under `/var/www/aaa-website/releases/`. The original IP configuration is `/etc/nginx/sites-available/aaa-website`; the two domain names use `/etc/nginx/sites-available/aaa-website-popldemo`. Sites are enabled through `sites-enabled`. Nginx starts automatically after a reboot. No Node process is required on the server.
 
-All nine deployed public files were verified against the local build with SHA-256 checksums. Future updates should build a new release directory, switch the `current` symlink, validate with `nginx -t`, and reload Nginx. Keep server credentials outside the repository.
+For every website modification, edit and verify the local checkout, commit and push to GitHub, then deploy the committed version to the server and verify the public result. `deploy/install-release.sh` verifies the static package's SHA-256 checksums, publishes a release named by its full Git commit, and atomically switches the `current` symlink. `/var/www/aaa-website/deployed-commit` records that version outside the public document root. Keep server credentials outside the repository.
 
-### Requested subdomain
+### DNS and HTTPS
 
-Nginx is also configured for `popl.0xwave.com`. Its hostname was verified against the deployed build using an HTTP Host header. As of 2026-10-14, the public DNS record has not yet been verified as published; the IP URL above remains available.
+OVH manages the DNS zone. Both hostname records were verified against the OVH authoritative DNS server and a public resolver on 2026-10-14:
 
-In OVHcloud Manager, open **Web Cloud → Domain names → 0xwave.com → DNS zone → Add an entry** and create this record:
+| Type | Subdomain | Target |
+| --- | --- | --- |
+| A | `popldemo` | `46.225.185.212` |
+| A | `www.popldemo` | `46.225.185.212` |
 
-| Type | Subdomain | Target | TTL |
-| --- | --- | --- | --- |
-| A | `popl` | `46.225.185.212` | By default |
+These hostnames are separate from the existing `0xwave.com` site. Keep its root-domain records and other services intact.
 
-This adds a separate hostname; keep the existing records for the root domain and other services. Once DNS resolves to the server, HTTP will be accessible at `http://popl.0xwave.com`. HTTPS certificate issuance remains pending DNS verification.
+`deploy/enable-https.sh` configures both Nginx hostnames, installs a Let's Encrypt certificate for both, redirects domain HTTP requests to HTTPS, enables the Certbot renewal timer, and runs a renewal dry run. Run this initial setup with root or sudo after DNS points to the server. Later static releases reuse this HTTPS configuration.
 
-Provider instructions: [Editing an OVHcloud DNS zone](https://docs.ovhcloud.com/en/guides/web-cloud/domains/dns-zone-edit).
+Instructions: [OVH DNS zones](https://docs.ovhcloud.com/en/guides/web-cloud/domains/dns-zone-edit), [Certbot with Nginx](https://eff-certbot.readthedocs.io/en/stable/using.html#nginx).
 
 ## Future live integration
 

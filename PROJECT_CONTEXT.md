@@ -40,6 +40,7 @@ The website introduces ZZZ Collection / Proof of Permanent Liquidity (PoPL) and 
 - Keep NFT artwork as an unfilled wireframe cube. Dormant lines are muted; active lines become brighter and thicker with restrained cyan glow. Enhanced is visibly bolder and Singularity has the brightest near-white outlines. Do not fill the entire hexagon or cube faces.
 - Conceptual levels: Dormant $0; Online $500; Enhanced $1,000; Advanced $5,000; Elite $25,000; Singularity $100,000. These are product illustrations, not implemented contract guarantees.
 - The NFT illustration in "More than a mint" uses a normal image cursor and a small bottom-right enlargement arrow, matching Overview. Avoid a zoom-in plus cursor.
+- The user later removed the supplied NFT JPEG from Overview to avoid repeating it. Keep it on Mint with its enlargement arrow. Overview leads with a native liquidity snapshot, then trading/fee figures, a five-step lifecycle, the fee calculator, and the existing dark allocation section.
 
 ## Website implementation and verification
 
@@ -50,7 +51,7 @@ The website introduces ZZZ Collection / Proof of Permanent Liquidity (PoPL) and 
 - All displayed positions and actions are labeled simulations. Connecting a real wallet still displays the example portfolio, not that address's actual on-chain holdings.
 - Preview events persist under localStorage key `zzz-popl-preview-v4`; wallet connections do not persist. The footer's Reset demo restores the baseline dataset.
 - Example portfolio includes NFTs #444, #128, #91, and dormant #74. Claims change funded example balances without reducing LP or generated fee history. Cent allocation conserves each displayed total.
-- Most recent automated verification: 25 Node tests passed; syntax, unique IDs, local references, application selectors, and four routes passed. Desktop browser interactions were checked. Responsive CSS exists, but a completed mobile browser test has not been recorded.
+- Most recent automated verification: 25 Node tests passed; syntax, unique IDs, local references, application selectors, and four routes passed. The redesigned Overview was checked at desktop width and at 390px mobile width without horizontal overflow. Overview contains no NFT JPEG, Mint retains its illustration/enlargement button, the 0.25% calculator example returns $720.80, and the browser reported no console errors.
 
 ## Contract candidate and integration boundary
 
@@ -64,15 +65,24 @@ The website introduces ZZZ Collection / Proof of Permanent Liquidity (PoPL) and 
 ## Public website deployment
 
 - On 2026-10-14, the user authorized deployment to their Ubuntu server and chose the server IP rather than a domain.
-- Public preview URL: http://46.225.185.212. HTTPS is not configured. The site's existing simulation boundaries still apply.
+- Initial preview URL: http://46.225.185.212. This first deployment used HTTP before the later domain/HTTPS setup below. The site's existing simulation boundaries still apply.
 - Ubuntu 24.04 runs Nginx on port 80. Nginx is enabled to start after a reboot. The pre-existing service on port 8443 was left alone.
 - Static document root: `/var/www/aaa-website/current`, pointing to `/var/www/aaa-website/releases/87b66e2-20261014`. Nginx site configuration: `/etc/nginx/sites-available/aaa-website`, with a `sites-enabled` symlink.
 - The release contains the nine built public files from website commit `87b66e2ef19f5564e50b45f598ea3b4b1024d8f4`. All nine returned HTTP 200 with matching SHA-256 hashes from outside the server. Source notes and Git metadata are not served.
 - There is no Node development server, Git credential, or server password in the deployed static build. Credentials must remain outside project files.
 - README setup instructions use `git clone`, relative `cd aaa-website`, and commands from the clone's root. Keep public setup instructions independent of the author's local paths and compatible with Windows, macOS, and Linux.
 - The user then selected `popl.0xwave.com` as the desired website hostname. DNS is managed by OVH; the existing `0xwave.com` site uses a separate server and must be preserved.
-- Nginx now recognises both `popl.0xwave.com` and the server IP. A request using the subdomain Host header returned the correct build with a matching SHA-256 hash. Before the user adds the record, OVH authoritative DNS reports the subdomain does not exist.
-- Required OVH DNS record: type A, subdomain `popl`, target `46.225.185.212`, TTL default. The agent has not edited OVH DNS; record creation is pending in the user's OVH account. HTTPS certificate issuance is pending successful public DNS verification.
+- The earlier Nginx configuration recognised both `popl.0xwave.com` and the server IP. A request using that Host header returned the correct build with a matching SHA-256 hash. OVH authoritative DNS reported that earlier subdomain did not exist.
+- The earlier requested OVH record was type A, subdomain `popl`, target `46.225.185.212`, TTL default. The user instead created the `popldemo` records described below; agents have not edited the OVH DNS zone.
+
+### Current hostname and publishing workflow
+
+- The user actually published A records for `popldemo.0xwave.com` and `www.popldemo.0xwave.com`, both pointing to `46.225.185.212`. These are the current website targets, superseding the earlier requested `popl` hostname. OVH authoritative DNS and public resolver 1.1.1.1 both returned the correct IPv4 address on 2026-10-14; no IPv6 records were returned.
+- Nginx routing must explicitly name both `popldemo` hostnames. A request for them previously reached the default welcome page because only the earlier `popl` hostname was configured.
+- The HTTPS setup is tracked in `deploy/enable-https.sh`: a separate Nginx site for the two names, a Let's Encrypt certificate covering both, HTTP-to-HTTPS redirects, and a Certbot renewal timer and renewal check. Website code remains a clearly labeled simulation.
+- Required workflow for every requested website modification: **edit locally → verify → commit and push to ABEF/AAA-website → deploy that committed version to Ubuntu → verify the public result**. This is standing user authorization to complete website updates across all three destinations. Do not deploy uncommitted product changes.
+- `deploy/install-release.sh` publishes a checksum-verified static build into a directory named by its full Git commit, atomically switches `/var/www/aaa-website/current`, and preserves the previous release for rollback. `/var/www/aaa-website/deployed-commit` records the active commit outside the public document root.
+- Do not change the `0xwave.com` root DNS or deploy smart contracts as part of website publishing. Preserve the separate root-domain site and the existing port-8443 service.
 
 ## Handling context and credentials
 
