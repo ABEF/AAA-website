@@ -43,7 +43,7 @@ function seedArtworkEntries(ids) {
   const available = [...ART_INVENTORY], assigned = Array(ids.length).fill(null);
   const remaining = Object.fromEntries(COLOR_STYLES.flatMap(style => RARITIES.map(rarity =>
     [`${style.id}:${rarity.id}`,style.supply*rarity.supply/10000])));
-  const fixed = new Map([[444,['cyan','commun']],[128,['blue','rare']],
+  const fixed = new Map([[444,['cyan','commun','arcs']],[128,['blue','rare']],
     [91,['emerald','legendary']],[74,['violet','legendary']]]);
   const take = (index,entry) => {
     assigned[index] = inventoryTraits(entry);
@@ -52,8 +52,8 @@ function seedArtworkEntries(ids) {
   };
   ids.forEach((id,index) => {
     if (!fixed.has(id)) return;
-    const [paletteId,rarity] = fixed.get(id);
-    take(index,available.find(entry => entry.paletteId === paletteId && entry.rarity === rarity));
+    const [paletteId,rarity,pattern] = fixed.get(id);
+    take(index,available.find(entry => entry.paletteId === paletteId && entry.rarity === rarity && (!pattern || entry.pattern === pattern)));
   });
   let seed = 0x504f504c;
   for (let index=0;index<assigned.length;index++) if (!assigned[index]) {

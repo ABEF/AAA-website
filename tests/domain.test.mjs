@@ -46,8 +46,9 @@ test('dormant positions have no fees or rewards',() => {
     assert.equal(nft.feesAllTimeCents,0); assert.equal(nft.fees24hCents,0); assert.equal(claimable(nft),0);
   }
 });
-test('featured NFT shows the updated $1,432 LP and preserves its $184 claim example',() => {
+test('featured NFT keeps the original Flowing arcs design, $1,432 LP and $184 claim example',() => {
   const nft = buildDemoCollection().find(item => item.id === 444);
+  assert.equal(nft.color,'cyan'); assert.equal(nft.rarity,'commun'); assert.equal(nft.pattern,'arcs');
   assert.equal(nft.lockedCents,143200); assert.equal(claimable(nft),18400);
 });
 test('default portfolio spans four colors and the intended evolution and reward states',() => {

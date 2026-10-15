@@ -281,3 +281,6 @@
 .footer-socials .footer-social-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:8px;border:1px solid #294057;border-radius:50%;background:#091528;color:#9bb2c6;line-height:1;transition:color .2s,border-color .2s,background .2s}
 .footer-socials .footer-social-icon:hover{color:var(--cyan);border-color:#368b9a;background:#0d2638}.footer-socials svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.footer-socials .icon-x{fill:currentColor;stroke:none}
 @media(max-width:600px){.site-footer>.footer-links{gap:16px}.footer-socials{gap:8px}}
+
+.demo-banner-copy{min-width:0;line-height:1.7}.demo-banner-copy strong{font-weight:700;color:#ecf6ff;letter-spacing:.04em;margin-right:8px}.demo-banner-copy>span{color:#a3b0c3}
+@media(max-width:600px){.demo-banner-copy strong{margin-right:4px}}
