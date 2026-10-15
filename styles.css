@@ -256,7 +256,8 @@
 
 .nft-detail-stats span{min-height:2.6em;line-height:1.3}
 
-/* Compact arrow links retain descriptive accessible names. */
-.compact-collection-metrics>.compact-metrics-link{font-size:13px;line-height:1;padding:4px}
-.artwork-overview>.artwork-browse-link{font-size:18px;line-height:1;padding:5px;grid-row:1;grid-column:2;align-self:start;justify-self:end}
-@media(max-width:680px){.overview-v2 .artwork-overview{grid-template-columns:minmax(0,1fr) auto}}
+/* Both Overview shortcuts share one bottom-right corner treatment. */
+.overview-v2 .compact-collection-metrics,.overview-v2 .artwork-overview{position:relative;padding-bottom:42px}
+.overview-v2 .artwork-overview{grid-template-columns:minmax(0,1fr)}
+.compact-collection-metrics>.compact-metrics-link,.artwork-overview>.artwork-browse-link{position:absolute;inset:auto 10px 8px auto;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0;padding:0;grid-area:auto;font-size:18px;line-height:1;color:#8faec4}
+.compact-collection-metrics>.compact-metrics-link:hover,.artwork-overview>.artwork-browse-link:hover{color:var(--cyan)}
