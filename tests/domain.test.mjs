@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildDemoCollection,getMetrics,getLevel,claimable,feeSplit,mintPreview,claimPreview,activatePreview,increasePreview,replayEvents,DEMO_ADDRESS,estimatePoolFees,distributeDailyFees} from '../domain.js';
+import {buildDemoCollection,getMetrics,getLevel,claimable,feeSplit,mintPreview,claimPreview,activatePreview,increasePreview,replayEvents,MAX_SUPPLY,RARITY_LIMITS,getMintSupply,DEMO_ADDRESS,estimatePoolFees,distributeDailyFees} from '../domain.js';
 import {WalletConnection,walletError} from '../wallet.js';
 
 test('initial collection has exactly $425k liquidity, 100 NFTs, and 20% dormant',() => {
@@ -9,6 +9,37 @@ test('initial collection has exactly $425k liquidity, 100 NFTs, and 20% dormant'
   assert.equal(metrics.liquidity,42500000); assert.equal(metrics.active,80); assert.equal(metrics.dormant,20);
   assert.ok(collection.filter(nft => nft.lockedCents >= 10000000).length >= 3);
   assert.deepEqual(collection,buildDemoCollection());
+});
+test('the 100-example seed uses exact 60/30/10 rarity counts inside the 1,000 NFT cap',() => {
+  const original = buildDemoCollection(); const supply = getMintSupply(original);
+  assert.equal(MAX_SUPPLY,1000); assert.deepEqual(RARITY_LIMITS,{commun:600,rare:300,legendary:100});
+  assert.equal(supply.minted,100); assert.equal(supply.remaining,900);
+  assert.deepEqual(supply.rarities,{commun:{minted:60,limit:600,remaining:540},rare:{minted:30,limit:300,remaining:270},legendary:{minted:10,limit:100,remaining:90}});
+});
+test('all remaining preview mints exhaust exact rarity quotas and stop at the supply cap',() => {
+  const original = buildDemoCollection(); const baseline = structuredClone(original);
+  let collection = original;
+  for (let index=0;index<900;index++) {
+    const previous = collection; const result = mintPreview(collection); collection = result.collection;
+    assert.equal(result.nft.id,1001+index); assert.equal(result.nft.lockedCents,0); assert.equal(claimable(result.nft),0);
+    assert.equal(getMetrics(previous).liquidity,42500000);
+  }
+  assert.equal(collection.length,1000); assert.equal(new Set(collection.map(nft => nft.id)).size,1000);
+  assert.deepEqual(getMintSupply(collection).rarities,{commun:{minted:600,limit:600,remaining:0},rare:{minted:300,limit:300,remaining:0},legendary:{minted:100,limit:100,remaining:0}});
+  assert.equal(getMetrics(collection).liquidity,42500000); assert.equal(getMetrics(collection).active,80);
+  assert.deepEqual(collection.slice(0,100),baseline); assert.deepEqual(original,baseline);
+  const full = structuredClone(collection);
+  assert.throws(() => mintPreview(collection),/fully minted/); assert.deepEqual(collection,full);
+});
+test('an exhausted rarity is never selected while other preview quotas remain',() => {
+  const template = buildDemoCollection()[0];
+  let collection = Array.from({length:600},(_,index) => ({...template,id:index+1,rarity:'commun',lockedCents:0,individualCents:0,collectiveCents:0}));
+  for (let index=0;index<400;index++) {
+    const result = mintPreview(collection); assert.notEqual(result.nft.rarity,'commun'); collection = result.collection;
+  }
+  assert.deepEqual(Object.fromEntries(Object.entries(getMintSupply(collection).rarities).map(([rarity,quota]) => [rarity,quota.minted])),RARITY_LIMITS);
+  const overQuota = Array.from({length:601},(_,index) => ({...template,id:index+1,rarity:'commun'}));
+  assert.throws(() => mintPreview(overQuota),/No valid example rarity/);
 });
 test('dormant positions have no fees or rewards',() => {
   for (const nft of buildDemoCollection().filter(item => item.lockedCents === 0)) {

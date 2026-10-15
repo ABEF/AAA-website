@@ -1,10 +1,12 @@
 import {EVOLUTIONS,getEvolution,traitsForPosition} from './artworks.js';
 export const MIN_ACTIVATION_USD = 100;
+export const MAX_SUPPLY = 1000;
+export const RARITY_LIMITS = Object.freeze({commun:600,rare:300,legendary:100});
 export const FUNDING_ASSETS = ['USDC','ZZZ'];
 export const POOLS = ['ZZZ/WETH', 'ZZZ/USDC'];
 export const LEVELS = EVOLUTIONS.map(level => level.label);
 export const DEMO_ADDRESS = '0x4440000000000000000000000000000000000444';
-export const STORAGE_KEY = 'zzz-popl-preview-v5';
+export const STORAGE_KEY = 'zzz-popl-preview-v6';
 export const COLLECTION_AGE_WEEKS = 10;
 export const COLLECTION_AGE_DAYS = COLLECTION_AGE_WEEKS * 7;
 export const BASE_PROTOCOL_LIQUIDITY_USD = 425000;
@@ -15,6 +17,41 @@ export const cents = value => Math.round(value * 100);
 export const dollars = value => value / 100;
 
 export function getLevel(lockedCents) { return getEvolution(lockedCents).label; }
+
+export function getMintSupply(collection) {
+  const counts = Object.fromEntries(Object.keys(RARITY_LIMITS).map(rarity => [rarity,0]));
+  for (const nft of collection) if (Object.hasOwn(counts,nft.rarity)) counts[nft.rarity]++;
+  return {minted:collection.length,cap:MAX_SUPPLY,remaining:Math.max(0,MAX_SUPPLY-collection.length),
+    rarities:Object.fromEntries(Object.entries(RARITY_LIMITS).map(([rarity,limit]) => [rarity,{minted:counts[rarity],limit,remaining:limit-counts[rarity]}]))};
+}
+
+function drawPreviewRarity(remaining,seed) {
+  const total = Object.values(remaining).reduce((sum,value) => sum+value,0);
+  if (total <= 0 || Object.values(remaining).some(value => value < 0)) throw new Error('No valid example rarity allocation remains. Reset the demo.');
+  let choice = seed % total;
+  for (const [rarity,count] of Object.entries(remaining)) { if (choice < count) return rarity; choice -= count; }
+}
+
+function seedRarities(ids,traits) {
+  const remaining = {commun:60,rare:30,legendary:10};
+  const fixed = new Map([[444,'commun'],[128,'rare'],[91,'legendary'],[74,'legendary']]);
+  const assigned = Array(ids.length).fill(null);
+  const assign = (index,rarity) => { assigned[index] = rarity; remaining[rarity]--; };
+  ids.forEach((id,index) => { if (fixed.has(id)) assign(index,fixed.get(id)); });
+  // Keep every existing palette/rarity pair available to explore, without using the LP/reward RNG.
+  for (const color of new Set(traits.map(trait => trait.color))) for (const rarity of Object.keys(remaining)) {
+    if (traits.some((trait,index) => trait.color === color && assigned[index] === rarity)) continue;
+    const index = traits.findIndex((trait,index) => trait.color === color && assigned[index] === null);
+    if (index < 0) throw new Error('The example traits cannot cover every artwork pair.');
+    assign(index,rarity);
+  }
+  let seed = 0x504f504c;
+  for (let index=0;index<assigned.length;index++) if (assigned[index] === null) {
+    seed = (Math.imul(seed,1664525)+1013904223) >>> 0;
+    assign(index,drawPreviewRarity(remaining,seed));
+  }
+  return assigned;
+}
 
 export function buildDemoCollection() {
   let seed = 444;
@@ -30,13 +67,15 @@ export function buildDemoCollection() {
   locked[79] += cents(BASE_PROTOCOL_LIQUIDITY_USD) - locked.reduce((a, b) => a + b, 0);
   locked.push(...Array(20).fill(0));
   const ownedColors = new Map([[444,'cyan'],[128,'blue'],[91,'emerald'],[74,'violet']]);
+  const assignedTraits = ids.map((id,index) => ({...traitsForPosition(index),color:ownedColors.get(id) || traitsForPosition(index).color}));
+  const rarities = seedRarities(ids,assignedTraits);
   const collection = ids.map((id, index) => {
     const lp = locked[index];
     const fees = Math.round(lp * (0.04 + random() * 0.13));
     const daily = Math.round(lp * (0.00015 + random() * 0.00055));
     const rewards = Math.round(fees * (0.06 + random() * 0.14));
     const individual = Math.round(rewards * 0.74);
-    const traits = traitsForPosition(index);
+    const traits = {...assignedTraits[index],rarity:rarities[index]};
     const alreadyClaimed = id === 91;
     return {id,...traits,color:ownedColors.get(id) || traits.color, pool:lp ? (index % 3 === 1 ? POOLS[1] : POOLS[0]) : null, lockedCents:lp,
       feesAllTimeCents:index === 0 ? cents(1472) : fees,
@@ -99,8 +138,13 @@ export function feeSplit(value) {
 }
 
 export function mintPreview(collection) {
+  const supply = getMintSupply(collection);
+  if (!supply.remaining) throw new Error('The example collection is fully minted (1,000 NFTs).');
+  const remaining = Object.fromEntries(Object.entries(supply.rarities).map(([rarity,quota]) => [rarity,quota.remaining]));
+  const seed = (Math.imul(collection.length+1,1664525)+1013904223) >>> 0;
+  const rarity = drawPreviewRarity(remaining,seed);
   const id = Math.max(1000, ...collection.map(nft => nft.id)) + 1;
-  const nft = {id,...traitsForPosition(collection.length),pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
+  const nft = {id,...traitsForPosition(collection.length),rarity,pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
   return {collection:[...collection,nft], nft};
 }
 

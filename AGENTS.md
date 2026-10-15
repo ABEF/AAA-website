@@ -15,4 +15,4 @@ Read `PROJECT_CONTEXT.md` when starting work on this project. It records the rel
 
 These are repository-local instructions, not a claim that global ChatGPT personal memory is enabled. Later explicit user instructions take precedence.
 
-Latest local website economics: $100 activation in ZZZ/USDC value and 80/10/5/5 LP revenue allocation. Solidity has not been changed to match. Use activation/attached-LP language while clearly stating that only funded rewards are claimable and principal is non-redeemable. Pool share is a small context figure, never a progress target.
+Latest local website economics: $100 activation in ZZZ/USDC value and 80/10/5/5 LP revenue allocation. The aligned Solidity update is under verification and remains undeployed; do not claim production readiness from website behavior. Use activation/attached-LP language while clearly stating that only funded rewards are claimable and principal is non-redeemable. Pool share is a small context figure, never a progress target.

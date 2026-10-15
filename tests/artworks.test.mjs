@@ -66,7 +66,8 @@ test('the 100-position preview covers all 18 immutable palette/rarity pairs and 
   assert.equal(new Set(original.map(nft => `${nft.color}-${nft.rarity}`)).size,18);
   const mint=mintPreview(original).nft;
   assert.equal(artworkForNft(mint).evolution,'dormant');assert.equal(royaltyWeight(mint),0);
-  assert.deepEqual({color:mint.color,rarity:mint.rarity},traitsForPosition(100));
+  assert.equal(mint.color,traitsForPosition(100).color);
+  assert.ok(RARITIES.some(rarity => rarity.id === mint.rarity));
 });
 
 test('unrecognized trait strings cannot create arbitrary image or metadata paths',() => {

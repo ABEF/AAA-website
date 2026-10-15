@@ -1,5 +1,5 @@
 import {ARTWORKS,PALETTES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getPalette,artworkForNft,royaltyWeight} from './artworks.js';
-import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
+import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
 
 const $ = selector => document.querySelector(selector);
@@ -150,8 +150,11 @@ function updateWallet() {
   $('#wallet-connected-actions').hidden = !wallet.state;
   $('#connected-wallet-description').textContent = wallet.state ? `Connected: ${wallet.state.name} · ${wallet.state.address}` : '';
   $('#mint-submit').type = wallet.state ? 'submit' : 'button';
-  $('#mint-submit').disabled = operationPending;
-  $('#mint-submit').textContent = operationPending ? 'Creating example NFT…' : wallet.state ? 'Preview dormant mint ↗' : 'Connect wallet to preview mint ↗';
+  const supply = getMintSupply(collection);
+  $('#mint-supply').textContent = `${number.format(supply.minted)} / ${number.format(supply.cap)}`;
+  $('#mint-remaining').textContent = `${number.format(supply.remaining)} remaining · illustrative rarity draw, not live VRF.`;
+  $('#mint-submit').disabled = operationPending || !supply.remaining;
+  $('#mint-submit').textContent = operationPending ? 'Creating example NFT…' : !supply.remaining ? 'Collection fully minted' : wallet.state ? 'Preview dormant mint ↗' : 'Connect wallet to preview mint ↗';
 }
 
 function renderMint() { updateWallet(); renderMintArt(); }
@@ -159,7 +162,7 @@ function renderMint() { updateWallet(); renderMintArt(); }
 function renderAll() { renderMetrics(); renderCollection(); renderPortfolio(); renderMint(); renderRarityShowcase(); renderArtGallery(); }
 function liquidityForm(nft, action) {
   const activation = action === 'activate';
-  return `<form class="liquidity-form" data-liquidity-form data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option></select>${activation ? `<label class="input-label" for="liquidity-pool-${nft.id}">EXAMPLE LP POOL</label><select name="pool" id="liquidity-pool-${nft.id}"><option value="ZZZ/WETH">ZZZ / WETH</option><option value="ZZZ/USDC">ZZZ / USDC</option></select>` : ''}<label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'VALUE TO ADD TO ATTACHED LP'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '0.01'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. The ZZZ quantity depends on its price; no token quote is simulated. Actual LP value also depends on execution.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${operationPending ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button></form>`;
+  return `<form class="liquidity-form" data-liquidity-form data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option></select>${activation ? `<label class="input-label" for="liquidity-pool-${nft.id}">EXAMPLE LP POOL</label><select name="pool" id="liquidity-pool-${nft.id}"><option value="ZZZ/WETH">ZZZ / WETH</option><option value="ZZZ/USDC">ZZZ / USDC</option></select>` : ''}<label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'VALUE TO ADD TO ATTACHED LP'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '0.01'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. The ZZZ quantity depends on its price; no token quote is simulated. Activation requires at least $100 of net deployed LP after execution costs.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${operationPending ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button></form>`;
 }
 
 function renderDetails(id) {
