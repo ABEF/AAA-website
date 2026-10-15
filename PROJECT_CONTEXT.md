@@ -2,6 +2,13 @@
 
 Recorded on 2026-10-14 from decisions in the project conversation. Update this note when the user changes those decisions. This is durable project context for future work in these repositories.
 
+## Artwork comparison and royalty preview - 2026-10-15
+
+- Artwork defaults are Cyan / Monochrome / Flowing arcs, with Dormant, Activated, Enhanced and Singularity as four consistent columns. Default rows are Commun, Rare and Legendary. Mixed styles interleave complete evolution families, never individual stages. On narrow screens the comparison scrolls within its own keyboard-accessible region.
+- NFT detail and portfolio cards show Royalties to claim separately. Total claimable includes LP owner, collective and royalties. Previously claimed is the NFT's cumulative LP-plus-royalty history, rather than the most recent payment. LP trading-fee histories/principal remain unchanged.
+- The separate funded example royalty round assigns $12.50 per activated rarity unit; #444 has $12.50 pending, #128 has $25 pending, #91 has $37.50 royalties already claimed and dormant #74 has zero. Default claimable/claimed states and all four colors remain intact. Mint/activation/top-ups receive no retroactive royalty allocation.
+- Preserve localStorage v7. Existing claim events without scope remain LP-only on replay; new combined claims persist scope=all. Claimed LP and royalty counters accumulate separately and are summed for display. No real wallet transaction, payment, backend connection or enforced royalty policy is added by this UI work.
+
 ## Eight-color artwork expansion — 2026-10-15
 
 This current section supersedes the older six-color/72-variant implementation notes below. Preserve the dated notes as historical evidence. Current economics remain a 0.05 ETH dormant mint, $100 net deployed LP activation and 80/10/5/5 LP revenue allocation with equal collective membership; Power is removed. Website actions remain simulations and contracts remain undeployed.

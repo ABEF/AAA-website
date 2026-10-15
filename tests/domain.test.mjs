@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildDemoCollection,getMetrics,getLevel,claimable,feeSplit,mintPreview,claimPreview,activatePreview,increasePreview,replayEvents,MAX_SUPPLY,RARITY_LIMITS,getMintSupply,DEMO_ADDRESS,estimatePoolFees,distributeDailyFees} from '../domain.js';
+import {buildDemoCollection,getMetrics,getLevel,claimable,lpClaimable,royaltyClaimable,previouslyClaimed,feeSplit,mintPreview,claimPreview,activatePreview,increasePreview,replayEvents,MAX_SUPPLY,RARITY_LIMITS,getMintSupply,DEMO_ADDRESS,estimatePoolFees,distributeDailyFees} from '../domain.js';
 import {WalletConnection,walletError} from '../wallet.js';
 
 test('initial collection has exactly $425k liquidity, 100 NFTs, and 20% dormant',() => {
@@ -46,10 +46,11 @@ test('dormant positions have no fees or rewards',() => {
     assert.equal(nft.feesAllTimeCents,0); assert.equal(nft.fees24hCents,0); assert.equal(claimable(nft),0);
   }
 });
-test('featured NFT keeps the original Flowing arcs design, $1,432 LP and $184 claim example',() => {
+test('featured NFT keeps Flowing arcs, $1,432 LP and $184 LP rewards alongside separate royalties',() => {
   const nft = buildDemoCollection().find(item => item.id === 444);
   assert.equal(nft.color,'cyan'); assert.equal(nft.rarity,'commun'); assert.equal(nft.pattern,'arcs');
-  assert.equal(nft.lockedCents,143200); assert.equal(claimable(nft),18400);
+  assert.equal(nft.lockedCents,143200); assert.equal(lpClaimable(nft),18400);
+  assert.equal(royaltyClaimable(nft),1250); assert.equal(claimable(nft),19650);
 });
 test('default portfolio spans four colors and the intended evolution and reward states',() => {
   const owned = buildDemoCollection().filter(nft => nft.exampleOwned);
@@ -61,7 +62,10 @@ test('default portfolio spans four colors and the intended evolution and reward 
   ]);
   const active = owned.filter(nft => nft.lockedCents > 0);
   assert.deepEqual(active.filter(nft => claimable(nft) > 0).map(nft => nft.id),[444,128]);
-  assert.equal(claimable(owned.find(nft => nft.id === 444)),18400);
+  assert.equal(lpClaimable(owned.find(nft => nft.id === 444)),18400);
+  assert.equal(claimable(owned.find(nft => nft.id === 444)),19650);
+  assert.equal(royaltyClaimable(owned.find(nft => nft.id === 128)),2500);
+  assert.equal(owned.find(nft => nft.id === 91).royaltiesClaimedCents,3750);
   assert.deepEqual(active.filter(nft => nft.claimedCents > 0 && claimable(nft) === 0).map(nft => nft.id),[91]);
 });
 test('level boundaries match the supplied concept',() => {
@@ -90,9 +94,11 @@ test('repeated minting changes supply only and keeps identifiers unique',() => {
 test('reward claim cannot redeem principal or change generated fees',() => {
   const original = buildDemoCollection(); const before = getMetrics(original);
   const {collection,amount} = claimPreview(original,[444]); const after = getMetrics(collection);
-  assert.equal(amount,18400); assert.equal(after.liquidity,before.liquidity); assert.equal(after.feesAllTime,before.feesAllTime); assert.equal(after.fees24h,before.fees24h);
-  assert.equal(before.claimable-after.claimable,18400); assert.equal(collection.find(nft => nft.id === 444).claimedCents,18400);
-  assert.equal(claimable(original.find(nft => nft.id === 444)),18400);
+  assert.equal(amount,19650); assert.equal(after.liquidity,before.liquidity); assert.equal(after.feesAllTime,before.feesAllTime); assert.equal(after.fees24h,before.fees24h);
+  assert.equal(before.claimable-after.claimable,19650);
+  const claimed = collection.find(nft => nft.id === 444);
+  assert.equal(claimed.claimedCents,18400); assert.equal(claimed.royaltiesClaimedCents,1250);
+  assert.equal(previouslyClaimed(claimed),19650); assert.equal(claimable(original.find(nft => nft.id === 444)),19650);
   assert.throws(() => claimPreview(collection,[444]));
 });
 test('bulk claims deduplicate NFT identifiers and reject foreign ownership',() => {
@@ -134,7 +140,9 @@ test('top-ups cannot bypass activation or target foreign NFTs',() => {
 test('saved demo events replay and tolerate corrupt events',() => {
   const events = [{type:'claim',ids:[444]},{type:'mint'},{type:'activate',id:1001,amount:500,pool:'ZZZ/WETH'},{type:'increase',id:1001,amount:10000},{type:'claim',ids:[72]},{type:'activate',id:99999,amount:-1,pool:'bad'}];
   const collection = replayEvents(events);
-  assert.equal(collection.length,101); assert.equal(getMetrics(collection).liquidity,43550000); assert.equal(claimable(collection.find(nft => nft.id === 444)),0);
+  assert.equal(collection.length,101); assert.equal(getMetrics(collection).liquidity,43550000);
+  assert.equal(lpClaimable(collection.find(nft => nft.id === 444)),0);
+  assert.equal(royaltyClaimable(collection.find(nft => nft.id === 444)),1250);
   assert.equal(replayEvents(null).length,100);
 });
 test('wallet connection requests accounts and chain only; no signing or transactions',async () => {
@@ -186,4 +194,111 @@ test('daily fee apportionment conserves cents and leaves dormant NFTs at zero',(
 test('24-hour and 10-week displayed allocations preserve the fee budget',() => {
   assert.deepEqual(feeSplit(864.96),{owner:69197,collective:8649,compound:4325,buyback:4325});
   assert.deepEqual(feeSplit(60547.20),{owner:4843776,collective:605472,compound:302736,buyback:302736});
+});
+
+
+test('illustrative royalty receipts form a separate funded rarity-weighted ledger',() => {
+  const collection = buildDemoCollection();
+  const multiplier = {commun:1,rare:2,legendary:3};
+  let admittedRoyalties = 0;
+  for (const nft of collection) {
+    const allocation = nft.lockedCents ? 1250 * multiplier[nft.rarity] : 0;
+    assert.equal(royaltyClaimable(nft) + nft.royaltiesClaimedCents,allocation);
+    assert.equal(claimable(nft),lpClaimable(nft) + royaltyClaimable(nft));
+    admittedRoyalties += allocation;
+  }
+  assert.equal(collection.reduce((sum,nft) => sum+royaltyClaimable(nft)+nft.royaltiesClaimedCents,0),admittedRoyalties);
+  assert.equal(getMetrics(collection).fees24h,86496);
+  assert.equal(getMetrics(collection).feesAllTime,6054720);
+  assert.equal(getMetrics(collection).liquidity,42500000);
+});
+
+test('combined bulk claims conserve both ledgers, deduplicate IDs and preserve other positions',() => {
+  const original = buildDemoCollection(); const baseline = structuredClone(original);
+  const ids = [444,128]; const selected = original.filter(nft => ids.includes(nft.id));
+  const lp = selected.reduce((sum,nft) => sum+lpClaimable(nft),0);
+  const royalties = selected.reduce((sum,nft) => sum+royaltyClaimable(nft),0);
+  const result = claimPreview(original,[444,128,444]);
+  assert.equal(result.amount,lp+royalties); assert.equal(result.lpAmount,lp); assert.equal(result.royaltiesAmount,royalties);
+  assert.deepEqual(original,baseline);
+  for (const nft of result.collection) {
+    const before = original.find(item => item.id === nft.id);
+    if (!ids.includes(nft.id)) { assert.strictEqual(nft,before); continue; }
+    assert.equal(claimable(nft),0);
+    assert.equal(nft.claimedCents-before.claimedCents,lpClaimable(before));
+    assert.equal(nft.royaltiesClaimedCents-before.royaltiesClaimedCents,royaltyClaimable(before));
+    assert.equal(previouslyClaimed(nft)-previouslyClaimed(before),claimable(before));
+    for (const field of ['lockedCents','feesAllTimeCents','fees24hCents','rarity','paletteId','pattern','inventoryId']) assert.equal(nft[field],before[field]);
+  }
+  assert.throws(() => claimPreview(result.collection,ids),/No example rewards/);
+});
+
+test('previously claimed remains cumulative across both reward sources and later funded claims',() => {
+  const initial = [{id:1,exampleOwned:true,lockedCents:100000,individualCents:200,collectiveCents:100,claimedCents:1000,royaltiesCents:400,royaltiesClaimedCents:500}];
+  const first = claimPreview(initial,[1]);
+  assert.equal(first.amount,700); assert.equal(previouslyClaimed(first.collection[0]),2200);
+  const funded = first.collection.map(nft => ({...nft,individualCents:90,collectiveCents:10,royaltiesCents:125}));
+  const second = claimPreview(funded,[1]);
+  assert.equal(second.amount,225); assert.equal(second.collection[0].claimedCents,1400);
+  assert.equal(second.collection[0].royaltiesClaimedCents,1025); assert.equal(previouslyClaimed(second.collection[0]),2425);
+  assert.equal(claimable(second.collection[0]),0); assert.equal(second.collection[0].lockedCents,100000);
+  assert.throws(() => claimPreview(second.collection,[1]),/No example rewards/);
+});
+
+test('royalties alone remain claimable after an LP-only legacy claim without overwriting LP history',() => {
+  const original = buildDemoCollection();
+  const lpOnly = claimPreview(original,[444],{scope:'lp'});
+  assert.equal(lpOnly.amount,18400); assert.equal(lpOnly.lpAmount,18400); assert.equal(lpOnly.royaltiesAmount,0);
+  const before = lpOnly.collection.find(nft => nft.id === 444);
+  assert.equal(claimable(before),1250); assert.equal(previouslyClaimed(before),18400);
+  const combined = claimPreview(lpOnly.collection,[444]);
+  const after = combined.collection.find(nft => nft.id === 444);
+  assert.equal(combined.amount,1250); assert.equal(combined.lpAmount,0); assert.equal(combined.royaltiesAmount,1250);
+  assert.equal(after.claimedCents,18400); assert.equal(after.royaltiesClaimedCents,1250);
+  assert.equal(previouslyClaimed(after),19650); assert.equal(claimable(after),0);
+  assert.throws(() => claimPreview(original,[444],{scope:'unrecognized'}),/claim scope/);
+});
+
+test('dormant mint, activation and top-ups grant no retroactive royalties or previous claims',() => {
+  const baseline = buildDemoCollection();
+  for (const nft of baseline.filter(item => !item.lockedCents)) {
+    assert.equal(royaltyClaimable(nft),0); assert.equal(nft.royaltiesClaimedCents,0); assert.equal(previouslyClaimed(nft),0);
+  }
+  const mint = mintPreview(baseline);
+  assert.equal(mint.nft.royaltiesCents,0); assert.equal(mint.nft.royaltiesClaimedCents,0);
+  const activated = activatePreview(mint.collection,{id:mint.nft.id,amount:100,pool:'ZZZ/WETH'}).collection;
+  const increased = increasePreview(activated,{id:mint.nft.id,amount:10000}).collection;
+  for (const collection of [activated,increased]) {
+    const nft = collection.find(item => item.id === mint.nft.id);
+    assert.equal(claimable(nft),0); assert.equal(previouslyClaimed(nft),0);
+    assert.equal(nft.royaltiesCents,0); assert.equal(nft.royaltiesClaimedCents,0);
+    assert.throws(() => claimPreview(collection,[mint.nft.id]),/No example rewards/);
+  }
+  const toppedUp = increasePreview(baseline,{id:444,amount:500}).collection.find(nft => nft.id === 444);
+  assert.equal(royaltyClaimable(toppedUp),1250); assert.equal(previouslyClaimed(toppedUp),0);
+});
+
+test('v7 legacy events claim LP only while explicit new events replay combined claims exactly once',() => {
+  const legacy = replayEvents([{type:'claim',ids:[444]}]);
+  const oldNft = legacy.find(nft => nft.id === 444);
+  assert.equal(oldNft.claimedCents,18400); assert.equal(oldNft.royaltiesClaimedCents,0);
+  assert.equal(lpClaimable(oldNft),0); assert.equal(royaltyClaimable(oldNft),1250);
+  const events = [{type:'claim',ids:[444]},{type:'claim',ids:[444],scope:'all'},{type:'claim',ids:[444],scope:'all'}];
+  const replayed = replayEvents(events).find(nft => nft.id === 444);
+  assert.equal(replayed.claimedCents,18400); assert.equal(replayed.royaltiesClaimedCents,1250);
+  assert.equal(previouslyClaimed(replayed),19650); assert.equal(claimable(replayed),0);
+  const direct = claimPreview(buildDemoCollection(),[444]).collection;
+  assert.deepEqual(replayEvents([{type:'claim',ids:[444],scope:'all'}]),direct);
+  assert.deepEqual(replayEvents([{type:'claim',ids:[444],scope:'invalid'}]),buildDemoCollection());
+  const alreadyClaimed = replayEvents([{type:'claim',ids:[91],scope:'all'}]).find(nft => nft.id === 91);
+  assert.equal(alreadyClaimed.royaltiesClaimedCents,3750); assert.equal(claimable(alreadyClaimed),0);
+});
+
+test('older NFT fixtures without royalty fields retain their LP-only amounts and cumulative history',() => {
+  const original = [{id:1,exampleOwned:true,individualCents:70,collectiveCents:30,claimedCents:20}];
+  assert.equal(lpClaimable(original[0]),100); assert.equal(royaltyClaimable(original[0]),0);
+  assert.equal(claimable(original[0]),100); assert.equal(previouslyClaimed(original[0]),20);
+  const result = claimPreview(original,[1]);
+  assert.equal(result.amount,100); assert.equal(previouslyClaimed(result.collection[0]),120);
+  assert.equal(result.collection[0].royaltiesClaimedCents,0); assert.equal(claimable(result.collection[0]),0);
 });

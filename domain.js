@@ -93,12 +93,16 @@ export function buildDemoCollection() {
     const individual = Math.round(rewards * 0.74);
     const traits = assignedTraits[index];
     const alreadyClaimed = id === 91;
+    // A separately funded example royalty round: $12.50 per activated rarity unit.
+    const royalties = lp ? 1250 * RARITIES.find(rarity => rarity.id === traits.rarity).royaltyMultiplier : 0;
     return {id,...traits,pool:lp ? (index % 3 === 1 ? POOLS[1] : POOLS[0]) : null, lockedCents:lp,
       feesAllTimeCents:index === 0 ? cents(1472) : fees,
       fees24hCents:daily,
       individualCents:alreadyClaimed ? 0 : index === 0 ? cents(142.32) : individual,
       collectiveCents:alreadyClaimed ? 0 : index === 0 ? cents(41.68) : rewards - individual,
       claimedCents:alreadyClaimed ? rewards : 0,
+      royaltiesCents:alreadyClaimed ? 0 : royalties,
+      royaltiesClaimedCents:alreadyClaimed ? royalties : 0,
       exampleOwned:ownedIds.has(id),
       owner:'0x' + (100000 + id).toString(16).padStart(40, '0'),
       createdOrder:index};
@@ -128,7 +132,10 @@ export function distributeDailyFees(collection,totalFeeCents) {
   return collection.map((nft,index) => ({...nft,fees24hCents:allocations[index].value}));
 }
 
-export const claimable = nft => nft.individualCents + nft.collectiveCents;
+export const lpClaimable = nft => nft.individualCents + nft.collectiveCents;
+export const royaltyClaimable = nft => nft.royaltiesCents ?? 0;
+export const claimable = nft => lpClaimable(nft) + royaltyClaimable(nft);
+export const previouslyClaimed = nft => (nft.claimedCents ?? 0) + (nft.royaltiesClaimedCents ?? 0);
 export function getMetrics(collection) {
   return collection.reduce((metrics, nft) => {
     metrics.liquidity += nft.lockedCents;
@@ -164,7 +171,7 @@ export function mintPreview(collection) {
   if (!available.length) throw new Error('No unused artwork inventory remains for this rarity. Reset the demo.');
   const traits = inventoryTraits(available[seed % available.length]);
   const id = Math.max(1000, ...collection.map(nft => nft.id)) + 1;
-  const nft = {id,...traits,pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
+  const nft = {id,...traits,pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,royaltiesCents:0,royaltiesClaimedCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
   return {collection:[...collection,nft], nft};
 }
 
@@ -187,18 +194,25 @@ export function increasePreview(collection, {id, amount, fundingAsset = 'USDC'})
   return {collection:collection.map(item => item.id === id ? {...item,lockedCents:item.lockedCents+cents(amount)} : item), id};
 }
 
-export function claimPreview(collection, ids) {
+export function claimPreview(collection, ids, {scope = 'all'} = {}) {
+  if (scope !== 'all' && scope !== 'lp') throw new Error('Choose a supported example claim scope.');
   if (!Array.isArray(ids) || !ids.length || ids.some(id => !Number.isSafeInteger(id))) throw new Error('Choose an example NFT to claim.');
   const unique = new Set(ids);
-  let amount = 0;
+  let lpAmount = 0, royaltiesAmount = 0;
   for (const id of unique) {
     const nft = collection.find(item => item.id === id);
     if (!nft || !nft.exampleOwned) throw new Error('You can only claim your example NFTs.');
-    amount += claimable(nft);
+    lpAmount += lpClaimable(nft);
+    if (scope === 'all') royaltiesAmount += royaltyClaimable(nft);
   }
+  const amount = lpAmount + royaltiesAmount;
   if (!amount) throw new Error('No example rewards are ready to claim.');
-  const updated = collection.map(nft => unique.has(nft.id) ? {...nft,individualCents:0,collectiveCents:0,claimedCents:nft.claimedCents + claimable(nft)} : nft);
-  return {collection:updated, amount};
+  const updated = collection.map(nft => {
+    if (!unique.has(nft.id)) return nft;
+    const lpClaimed = {...nft,individualCents:0,collectiveCents:0,claimedCents:(nft.claimedCents ?? 0) + lpClaimable(nft)};
+    return scope === 'all' ? {...lpClaimed,royaltiesCents:0,royaltiesClaimedCents:(nft.royaltiesClaimedCents ?? 0) + royaltyClaimable(nft)} : lpClaimed;
+  });
+  return {collection:updated, amount, lpAmount, royaltiesAmount};
 }
 
 export function replayEvents(events) {
@@ -207,7 +221,8 @@ export function replayEvents(events) {
   for (const event of events.slice(0,1000)) {
     try {
       if (event.type === 'mint') collection = mintPreview(collection,event).collection;
-      if (event.type === 'claim') collection = claimPreview(collection,event.ids).collection;
+      // Existing v7 claim events predate royalties and must retain their LP-only meaning.
+      if (event.type === 'claim') collection = claimPreview(collection,event.ids,{scope:event.scope === undefined ? 'lp' : event.scope}).collection;
       if (event.type === 'activate') collection = activatePreview(collection,event).collection;
       if (event.type === 'increase') collection = increasePreview(collection,event).collection;
     } catch { /* Invalid or obsolete local demo events do not affect the source model. */ }
