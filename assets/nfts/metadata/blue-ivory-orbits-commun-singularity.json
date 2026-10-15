@@ -1,0 +1,58 @@
+{
+  "name": "PoPL artwork · Blue / Ivory · Orbital rings · Commun · Singularity",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../blue-ivory-orbits-commun-singularity.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Commun"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Bicolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Blue / Ivory"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Blue"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Ivory"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Orbital rings"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Singularity"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 1
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "blue-ivory",
+    "color_ids": [
+      "blue",
+      "ivory"
+    ],
+    "pattern": "orbits",
+    "evolution": "singularity",
+    "royalty_multiplier": 1,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-commun-singularity.png"
+  }
+}

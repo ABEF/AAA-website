@@ -1,0 +1,63 @@
+{
+  "name": "PoPL artwork · Violet / Amber / Ivory · Flowing arcs · Legendary · Dormant",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../violet-amber-ivory-arcs-legendary-dormant.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Tricolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Violet / Amber / Ivory"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Violet"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Amber"
+    },
+    {
+      "trait_type": "Color 3",
+      "value": "Ivory"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Flowing arcs"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Dormant"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 0
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "violet-amber-ivory",
+    "color_ids": [
+      "violet",
+      "amber",
+      "ivory"
+    ],
+    "pattern": "arcs",
+    "evolution": "dormant",
+    "royalty_multiplier": 3,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-legendary-dormant.png"
+  }
+}

@@ -1,4 +1,4 @@
-import {ARTWORKS,PALETTES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getPalette,artworkForNft,royaltyWeight} from './artworks.js';
+import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight} from './artworks.js';
 import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
 
@@ -13,6 +13,12 @@ const poolName = nft => nft.pool ? nft.pool.replace('/', ' / ') : 'Not activated
 const shortAddress = value => `${value.slice(0,6)}…${value.slice(-4)}`;
 const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const wait = duration => new Promise(resolve => setTimeout(resolve,duration));
+const colorwayFor = nft => getColorway(nft.paletteId || nft.color);
+const colorsFor = nft => colorwayFor(nft).colorIds || colorwayFor(nft).colors;
+const paletteLabel = nft => colorwayFor(nft).label;
+const styleLabel = id => COLOR_STYLES.find(style => style.id === id)?.label || 'Monochrome';
+const patternLabel = id => PATTERNS.find(pattern => pattern.id === id)?.label || PATTERNS[0].label;
+const visualTraits = nft => `<span>${styleLabel(colorwayFor(nft).colorStyle)}</span><span>${paletteLabel(nft)}</span><span>${patternLabel(nft.pattern)}</span>`;
 let events = [];
 try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); if (Array.isArray(saved)) events = saved.slice(0,1000); } catch { /* Preview can run without browser storage. */ }
 let collection = events.length ? replayEvents(events) : buildDemoCollection();
@@ -41,13 +47,13 @@ function openArtwork(id) {
   if (!art) return;
   $('#illustration-image').src = art.src;
   $('#illustration-image').alt = `${art.colorLabel} ${art.rarityLabel} egg NFT · ${art.evolutionLabel}`;
-  $('#illustration-title').textContent = `${art.colorLabel} / ${art.rarityLabel} / ${art.evolutionLabel}`;
-  $('#illustration-note').textContent = `${art.threshold} · ${art.evolution === 'dormant' ? `Dormant: zero royalty weight. ${art.rarityLabel} becomes ×${art.royaltyMultiplier} after activation.` : `NFT-sale royalty weight ×${art.royaltyWeight}.`} LP fee shares are unchanged by rarity. Artwork and metadata preview.`;
+  $('#illustration-title').textContent = `${art.colorLabel} · ${art.rarityLabel} · ${art.evolutionLabel}`;
+  $('#illustration-note').textContent = `${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}. ${art.evolution === 'dormant' ? `Dormant: zero royalty weight. ${art.rarityLabel} becomes ×${art.royaltyMultiplier} after activation.` : `NFT-sale royalty weight ×${art.royaltyWeight}.`} Colors and circuit patterns are visual traits only; LP fees are unchanged. Artwork and metadata preview.`;
   $('#illustration-metadata').href = art.metadata;
   $('#illustration-metadata').download = `${art.id}.json`;
   if (!$('#illustration-dialog').open) $('#illustration-dialog').showModal();
 }
-let artColor = 'cyan', artPage = 1, mintEvolution = 'dormant';
+let artColor = 'all', artPage = 1, mintEvolution = 'dormant';
 function renderRarityShowcase() {
   $('#rarity-showcase').innerHTML = RARITIES.map(rarity => {
     const nft = {color:'cyan',rarity:rarity.id,lockedCents:100000};
@@ -57,26 +63,37 @@ function renderRarityShowcase() {
 function renderArtGallery() {
   $('#art-color-filters').innerHTML = [{id:'all',label:'All colors',accent:'#8fa6be'},...PALETTES].map(color => `<button type="button" class="palette-button ${color.id === artColor ? 'is-active' : ''}" style="--swatch:${color.accent}" data-art-color="${color.id}" aria-pressed="${color.id === artColor}"><span class="swatch" aria-hidden="true"></span>${color.label}</button>`).join('');
   const rarity = $('#art-rarity-filter').value, evolution = $('#art-evolution-filter').value;
-  const matches = ARTWORKS.filter(art => (artColor === 'all' || art.color === artColor) && (rarity === 'all' || art.rarity === rarity) && (evolution === 'all' || art.evolution === evolution));
+  const colorStyle = $('#art-style-filter').value, pattern = $('#art-pattern-filter').value;
+  let matches = ARTWORKS.filter(art => (artColor === 'all' || colorsFor(art).includes(artColor)) && (colorStyle === 'all' || art.colorStyle === colorStyle) && (pattern === 'all' || art.pattern === pattern) && (rarity === 'all' || art.rarity === rarity) && (evolution === 'all' || art.evolution === evolution));
+  if (colorStyle === 'all') {
+    // Show mono-, bi- and tricolor examples together before paging through each family.
+    const groups = COLOR_STYLES.map(style => matches.filter(art => art.colorStyle === style.id));
+    matches = Array.from({length:Math.max(0,...groups.map(group => group.length))},(_,index) => groups.flatMap(group => group[index] || [])).flat();
+  }
   const pages = Math.max(1,Math.ceil(matches.length / 12));
   artPage = Math.max(1,Math.min(pages,artPage));
   const shown = matches.slice((artPage-1)*12,artPage*12);
   $('#artwork-gallery').classList.toggle('six-variants',shown.length === 6);
-  $('#artwork-gallery').innerHTML = shown.map(art => `<article class="artwork-card" style="--art-accent:${art.accent}"><button type="button" class="art-image-button" data-artwork-id="${art.id}" aria-label="Enlarge ${art.colorLabel} ${art.rarityLabel} ${art.evolutionLabel}"><img class="nft-artwork" src="${art.src}" alt="${art.colorLabel} ${art.rarityLabel} egg · ${art.evolutionLabel}" width="1024" height="1024" loading="lazy" decoding="async"><span class="art-enlarge" aria-hidden="true">↗</span></button><div class="artwork-card-copy"><div><h2>${art.evolutionLabel}</h2><span class="rarity-tag" data-rarity="${art.rarity}">${art.rarityLabel}</span></div><p>${art.colorLabel} · ${art.threshold}</p><span class="level-badge">${art.royaltyWeight ? `Royalty weight ×${art.royaltyWeight}` : 'Dormant · royalty weight 0'}</span></div></article>`).join('');
-  $('#art-variant-count').textContent = `${matches.length} of 72 artwork variants · ${collection.length} example positions`;
-  $('#art-page-info').textContent = `${(artPage-1)*12+1}–${Math.min(artPage*12,matches.length)} of ${matches.length} · Page ${artPage} of ${pages}`;
+  $('#artwork-gallery').innerHTML = shown.length ? shown.map(art => `<article class="artwork-card" style="--art-accent:${art.accent}"><button type="button" class="art-image-button" data-artwork-id="${art.id}" aria-label="Enlarge ${art.colorLabel} ${patternLabel(art.pattern)} ${art.rarityLabel} ${art.evolutionLabel}"><img class="nft-artwork" src="${art.src}" alt="${art.colorLabel} ${art.rarityLabel} egg · ${patternLabel(art.pattern)} · ${art.evolutionLabel}" width="1024" height="1024" loading="lazy" decoding="async"><span class="art-enlarge" aria-hidden="true">↗</span></button><div class="artwork-card-copy"><div><h2>${art.evolutionLabel}</h2><span class="rarity-tag" data-rarity="${art.rarity}">${art.rarityLabel}</span></div><p>${art.colorLabel}</p><small>${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}</small><span class="level-badge">${art.royaltyWeight ? `Royalty weight ×${art.royaltyWeight}` : 'Dormant · royalty weight 0'}</span></div></article>`).join('') : '<p class="empty-artworks">No artwork matches these filters. Try another color, style or pattern.</p>';
+  $('#art-variant-count').textContent = `${number.format(matches.length)} of ${number.format(ARTWORKS.length)} artwork states · ${collection.length} example NFTs`;
+  $('#art-page-info').textContent = matches.length ? `${(artPage-1)*12+1}–${Math.min(artPage*12,matches.length)} of ${number.format(matches.length)} · Page ${artPage} of ${pages}` : '0 artwork states';
   $('#art-prev').disabled = artPage === 1;
   $('#art-next').disabled = artPage === pages;
 }
 function renderMintArt() {
-  const art = findArtwork(`${$('#mint-art-color').value}-${$('#mint-art-rarity').value}-${mintEvolution}`);
+  const selectedStyle = $('#mint-art-style').value;
+  const selectedPalette = $('#mint-art-color').value;
+  const choices = COLORWAYS.filter(palette => palette.colorStyle === selectedStyle);
+  $('#mint-art-color').innerHTML = choices.map(palette => `<option value="${palette.id}">${palette.label}</option>`).join('');
+  if (choices.some(palette => palette.id === selectedPalette)) $('#mint-art-color').value = selectedPalette;
+  const art = findArtwork(`${$('#mint-art-color').value}-${$('#mint-art-pattern').value}-${$('#mint-art-rarity').value}-${mintEvolution}`);
   if (!art) return;
   const image = $('#mint-art-image');
   if (image.getAttribute('src') !== art.src) image.src = art.src;
   image.alt = `${art.colorLabel} ${art.rarityLabel} egg NFT · ${art.evolutionLabel}`;
   $('#mint-art-open').dataset.artworkId = art.id;
   $('#mint-art-open').style.setProperty('--art-accent',art.accent);
-  $('#mint-art-caption').textContent = `${art.colorLabel} · ${art.rarityLabel} · ${art.evolutionLabel}`;
+  $('#mint-art-caption').textContent = `${art.colorLabel} · ${patternLabel(art.pattern)} · ${art.rarityLabel} · ${art.evolutionLabel}`;
   $('#mint-evolution-controls').innerHTML = EVOLUTIONS.map(evolution => `<button type="button" data-mint-evolution="${evolution.id}" class="${evolution.id === mintEvolution ? 'is-active' : ''}" aria-pressed="${evolution.id === mintEvolution}">${evolution.label}</button>`).join('');
 }
 
@@ -112,14 +129,14 @@ function renderCollection() {
   const query = $('#nft-search').value.trim().replace(/^#/, '');
   const status = $('#status-filter').value;
   const sort = $('#sort-positions').value;
-  let matches = collection.filter(nft => (!query || String(nft.id).includes(query)) && (poolFilter === 'all' || nft.pool === poolFilter) && (status === 'all' || (status === 'active' ? nft.lockedCents > 0 : nft.lockedCents === 0)) && ($('#rarity-filter').value === 'all' || nft.rarity === $('#rarity-filter').value) && ($('#color-filter').value === 'all' || nft.color === $('#color-filter').value));
+  let matches = collection.filter(nft => (!query || String(nft.id).includes(query)) && (poolFilter === 'all' || nft.pool === poolFilter) && (status === 'all' || (status === 'active' ? nft.lockedCents > 0 : nft.lockedCents === 0)) && ($('#rarity-filter').value === 'all' || nft.rarity === $('#rarity-filter').value) && ($('#color-filter').value === 'all' || colorsFor(nft).includes($('#color-filter').value)) && ($('#color-style-filter').value === 'all' || colorwayFor(nft).colorStyle === $('#color-style-filter').value));
   if (sort === 'liquidity') matches.sort((a,b) => b.lockedCents-a.lockedCents);
   if (sort === 'fees') matches.sort((a,b) => b.feesAllTimeCents-a.feesAllTimeCents);
   if (sort === 'newest') matches.sort((a,b) => b.createdOrder-a.createdOrder);
   const pageCount = Math.max(1,Math.ceil(matches.length / 8));
   page = Math.min(pageCount,Math.max(1,page));
   const shown = matches.slice((page-1)*8,page*8);
-  $('#positions-body').innerHTML = shown.length ? shown.map(nft => `<tr><td><div class="position-identity"><button type="button" class="position-art" style="--art-accent:${getPalette(nft.color).accent}" data-artwork-id="${artworkForNft(nft).id}" aria-label="Enlarge artwork for PoPL ${nft.id}"><img src="${artworkForNft(nft).src}" alt="" width="51" height="51" loading="lazy" decoding="async"></button><div><span class="nft-name">PoPL #${nft.id}</span><span class="position-traits">${getRarity(nft.rarity).label} · ${getPalette(nft.color).label}</span><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div></div></td><td class="position-pool">${poolName(nft)}</td><td>${money(nft.lockedCents)}</td><td class="position-fee">${money(nft.feesAllTimeCents)}</td><td class="position-fee">${money(nft.fees24hCents)}</td><td><button class="position-view" data-nft-id="${nft.id}" aria-label="View PoPL NFT ${nft.id}">↗</button></td></tr>`).join('') : '<tr><td colspan="6" class="empty-results">No positions match these filters. Try another NFT number or pool.</td></tr>';
+  $('#positions-body').innerHTML = shown.length ? shown.map(nft => `<tr><td><div class="position-identity"><button type="button" class="position-art" style="--art-accent:${colorwayFor(nft).accent}" data-artwork-id="${artworkForNft(nft).id}" aria-label="Enlarge artwork for PoPL ${nft.id}"><img src="${artworkForNft(nft).src}" alt="" width="51" height="51" loading="lazy" decoding="async"></button><div><span class="nft-name">PoPL #${nft.id}</span><span class="position-traits">${getRarity(nft.rarity).label} · ${styleLabel(colorwayFor(nft).colorStyle)}<br>${paletteLabel(nft)}</span><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div></div></td><td class="position-pool">${poolName(nft)}</td><td>${money(nft.lockedCents)}</td><td class="position-fee">${money(nft.feesAllTimeCents)}</td><td class="position-fee">${money(nft.fees24hCents)}</td><td><button class="position-view" data-nft-id="${nft.id}" aria-label="View PoPL NFT ${nft.id}">↗</button></td></tr>`).join('') : '<tr><td colspan="6" class="empty-results">No positions match these filters. Try another NFT number or pool.</td></tr>';
   $('#result-count').textContent = `${matches.length} position${matches.length === 1 ? '' : 's'}`;
   $('#page-info').textContent = matches.length ? `${(page-1)*8+1}–${Math.min(page*8,matches.length)} of ${matches.length} · Page ${page} of ${pageCount}` : '0 positions';
   $('#page-prev').disabled = page === 1;
@@ -142,7 +159,7 @@ function renderPortfolio() {
   $('#my-count').textContent = `${owned.length} NFTs · ${metrics.active} active · ${metrics.dormant} dormant`;
   $('#claim-all').disabled = operationPending || metrics.claimable === 0;
   $('#claim-all').textContent = operationPending ? 'Processing preview…' : metrics.claimable ? 'Preview claim all ↗' : 'All rewards claimed';
-  $('#owned-nfts').innerHTML = owned.map(nft => `<article class="nft-card"><div class="nft-card-art ${nft.lockedCents ? 'is-active' : 'is-dormant'}">${artButton(nft)}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${nft.id}</h3><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div><div class="nft-card-traits">${rarityLabel(nft)}<span>${getPalette(nft.color).label}</span></div><div class="nft-card-details"><div><span>Pool</span><b>${poolName(nft)}</b></div><div><span>LP attached</span><b>${money(nft.lockedCents)}</b></div><div><span>Fees generated · all time</span><b>${money(nft.feesAllTimeCents)}</b></div><div><span>Fees generated · 24h</span><b>${money(nft.fees24hCents)}</b></div><div class="royalty-detail"><span>NFT-sale royalty weight</span><b>${royaltyWeight(nft) ? `×${royaltyWeight(nft)}` : `0 · dormant`}</b></div></div><div class="nft-card-claim"><span>CLAIMABLE REWARDS<strong>${money(claimable(nft))}</strong></span>${nft.lockedCents ? `<button class="button claim-one" data-claim-id="${nft.id}" ${operationPending || !claimable(nft) ? 'disabled' : ''}>${claimable(nft) ? 'Preview claim' : nft.claimedCents ? 'Claimed' : 'No rewards yet'}</button>` : `<button class="button claim-one" data-nft-id="${nft.id}">Activate ↗</button>`}</div></div>${nft.lockedCents ? `<div class="nft-card-actions"><button class="text-link" data-manage-id="${nft.id}">Grow attached LP ↗</button></div>` : ''}<button class="nft-card-detail-link" data-nft-id="${nft.id}"><span>Position & reward breakdown</span><span aria-hidden="true">↗</span></button></article>`).join('');
+  $('#owned-nfts').innerHTML = owned.map(nft => `<article class="nft-card"><div class="nft-card-art ${nft.lockedCents ? 'is-active' : 'is-dormant'}">${artButton(nft)}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${nft.id}</h3><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div><div class="nft-card-traits">${rarityLabel(nft)}${visualTraits(nft)}</div><div class="nft-card-details"><div><span>Pool</span><b>${poolName(nft)}</b></div><div><span>LP attached</span><b>${money(nft.lockedCents)}</b></div><div><span>Fees generated · all time</span><b>${money(nft.feesAllTimeCents)}</b></div><div><span>Fees generated · 24h</span><b>${money(nft.fees24hCents)}</b></div><div class="royalty-detail"><span>NFT-sale royalty weight</span><b>${royaltyWeight(nft) ? `×${royaltyWeight(nft)}` : `0 · dormant`}</b></div></div><div class="nft-card-claim"><span>CLAIMABLE REWARDS<strong>${money(claimable(nft))}</strong></span>${nft.lockedCents ? `<button class="button claim-one" data-claim-id="${nft.id}" ${operationPending || !claimable(nft) ? 'disabled' : ''}>${claimable(nft) ? 'Preview claim' : nft.claimedCents ? 'Claimed' : 'No rewards yet'}</button>` : `<button class="button claim-one" data-nft-id="${nft.id}">Activate ↗</button>`}</div></div>${nft.lockedCents ? `<div class="nft-card-actions"><button class="text-link" data-manage-id="${nft.id}">Grow attached LP ↗</button></div>` : ''}<button class="nft-card-detail-link" data-nft-id="${nft.id}"><span>Position & reward breakdown</span><span aria-hidden="true">↗</span></button></article>`).join('');
 }
 
 function updateWallet() {
@@ -152,7 +169,7 @@ function updateWallet() {
   $('#mint-submit').type = wallet.state ? 'submit' : 'button';
   const supply = getMintSupply(collection);
   $('#mint-supply').textContent = `${number.format(supply.minted)} / ${number.format(supply.cap)}`;
-  $('#mint-remaining').textContent = `${number.format(supply.remaining)} remaining · illustrative rarity draw, not live VRF.`;
+  $('#mint-remaining').textContent = `${number.format(supply.remaining)} remaining · illustrative inventory draw, not live VRF.`;
   $('#mint-submit').disabled = operationPending || !supply.remaining;
   $('#mint-submit').textContent = operationPending ? 'Creating example NFT…' : !supply.remaining ? 'Collection fully minted' : wallet.state ? 'Preview dormant mint ↗' : 'Connect wallet to preview mint ↗';
 }
@@ -175,7 +192,7 @@ function renderDetails(id) {
     else if (nft.lockedCents) controls = `<button class="button button-full" data-claim-id="${id}" ${!claimable(nft) || operationPending ? 'disabled' : ''}>${claimable(nft) ? 'Preview reward claim ↗' : 'No rewards ready to claim'}</button><details class="manage-liquidity"><summary>Grow the LP attached to this NFT</summary><p class="activate-intro">Add ZZZ or USDC to grow the LP allocated to this NFT. Its attached LP and the collection total increase; its fee rights remain with the NFT.</p>${liquidityForm(nft,'increase')}</details>`;
     else controls = `<p class="activate-intro">Bring this dormant NFT online with at least 100 USDC or $100 worth of ZZZ. Your contribution funds its attached LP and activates its reward rights.</p>${liquidityForm(nft,'activate')}`;
   }
-  $('#nft-dialog-content').innerHTML = `<div class="nft-detail-art">${artButton(nft)}</div><div class="nft-detail-heading"><h2 id="nft-details-title">PoPL #${nft.id}</h2><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)} · ${poolName(nft)}</span></div><div class="nft-detail-traits">${rarityLabel(nft)}<span>${getPalette(nft.color).label}</span><span>Royalty weight ${royaltyWeight(nft) ? `×${royaltyWeight(nft)}` : `0 · dormant`}</span></div><p class="nft-royalty-note"><strong>${getRarity(nft.rarity).label} · ×${getRarity(nft.rarity).royaltyMultiplier} after activation.</strong> Rarity weights a separate NFT-sale royalty pool. It does not multiply the LP fees shown below. No royalty balance is simulated here.</p><div class="nft-detail-stats"><div><span>LP ATTACHED</span><strong>${money(nft.lockedCents)}</strong></div><div><span>FEES · ALL TIME</span><strong>${money(nft.feesAllTimeCents)}</strong></div><div><span>FEES · LAST 24H</span><strong>${money(nft.fees24hCents)}</strong></div></div><div class="nft-detail-rewards"><div><span>Individual position rewards</span><b>${money(nft.individualCents)}</b></div><div><span>Collective rewards</span><b>${money(nft.collectiveCents)}</b></div><div><span>Previously claimed</span><b>${money(nft.claimedCents)}</b></div><div><span>Total claimable</span><b>${money(claimable(nft))}</b></div></div><p class="nft-detail-owner">Example owner: ${escape(owner)}</p>${controls}<p class="small-note">Illustrative dollar values. Principal cannot be claimed; only funded fee rewards carry claim rights. Activations, LP additions, and claims here are simulations.</p>`;
+  $('#nft-dialog-content').innerHTML = `<div class="nft-detail-art">${artButton(nft)}</div><div class="nft-detail-heading"><h2 id="nft-details-title">PoPL #${nft.id}</h2><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)} · ${poolName(nft)}</span></div><div class="nft-detail-traits">${rarityLabel(nft)}${visualTraits(nft)}<span>Royalty weight ${royaltyWeight(nft) ? `×${royaltyWeight(nft)}` : `0 · dormant`}</span></div><p class="nft-royalty-note"><strong>${getRarity(nft.rarity).label} · ×${getRarity(nft.rarity).royaltyMultiplier} after activation.</strong> Rarity weights a separate NFT-sale royalty pool. It does not multiply the LP fees shown below. No royalty balance is simulated here.</p><div class="nft-detail-stats"><div><span>LP ATTACHED</span><strong>${money(nft.lockedCents)}</strong></div><div><span>FEES · ALL TIME</span><strong>${money(nft.feesAllTimeCents)}</strong></div><div><span>FEES · LAST 24H</span><strong>${money(nft.fees24hCents)}</strong></div></div><div class="nft-detail-rewards"><div><span>Individual position rewards</span><b>${money(nft.individualCents)}</b></div><div><span>Collective rewards</span><b>${money(nft.collectiveCents)}</b></div><div><span>Previously claimed</span><b>${money(nft.claimedCents)}</b></div><div><span>Total claimable</span><b>${money(claimable(nft))}</b></div></div><p class="nft-detail-owner">Example owner: ${escape(owner)}</p>${controls}<p class="small-note">Illustrative dollar values. Principal cannot be claimed; only funded fee rewards carry claim rights. Activations, LP additions, and claims here are simulations.</p>`;
   if (!$('#nft-dialog').open) $('#nft-dialog').showModal();
 }
 
@@ -252,6 +269,8 @@ document.addEventListener('submit',event => {
 document.addEventListener('click',async event => {
   const target = event.target.closest('button');
   if (!target) return;
+  if (target.id === 'footer-x-link') toast('X link coming soon.');
+  if (target.id === 'footer-telegram-link') toast('Telegram link coming soon.');
   if (target.matches('[data-connect]')) openWallet();
   if (target.matches('[data-close-dialog]')) target.closest('dialog').close();
   if (target.dataset.nftId) renderDetails(Number(target.dataset.nftId));
@@ -300,10 +319,10 @@ $('#mint-form').addEventListener('submit',async event => {
   finally { operationPending = false; renderAll(); }
 });
 
-for (const selector of ['#nft-search','#status-filter','#sort-positions','#rarity-filter','#color-filter']) $(selector).addEventListener(selector === '#nft-search' ? 'input' : 'change',() => { page = 1; renderCollection(); });
+for (const selector of ['#nft-search','#status-filter','#sort-positions','#rarity-filter','#color-filter','#color-style-filter']) $(selector).addEventListener(selector === '#nft-search' ? 'input' : 'change',() => { page = 1; renderCollection(); });
 $('#page-prev').addEventListener('click',() => { page--; renderCollection(); });
-for (const selector of ['#art-rarity-filter','#art-evolution-filter']) $(selector).addEventListener('change',() => { artPage = 1; renderArtGallery(); });
-for (const selector of ['#mint-art-color','#mint-art-rarity']) $(selector).addEventListener('change',renderMintArt);
+for (const selector of ['#art-rarity-filter','#art-evolution-filter','#art-style-filter','#art-pattern-filter']) $(selector).addEventListener('change',() => { artPage = 1; renderArtGallery(); });
+for (const selector of ['#mint-art-color','#mint-art-rarity','#mint-art-style','#mint-art-pattern']) $(selector).addEventListener('change',renderMintArt);
 $('#art-prev').addEventListener('click',() => { artPage--; renderArtGallery(); });
 $('#art-next').addEventListener('click',() => { artPage++; renderArtGallery(); });
 

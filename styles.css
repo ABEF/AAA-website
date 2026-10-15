@@ -261,3 +261,23 @@
 .overview-v2 .artwork-overview{grid-template-columns:minmax(0,1fr)}
 .compact-collection-metrics>.compact-metrics-link,.artwork-overview>.artwork-browse-link{position:absolute;inset:auto 10px 8px auto;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0;padding:0;grid-area:auto;font-size:18px;line-height:1;color:#8faec4}
 .compact-collection-metrics>.compact-metrics-link:hover,.artwork-overview>.artwork-browse-link:hover{color:var(--cyan)}
+
+/* Eight fixed artwork colors and independently selectable visual traits. */
+.overview-v2 .art-color-legend{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;width:100%}
+.overview-v2 .art-color-legend li{min-width:0;justify-content:center;gap:8px}
+.art-color-legend [style*="#171c24"],.palette-button[style*="#171c24"] .swatch{border:1px solid #768191;box-shadow:0 0 0 1px #171c24}
+.artwork-palette-guide{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:40px;padding:25px 28px;margin:28px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.artwork-palette-guide h2{font-size:25px;margin-bottom:10px}.artwork-palette-guide p{font-size:12px;line-height:1.8;margin-bottom:8px}.artwork-palette-guide strong{color:var(--text);font-weight:500}
+.artwork-filter-bar{align-items:start;gap:20px}.palette-filters{flex-wrap:wrap}.artwork-selects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:310px}.artwork-selects select{min-width:0;width:100%}
+.artwork-card-copy small{display:block;color:var(--muted);font-size:10px;margin:0 0 9px}.artwork-card-copy p{overflow-wrap:anywhere;line-height:1.5}.artwork-card-copy>div{gap:8px}.empty-artworks{grid-column:1/-1;padding:40px;text-align:center}
+.mint-art-controls{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.mint-art-controls label,.mint-art-controls select{min-width:0;width:100%}.mint-art-footer{gap:12px}.mint-art-footer>span{min-width:0;line-height:1.6}.mint-art-footer>a{flex-shrink:0}
+.nft-card-traits,.nft-detail-traits{flex-wrap:wrap;gap:7px 10px}.nft-card-traits>span,.nft-detail-traits>span{font-size:10px;line-height:1.5}.nft-card-traits>span:nth-child(3){flex-basis:100%;color:var(--text)}.nft-card-traits>span:last-child{color:var(--muted)}
+.collection-filters{flex-wrap:wrap}.collection-filters select{min-width:0;max-width:100%}.position-traits{line-height:1.6;max-width:220px}
+@media(max-width:900px){.artwork-palette-guide{gap:24px}.artwork-filter-bar{display:block}.artwork-selects{margin-top:14px;width:100%;min-width:0}.overview-v2 .art-color-legend{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:16px}}
+@media(max-width:600px){.artwork-palette-guide{grid-template-columns:1fr;gap:12px;padding:20px}.artwork-palette-guide h2{font-size:24px}.mint-art-controls{gap:12px}.mint-art-controls select{font-size:10px}.overview-v2 .art-color-legend{gap:14px 8px}.overview-v2 .art-color-legend li{font-size:9px;gap:6px}.mint-art-footer{align-items:start}.mint-art-footer .text-link{font-size:9px}.collection-filters>select{flex:1 1 135px}}
+
+/* Community destinations use compact, accessible native icon controls. */
+.site-footer>.footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:20px}.footer-socials{display:flex;align-items:center;gap:10px}
+.footer-socials .footer-social-icon{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;padding:8px;border:1px solid #294057;border-radius:50%;background:#091528;color:#9bb2c6;line-height:1;transition:color .2s,border-color .2s,background .2s}
+.footer-socials .footer-social-icon:hover{color:var(--cyan);border-color:#368b9a;background:#0d2638}.footer-socials svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.footer-socials .icon-x{fill:currentColor;stroke:none}
+@media(max-width:600px){.site-footer>.footer-links{gap:16px}.footer-socials{gap:8px}}

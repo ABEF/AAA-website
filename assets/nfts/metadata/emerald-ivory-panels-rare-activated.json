@@ -1,0 +1,58 @@
+{
+  "name": "PoPL artwork · Emerald / Ivory · Segmented panels · Rare · Activated",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../emerald-ivory-panels-rare-activated.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Bicolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Emerald / Ivory"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Emerald"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Ivory"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Segmented panels"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Activated"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 2
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "emerald-ivory",
+    "color_ids": [
+      "emerald",
+      "ivory"
+    ],
+    "pattern": "panels",
+    "evolution": "activated",
+    "royalty_multiplier": 2,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-rare-activated.png"
+  }
+}

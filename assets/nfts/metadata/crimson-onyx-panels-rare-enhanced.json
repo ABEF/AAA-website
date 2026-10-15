@@ -1,0 +1,58 @@
+{
+  "name": "PoPL artwork · Crimson / Onyx · Segmented panels · Rare · Enhanced",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../crimson-onyx-panels-rare-enhanced.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Bicolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Crimson / Onyx"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Crimson"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Onyx"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Segmented panels"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Enhanced"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 2
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "crimson-onyx",
+    "color_ids": [
+      "crimson",
+      "onyx"
+    ],
+    "pattern": "panels",
+    "evolution": "enhanced",
+    "royalty_multiplier": 2,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-rare-enhanced.png"
+  }
+}

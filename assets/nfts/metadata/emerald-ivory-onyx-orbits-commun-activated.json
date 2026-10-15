@@ -1,0 +1,63 @@
+{
+  "name": "PoPL artwork · Emerald / Ivory / Onyx · Orbital rings · Commun · Activated",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../emerald-ivory-onyx-orbits-commun-activated.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Commun"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Tricolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Emerald / Ivory / Onyx"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Emerald"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Ivory"
+    },
+    {
+      "trait_type": "Color 3",
+      "value": "Onyx"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Orbital rings"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Activated"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 1
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "emerald-ivory-onyx",
+    "color_ids": [
+      "emerald",
+      "ivory",
+      "onyx"
+    ],
+    "pattern": "orbits",
+    "evolution": "activated",
+    "royalty_multiplier": 1,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-commun-activated.png"
+  }
+}

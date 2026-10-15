@@ -1,0 +1,63 @@
+{
+  "name": "PoPL artwork · Amber / Crimson / Onyx · Vertical ribs · Commun · Enhanced",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../amber-crimson-onyx-ribs-commun-enhanced.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Commun"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Tricolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Amber / Crimson / Onyx"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Amber"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Crimson"
+    },
+    {
+      "trait_type": "Color 3",
+      "value": "Onyx"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Vertical ribs"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Enhanced"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 1
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "amber-crimson-onyx",
+    "color_ids": [
+      "amber",
+      "crimson",
+      "onyx"
+    ],
+    "pattern": "ribs",
+    "evolution": "enhanced",
+    "royalty_multiplier": 1,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-commun-enhanced.png"
+  }
+}

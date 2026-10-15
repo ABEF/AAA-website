@@ -1,0 +1,63 @@
+{
+  "name": "PoPL artwork · Violet / Ivory / Onyx · Vertical ribs · Commun · Activated",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../violet-ivory-onyx-ribs-commun-activated.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Commun"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Tricolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Violet / Ivory / Onyx"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Violet"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Ivory"
+    },
+    {
+      "trait_type": "Color 3",
+      "value": "Onyx"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Vertical ribs"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Activated"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 1
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "violet-ivory-onyx",
+    "color_ids": [
+      "violet",
+      "ivory",
+      "onyx"
+    ],
+    "pattern": "ribs",
+    "evolution": "activated",
+    "royalty_multiplier": 1,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-commun-activated.png"
+  }
+}

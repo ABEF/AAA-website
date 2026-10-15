@@ -1,0 +1,437 @@
+{
+  "description": "Format/size optimization only. Original egg texture, silhouette and state lighting preserved. No generated replacement material is used.",
+  "sources": [
+    {
+      "file": "cyan-commun-dormant.webp",
+      "source": "cyan-commun-dormant.png",
+      "source_sha256": "ace2d2738d9b89a3e0d7d8d696584e77c4c4c67a81489433f1dd16042d140148",
+      "sha256": "b64e229af0cb22c418aebe1acf0601e7b4f6a082425efb873306a11da02a4a77"
+    },
+    {
+      "file": "cyan-commun-activated.webp",
+      "source": "cyan-commun-activated.png",
+      "source_sha256": "fbfcfd44d147d1ca08481f2ccb1aa6581846f1ea5534f6cf921afd5d7fcb216d",
+      "sha256": "bac0bb45ee7de63fcd7d37bdbc3a372596c9edf5b80dc38c490e424c97a39492"
+    },
+    {
+      "file": "cyan-commun-enhanced.webp",
+      "source": "cyan-commun-enhanced.png",
+      "source_sha256": "8f1eda187e5358e317ad152f9e4b4e9f667fcbdf71ae15c3bcf5d25b437191d6",
+      "sha256": "e179a40fd7357d1ce85639c5d49d8e9794dec9fde04a081bf37812fc57a138b7"
+    },
+    {
+      "file": "cyan-commun-singularity.webp",
+      "source": "cyan-commun-singularity.png",
+      "source_sha256": "7ca647e7d068efff89d31abdc0c2ac9ae52dd8cb8030e6f1e78bae9c9a5ba52d",
+      "sha256": "cd76c708449075262e4eae2abf376c5a04ff072519d9b99cf6c9e0198d949c30"
+    },
+    {
+      "file": "cyan-rare-dormant.webp",
+      "source": "cyan-rare-dormant.png",
+      "source_sha256": "cf854557f06dd4ac78ccab08d7469a2b8b1de6a98257ba75f8a13570daf20473",
+      "sha256": "565efeda890628af883a359af00a1de6363746367a2dfcecaa9c720b1d051636"
+    },
+    {
+      "file": "cyan-rare-activated.webp",
+      "source": "cyan-rare-activated.png",
+      "source_sha256": "9a4dab3079e961300d6b0ef4e8cd7b2e6cb11902d2b010c22f76fd82ecafb41f",
+      "sha256": "ea722f526d40829cc86b16db3a2a5de536ccb9a8d95e8569210c8201948b5af2"
+    },
+    {
+      "file": "cyan-rare-enhanced.webp",
+      "source": "cyan-rare-enhanced.png",
+      "source_sha256": "8a4b635c1fa724ff9db555b02429241ac7173d454687c515dbdc8e5c27495d8c",
+      "sha256": "17e3678ecb65ce8f28f13fccdf5523d9b6e72d719f0dec794ae589c3ae45f02a"
+    },
+    {
+      "file": "cyan-rare-singularity.webp",
+      "source": "cyan-rare-singularity.png",
+      "source_sha256": "a3fd6cfe18377bb131685d2c24263df6d665a47b72771640bfac49df5df564a8",
+      "sha256": "6c08b04e39d47eca2275481c2b069268b58a5c8e80598667df48c3bd8b9bfa7e"
+    },
+    {
+      "file": "cyan-legendary-dormant.webp",
+      "source": "cyan-legendary-dormant.png",
+      "source_sha256": "425545b03136d80bc595a7b093d26d3536d38bff243e104a2c188aeb4bd13fd2",
+      "sha256": "04a2f1bf4ec0afb3228bc692bd7a9f9f3076b674324578bf00cf368d71c3c811"
+    },
+    {
+      "file": "cyan-legendary-activated.webp",
+      "source": "cyan-legendary-activated.png",
+      "source_sha256": "ff265b55313dba5be53354e7b5102967327f85c2451aed46a4621cfe84848a5c",
+      "sha256": "4e549896a29595d639d0184f0737fa5b9f23dc81071fa39920e93b4c0f1433f3"
+    },
+    {
+      "file": "cyan-legendary-enhanced.webp",
+      "source": "cyan-legendary-enhanced.png",
+      "source_sha256": "6b56bc3d70d22f126c76d2b7f5e0181165bf474176b5067c5261055b282f9aca",
+      "sha256": "c6b9f91a3093d9ef6c259b6e6b1a7bb90688b676a8cb5a4d3e49ef54906714d5"
+    },
+    {
+      "file": "cyan-legendary-singularity.webp",
+      "source": "cyan-legendary-singularity.png",
+      "source_sha256": "dda60ab82661ac045fda04415c15648a83a43092eba432c6cffd9b34c51d92c3",
+      "sha256": "ffd93e3b7b50e52d8fd2da6bafeb52792c23213c0794827de23bf4401c2f4684"
+    },
+    {
+      "file": "blue-commun-dormant.webp",
+      "source": "blue-commun-dormant.png",
+      "source_sha256": "a7ea15e4eb91237e465cb05b320433a809d27cbc8e63b223f56637af3169ffc1",
+      "sha256": "d191134dada7cfd4a7b434132282ca8f564365e73d3b59ec9fd239b2c2fcaf3f"
+    },
+    {
+      "file": "blue-commun-activated.webp",
+      "source": "blue-commun-activated.png",
+      "source_sha256": "0ba08db00a33c3e6185210f7b6b6b296a9a9f4223ee7b084d02154901daddb16",
+      "sha256": "75555bcb6303cc688dd837e6faa0ad173aaaa5ed4171c63eb027913abca53e8f"
+    },
+    {
+      "file": "blue-commun-enhanced.webp",
+      "source": "blue-commun-enhanced.png",
+      "source_sha256": "df5bbe00ee2a34f93c8388fc506642fade18543b0ac18f8a9a4204b0de1a5770",
+      "sha256": "f8f3053f30941ebdd91f318fc5ed10c1897cb993eef8c627662d880437fda867"
+    },
+    {
+      "file": "blue-commun-singularity.webp",
+      "source": "blue-commun-singularity.png",
+      "source_sha256": "0be24d4bbc072ad5292e2c21c3aca85bc1eca65f6c23221fd9604e28b672320c",
+      "sha256": "5f85e6ef13226ab401d55965d2a9dfbb7c6abf581b0ef6aa393eba75a386cd3b"
+    },
+    {
+      "file": "blue-rare-dormant.webp",
+      "source": "blue-rare-dormant.png",
+      "source_sha256": "e086b3836e26a2067b3e8736af418384f7a47161661d5c3062e817fb7596b524",
+      "sha256": "a8e409c7f47e6b72082e15f62d57192f71bd35d455bae3d0a657773088440314"
+    },
+    {
+      "file": "blue-rare-activated.webp",
+      "source": "blue-rare-activated.png",
+      "source_sha256": "8b7d5c99334310e5b44183ef034ac294cf86fbe700e5269ffdce35fc122be006",
+      "sha256": "47602f822c03922619120eef331d1f0b5961c4258c9844ace0bdabdd41386303"
+    },
+    {
+      "file": "blue-rare-enhanced.webp",
+      "source": "blue-rare-enhanced.png",
+      "source_sha256": "383ef265e19777ea66f0e7249945770661dec62d47c75cccf26fab1162256d63",
+      "sha256": "844d3bcc48a501d76f43b4f4108c6f61602b69cb589098c8bddba0dd02fc27ee"
+    },
+    {
+      "file": "blue-rare-singularity.webp",
+      "source": "blue-rare-singularity.png",
+      "source_sha256": "797e977eb4305527a6ed01939832070dd13a94c640613d77c73fca78b3df4ea9",
+      "sha256": "0807520dbb5726878572d650797fe380b4247cd555295a170290f751b7f27e69"
+    },
+    {
+      "file": "blue-legendary-dormant.webp",
+      "source": "blue-legendary-dormant.png",
+      "source_sha256": "065191bffcaff4468e0b995dfbeb392060d29c50b98e23deb2b46b43bd8103d7",
+      "sha256": "2c908de4afff3c5e645f61b2a41eec9c92c2b88f825a475b53c1b68771177c54"
+    },
+    {
+      "file": "blue-legendary-activated.webp",
+      "source": "blue-legendary-activated.png",
+      "source_sha256": "37ac733426300822865646dd6eff6a8410b6d758286869eb53942ff68efe4c17",
+      "sha256": "e1c76cc6ea7af30d69b3ce21801e9db77e0ea38c57824285f9fbff019e080702"
+    },
+    {
+      "file": "blue-legendary-enhanced.webp",
+      "source": "blue-legendary-enhanced.png",
+      "source_sha256": "1ecc28fb28196830540078dea8fe41c509e4b8ba316f6723367518adb2ff32fb",
+      "sha256": "c7e2b744ef08758b972d6f0e5515ba13af4e5436ec1de19359ffae6306db9056"
+    },
+    {
+      "file": "blue-legendary-singularity.webp",
+      "source": "blue-legendary-singularity.png",
+      "source_sha256": "53842281bb6a4d66d11afd1d02d6c9bb10ded2fff50978009e94b3ef4fb491a0",
+      "sha256": "020b59820e151ce11762e28fc3700982d797dcb43cb22d7dad377acd6e91d48b"
+    },
+    {
+      "file": "violet-commun-dormant.webp",
+      "source": "violet-commun-dormant.png",
+      "source_sha256": "e6990b4391de1536f35fab06f43044ade23f8e20118f1249ece278d4d144d9c9",
+      "sha256": "63645398a0d84c73520c9139c4e870623487237934066caaa996bf15d51beec5"
+    },
+    {
+      "file": "violet-commun-activated.webp",
+      "source": "violet-commun-activated.png",
+      "source_sha256": "fb38b442dfbb1bafd6eb61409e6662037e2a0edb470427f8dabc52379de7b7c4",
+      "sha256": "3ea806ea9332a86e68f87cb2efff53138f8b8fef2095153c0d323ee4bb197a69"
+    },
+    {
+      "file": "violet-commun-enhanced.webp",
+      "source": "violet-commun-enhanced.png",
+      "source_sha256": "fe0ffc376f2f458064c8bdb166bc4d1372b7b4afacf1f9b7f69f5db186062a1d",
+      "sha256": "de52bcdfd6f172aa0c047bc87c22cb23dd4c246467c6364032ee02283a96454c"
+    },
+    {
+      "file": "violet-commun-singularity.webp",
+      "source": "violet-commun-singularity.png",
+      "source_sha256": "81efc18bf9ce616b61f33a5948fd29c1a368c7ed02b7dd315a79724b7d3665b0",
+      "sha256": "300140cdfcd3c3e363a6f22540666ce35fa372fc997f17deac1d5534e494336c"
+    },
+    {
+      "file": "violet-rare-dormant.webp",
+      "source": "violet-rare-dormant.png",
+      "source_sha256": "7c398e14c9371c66fe89db58a0e607dacc3aad7161548f8de19494010097e805",
+      "sha256": "59b0c33a81dea4f2e13ee26f583674a55640fb05564ca889d382e08897a94bd8"
+    },
+    {
+      "file": "violet-rare-activated.webp",
+      "source": "violet-rare-activated.png",
+      "source_sha256": "05e2c2ca0912cb116f8201aff89580e526c7683527c9c0fed2fa2c0d90274a23",
+      "sha256": "a7af7beccb91bc6747412e2ad00f941b4114b9fc72246e8aaac745916df9ae33"
+    },
+    {
+      "file": "violet-rare-enhanced.webp",
+      "source": "violet-rare-enhanced.png",
+      "source_sha256": "773fb5d128b6f52cb3f222bfac7bd1af2c91722fd2aa0ba73ed7a90089b36d7d",
+      "sha256": "96f6f03986825f4a0000a7298e10258ca4735f8ecc70d3e10b6abb9b3fe572a2"
+    },
+    {
+      "file": "violet-rare-singularity.webp",
+      "source": "violet-rare-singularity.png",
+      "source_sha256": "620c9b6858f7c4c35e7930880f4fa8a2ea3a7adf15e902b1d314bb631d306684",
+      "sha256": "9a1c2a3e4688131be3504c1a73dca1cbe812cf0e40ea47f9d551899ab96e509b"
+    },
+    {
+      "file": "violet-legendary-dormant.webp",
+      "source": "violet-legendary-dormant.png",
+      "source_sha256": "f50325c50f04c3c42092c8e8c5f5f9e2b67500841eaf82db4be1653d0f2cc03f",
+      "sha256": "17949f3305e6b9ee5ddaa6d9b9fd3c000f8f1f8c60e408d12e73ba1b0e17a8b2"
+    },
+    {
+      "file": "violet-legendary-activated.webp",
+      "source": "violet-legendary-activated.png",
+      "source_sha256": "b8e7fafa22a855e11cc9da5e53db5f75d4f6b12750cff5328fc031679b66d19c",
+      "sha256": "c94a2685f63867a240033c3c782463bf976040e6a1090c6d9661f0bf7e0ab5c2"
+    },
+    {
+      "file": "violet-legendary-enhanced.webp",
+      "source": "violet-legendary-enhanced.png",
+      "source_sha256": "37435f6e9975ad7a1ee864d8bfc6391968fdf41a32500cbfbc43c541fd60329c",
+      "sha256": "21cf8c8ed1d14ad421a82453b31c43a7597d99b66edeeb4f216518b9aa6ec177"
+    },
+    {
+      "file": "violet-legendary-singularity.webp",
+      "source": "violet-legendary-singularity.png",
+      "source_sha256": "ded2f5385ff393128e8ebeb5aa42587ed84a0387c1e5e0c1be67ef79ccb4f1c4",
+      "sha256": "eff6baac0e9392bd833ff498efaa49690ca553c00accefd0473f69caf285be3b"
+    },
+    {
+      "file": "emerald-commun-dormant.webp",
+      "source": "emerald-commun-dormant.png",
+      "source_sha256": "90e903845fef11171e9a236316279edbc6589f963c5ce160770d3dc6985081f9",
+      "sha256": "9df3125bf62d5f282880454a45fbcb06c55259a7c092d6ff2683d98f86ce696f"
+    },
+    {
+      "file": "emerald-commun-activated.webp",
+      "source": "emerald-commun-activated.png",
+      "source_sha256": "a6c84c54660c39cad75d3c0dea2d74eda8b9f14350dcdb7e2675935eb390a0b3",
+      "sha256": "705d2ccf99f68cc448c71401c2eb412c23f520551bf0e8ab862f4bb37fb5eebf"
+    },
+    {
+      "file": "emerald-commun-enhanced.webp",
+      "source": "emerald-commun-enhanced.png",
+      "source_sha256": "1d548f18abefc69ee0e897de4876fbf60be92ffaafc92cbe54de413414736a80",
+      "sha256": "9fa5ba6ab1eb0e76a1b0c3ef0e9943e1815ee75c3a8751f74ce9ceb8461e2814"
+    },
+    {
+      "file": "emerald-commun-singularity.webp",
+      "source": "emerald-commun-singularity.png",
+      "source_sha256": "c303d5306b3658e40e7431dbcab84a7ce9adf54c0c5dace899ff2fad36909975",
+      "sha256": "a0e4480d7c00a510f6d71c06fe3642e63ed51a74ef0b91be098e87c8519da90e"
+    },
+    {
+      "file": "emerald-rare-dormant.webp",
+      "source": "emerald-rare-dormant.png",
+      "source_sha256": "dee8155be9c69a2637b0093b0f853154a780128c3416e0e466a698c418bfc1c0",
+      "sha256": "17483a1ce2beacdba1e9d703adc564e27cef6b54ff3397e4ffb9b575ac5ed753"
+    },
+    {
+      "file": "emerald-rare-activated.webp",
+      "source": "emerald-rare-activated.png",
+      "source_sha256": "80bf92c23e992d5f5618960cd5242fb25356332644db7a548d47b630939b3137",
+      "sha256": "9cdd9837479d6b29f5617e3490da5c1184c8b5250a2ab6e60b3b628f08fd0fd3"
+    },
+    {
+      "file": "emerald-rare-enhanced.webp",
+      "source": "emerald-rare-enhanced.png",
+      "source_sha256": "d8f25ec33d56cbb62846d4435c38cb6252d99cbde286e18cf4aacac46e05fad7",
+      "sha256": "a582be9956aad92dcdfc089e7b303e0d7df350007d075f10cc90fdc39d481d1d"
+    },
+    {
+      "file": "emerald-rare-singularity.webp",
+      "source": "emerald-rare-singularity.png",
+      "source_sha256": "24896abda61bad45df5ee44ff784d07f68e9044f434509d30c21b8fb33b26599",
+      "sha256": "2137a007ef6b152ba005da44bad03d726f36b59f9186362119035168032baed7"
+    },
+    {
+      "file": "emerald-legendary-dormant.webp",
+      "source": "emerald-legendary-dormant.png",
+      "source_sha256": "91058b1ed243e02c90fac9470312e49ca3143999301795fbe48e212cb8eec228",
+      "sha256": "dc01786f62aa8b784f08cf4add3034029b7c55098f6c2b989c0bf46bf6aa97d6"
+    },
+    {
+      "file": "emerald-legendary-activated.webp",
+      "source": "emerald-legendary-activated.png",
+      "source_sha256": "5b90a4c20a354d5665f8e26a690818c08b6facf14b7518fe2b84bcab4ffc0089",
+      "sha256": "6e73fd553c6e4eb40dc8352d9c22a5e9045d69167061ead682f69eaf69f6fd2e"
+    },
+    {
+      "file": "emerald-legendary-enhanced.webp",
+      "source": "emerald-legendary-enhanced.png",
+      "source_sha256": "bad92871b813d6a452d635804ecfebb79c88dbe59405cf831a3bd368939b3faa",
+      "sha256": "80c0dc1d89faadb916cdf12c6425e6639b465696df7e6124ad2fa735ecf4c92d"
+    },
+    {
+      "file": "emerald-legendary-singularity.webp",
+      "source": "emerald-legendary-singularity.png",
+      "source_sha256": "85285f591e53b8898017ba6880a7080bcf7301de4a7daa0e7311017644bfa23a",
+      "sha256": "f37b030e467ec662c9e983186b8286b30e3f34ed853751dd7ccf789f545cddc2"
+    },
+    {
+      "file": "amber-commun-dormant.webp",
+      "source": "amber-commun-dormant.png",
+      "source_sha256": "4c6cfc81b23b02ac04c4f813070fccaf1c59a71b1355af75279a31e1df4bbda9",
+      "sha256": "b7756bb7a3faaab1b31202bea3e1ed93ae86f6e88f5e646f4a54a060b56d52ba"
+    },
+    {
+      "file": "amber-commun-activated.webp",
+      "source": "amber-commun-activated.png",
+      "source_sha256": "deb7fc488c50984e419e48bb796e5ee77e105edc1a6bc4b7d3b5e133ec598f7b",
+      "sha256": "bb9917b2ac0b99af024b488d31b16fd90bc90d9de3ddcebe67fc78ddf686d1ef"
+    },
+    {
+      "file": "amber-commun-enhanced.webp",
+      "source": "amber-commun-enhanced.png",
+      "source_sha256": "205270933ce9132dda888ea1ee91585737f60a0ebd5656f867e78237a762ac46",
+      "sha256": "606c89c96922c2ee46fb0ba061db99f72b315284f740def171505096b096f9f7"
+    },
+    {
+      "file": "amber-commun-singularity.webp",
+      "source": "amber-commun-singularity.png",
+      "source_sha256": "e762db21d938895120ee163d776085b823af55896c3fba21273785ce31327dd6",
+      "sha256": "740af019ae1246c72392320558fafa6d1b91fe5dbb98e44386f9c35925debb6c"
+    },
+    {
+      "file": "amber-rare-dormant.webp",
+      "source": "amber-rare-dormant.png",
+      "source_sha256": "96f269595ced61d34fc929639ff94092ed7d81f02ce1eb3cf82471b449ce157f",
+      "sha256": "beebd51d736b34b4bd6a2ac00ee43fb97bf146995ed7c80c50f7a5685a9a61d1"
+    },
+    {
+      "file": "amber-rare-activated.webp",
+      "source": "amber-rare-activated.png",
+      "source_sha256": "b02c3314004e772d4a722231ced7e7c8cf205e2fa2c7ced3abcb0bc49169eee6",
+      "sha256": "419afe8a05d520014647e01b732ea0a11fe4080c35a4e260978482f70350e7d6"
+    },
+    {
+      "file": "amber-rare-enhanced.webp",
+      "source": "amber-rare-enhanced.png",
+      "source_sha256": "181e44b211b2033e3b066fbccaee37432e9169ea66950ebe16a81b55c747ffd8",
+      "sha256": "bf7fc29955057e74ca4e77b1dee0b221bef8570ff0ecfd637f2f3470e1266269"
+    },
+    {
+      "file": "amber-rare-singularity.webp",
+      "source": "amber-rare-singularity.png",
+      "source_sha256": "1114c49141c8c3a4231329b8faaa5a8594aec16e8875b635fa912c598070a45c",
+      "sha256": "d3c5e64ff956b1fc026939bf2af0775e5a5150a2c9095a28e8eb81b126557d95"
+    },
+    {
+      "file": "amber-legendary-dormant.webp",
+      "source": "amber-legendary-dormant.png",
+      "source_sha256": "6de200e3bad0b4f65165ed063386faa686c1fd1b45126b1ef3e53a867fad8c19",
+      "sha256": "88926566eb9cb99b1a4db405d01cc87b8d503da33943cd26457d150e0f90d4f5"
+    },
+    {
+      "file": "amber-legendary-activated.webp",
+      "source": "amber-legendary-activated.png",
+      "source_sha256": "9fd9ccfcd217594cdcf06e163a15ea85cb98f2a6365cfd136d925a92add209d0",
+      "sha256": "0fbbffad95733540273759f3d54b7fc00d038a57939b77bdd7c541334517521b"
+    },
+    {
+      "file": "amber-legendary-enhanced.webp",
+      "source": "amber-legendary-enhanced.png",
+      "source_sha256": "65a081b05e52da2647fd871252cf2f8a5d6f2efccca7926edfc6c93fb1d0dc39",
+      "sha256": "86f792df6d0261e68c3086c83b25b0685fbcedd38f84f99d6e9284db7dc4a02d"
+    },
+    {
+      "file": "amber-legendary-singularity.webp",
+      "source": "amber-legendary-singularity.png",
+      "source_sha256": "a38ca011958b5a6fffd9d9ba6acfb9623b9d9addd3275931b324522b69a1ed14",
+      "sha256": "9a4204d33591ba6db29a2b3a050516564a6e42bce86813e75d288f12486bb9ce"
+    },
+    {
+      "file": "crimson-commun-dormant.webp",
+      "source": "crimson-commun-dormant.png",
+      "source_sha256": "76079b3999b1e9e0b16a494e5bf118b9bfad4e6c5096928703a30dc56861f340",
+      "sha256": "7e433e80ed52a145d3c2a2d1f50a2b4aed52ea56719d4c96f2efe4a93cd01ff3"
+    },
+    {
+      "file": "crimson-commun-activated.webp",
+      "source": "crimson-commun-activated.png",
+      "source_sha256": "561bf4ccc42595e6a6566c961d6d9f476415eb60af4537738a835b689aeeb0cd",
+      "sha256": "5a673ab7033ab520702a27ba50a0b70b830871ee484c8e2308a92999c85f7971"
+    },
+    {
+      "file": "crimson-commun-enhanced.webp",
+      "source": "crimson-commun-enhanced.png",
+      "source_sha256": "133a865000034e169982f7e4b797f4d8ee04acffdc1f2afba8fa2565c699f9b7",
+      "sha256": "3efa76abf2926349dff5e752647bc3cd7d4d2d551006a3198cff654bba406cf0"
+    },
+    {
+      "file": "crimson-commun-singularity.webp",
+      "source": "crimson-commun-singularity.png",
+      "source_sha256": "ae151b73e6263201da6fcf0b3412c20c87485a0404d31f6f61ccc8afe9f0c78f",
+      "sha256": "e5c6b121c8b719f67a6bc2a4939944dcbda141662e35effe8c34ac29a834a3d7"
+    },
+    {
+      "file": "crimson-rare-dormant.webp",
+      "source": "crimson-rare-dormant.png",
+      "source_sha256": "18c77fcf57a5e97ccd4bd51716e89b1b2a979c8e403ec06f5d7a6fd8e8c11539",
+      "sha256": "53ff08ba789f1e8fbc6c090ec2d7e65972bd9b4ad69eecfa6ffc0fb35437aa84"
+    },
+    {
+      "file": "crimson-rare-activated.webp",
+      "source": "crimson-rare-activated.png",
+      "source_sha256": "0313f17da530ab4f0ef52304eed38398421466890d0edf6951af46810048c563",
+      "sha256": "1d897daba63377a5725986f3122e364e843eb9934ba684490bde0afcac873814"
+    },
+    {
+      "file": "crimson-rare-enhanced.webp",
+      "source": "crimson-rare-enhanced.png",
+      "source_sha256": "4824b4fd80a2732fb4bb575e63a0ab3ad2ea90e0fccc930baa2dd095917fa8e9",
+      "sha256": "25e8ed97a6f21b1ac8d72e34178b128ded3bd486dae0247d42b6059ce00c4d1e"
+    },
+    {
+      "file": "crimson-rare-singularity.webp",
+      "source": "crimson-rare-singularity.png",
+      "source_sha256": "4a86d62db3b6b3789fbcaaa6baf0d949d7b572047a4ae4c5c71ce161e9e9a277",
+      "sha256": "52fd9484707c9a353b7d4effa60414437a7e3c490a94c36b65c5c176cd16acdd"
+    },
+    {
+      "file": "crimson-legendary-dormant.webp",
+      "source": "crimson-legendary-dormant.png",
+      "source_sha256": "1dca950346b24ca5e0c036caa96c15e6fb6b72bb9e7487c902fb246f20d3ad85",
+      "sha256": "1af310d7738f1d8f4526caa01b1c61f2b167fea9831e3724fb8fdd766e35b2ca"
+    },
+    {
+      "file": "crimson-legendary-activated.webp",
+      "source": "crimson-legendary-activated.png",
+      "source_sha256": "a2e7f96baf322f4fdb256a6e4ec95771dc2273a12863a396db26206bb78453a2",
+      "sha256": "617f1ad308fe481fd67055d0543aa84f5db32ee496bae5dff98c11d81a4f8498"
+    },
+    {
+      "file": "crimson-legendary-enhanced.webp",
+      "source": "crimson-legendary-enhanced.png",
+      "source_sha256": "4ef2ce6c9057e130efa9965664eea133041ea57f5ab5b3270598071c555b3928",
+      "sha256": "388d79ee6ac841c01566b663c992b63db09fd0c1ea9ceded888d50f1e84da8b5"
+    },
+    {
+      "file": "crimson-legendary-singularity.webp",
+      "source": "crimson-legendary-singularity.png",
+      "source_sha256": "5c780d3f19c54201f6a7de12d2f3bf9e35dd8bda0ae1f2afb7bc065658410972",
+      "sha256": "048b13535286fd8639e1f7bef1408b55adcb75bc550288737eac03c8f2604aea"
+    }
+  ]
+}

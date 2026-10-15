@@ -1,4 +1,5 @@
-import {EVOLUTIONS,getEvolution,traitsForPosition} from './artworks.js';
+import {EVOLUTIONS,getEvolution} from './artworks.js';
+import {buildInventory,COLOR_STYLES,RARITIES} from './palette-system.js';
 export const MIN_ACTIVATION_USD = 100;
 export const MAX_SUPPLY = 1000;
 export const RARITY_LIMITS = Object.freeze({commun:600,rare:300,legendary:100});
@@ -6,7 +7,7 @@ export const FUNDING_ASSETS = ['USDC','ZZZ'];
 export const POOLS = ['ZZZ/WETH', 'ZZZ/USDC'];
 export const LEVELS = EVOLUTIONS.map(level => level.label);
 export const DEMO_ADDRESS = '0x4440000000000000000000000000000000000444';
-export const STORAGE_KEY = 'zzz-popl-preview-v6';
+export const STORAGE_KEY = 'zzz-popl-preview-v7';
 export const COLLECTION_AGE_WEEKS = 10;
 export const COLLECTION_AGE_DAYS = COLLECTION_AGE_WEEKS * 7;
 export const BASE_PROTOCOL_LIQUIDITY_USD = 425000;
@@ -32,23 +33,39 @@ function drawPreviewRarity(remaining,seed) {
   for (const [rarity,count] of Object.entries(remaining)) { if (choice < count) return rarity; choice -= count; }
 }
 
-function seedRarities(ids,traits) {
-  const remaining = {commun:60,rare:30,legendary:10};
-  const fixed = new Map([[444,'commun'],[128,'rare'],[91,'legendary'],[74,'legendary']]);
-  const assigned = Array(ids.length).fill(null);
-  const assign = (index,rarity) => { assigned[index] = rarity; remaining[rarity]--; };
-  ids.forEach((id,index) => { if (fixed.has(id)) assign(index,fixed.get(id)); });
-  // Keep every existing palette/rarity pair available to explore, without using the LP/reward RNG.
-  for (const color of new Set(traits.map(trait => trait.color))) for (const rarity of Object.keys(remaining)) {
-    if (traits.some((trait,index) => trait.color === color && assigned[index] === rarity)) continue;
-    const index = traits.findIndex((trait,index) => trait.color === color && assigned[index] === null);
-    if (index < 0) throw new Error('The example traits cannot cover every artwork pair.');
-    assign(index,rarity);
-  }
+const ART_INVENTORY = buildInventory();
+const inventoryTraits = entry => ({inventoryId:entry.tokenId,rarity:entry.rarity,
+  color:entry.colorIds[0],colors:[...entry.colorIds],colorIds:[...entry.colorIds],
+  paletteId:entry.paletteId,colorStyle:entry.colorStyle,pattern:entry.pattern});
+
+function seedArtworkEntries(ids) {
+  // These are fixed inventory slots, not freely rerolled color/rarity combinations.
+  const available = [...ART_INVENTORY], assigned = Array(ids.length).fill(null);
+  const remaining = Object.fromEntries(COLOR_STYLES.flatMap(style => RARITIES.map(rarity =>
+    [`${style.id}:${rarity.id}`,style.supply*rarity.supply/10000])));
+  const fixed = new Map([[444,['cyan','commun']],[128,['blue','rare']],
+    [91,['emerald','legendary']],[74,['violet','legendary']]]);
+  const take = (index,entry) => {
+    assigned[index] = inventoryTraits(entry);
+    available.splice(available.indexOf(entry),1);
+    remaining[`${entry.colorStyle}:${entry.rarity}`]--;
+  };
+  ids.forEach((id,index) => {
+    if (!fixed.has(id)) return;
+    const [paletteId,rarity] = fixed.get(id);
+    take(index,available.find(entry => entry.paletteId === paletteId && entry.rarity === rarity));
+  });
   let seed = 0x504f504c;
-  for (let index=0;index<assigned.length;index++) if (assigned[index] === null) {
+  for (let index=0;index<assigned.length;index++) if (!assigned[index]) {
     seed = (Math.imul(seed,1664525)+1013904223) >>> 0;
-    assign(index,drawPreviewRarity(remaining,seed));
+    let choice = seed % Object.values(remaining).reduce((sum,count) => sum+count,0);
+    let selected;
+    for (const [key,count] of Object.entries(remaining)) {
+      if (choice < count) { selected = key; break; }
+      choice -= count;
+    }
+    const candidates = available.filter(entry => `${entry.colorStyle}:${entry.rarity}` === selected);
+    take(index,candidates[seed % candidates.length]);
   }
   return assigned;
 }
@@ -66,24 +83,23 @@ export function buildDemoCollection() {
   locked.push(...raw.map(value => Math.floor(value / rawTotal * remaining)));
   locked[79] += cents(BASE_PROTOCOL_LIQUIDITY_USD) - locked.reduce((a, b) => a + b, 0);
   locked.push(...Array(20).fill(0));
-  const ownedColors = new Map([[444,'cyan'],[128,'blue'],[91,'emerald'],[74,'violet']]);
-  const assignedTraits = ids.map((id,index) => ({...traitsForPosition(index),color:ownedColors.get(id) || traitsForPosition(index).color}));
-  const rarities = seedRarities(ids,assignedTraits);
+  const ownedIds = new Set([444,128,91,74]);
+  const assignedTraits = seedArtworkEntries(ids);
   const collection = ids.map((id, index) => {
     const lp = locked[index];
     const fees = Math.round(lp * (0.04 + random() * 0.13));
     const daily = Math.round(lp * (0.00015 + random() * 0.00055));
     const rewards = Math.round(fees * (0.06 + random() * 0.14));
     const individual = Math.round(rewards * 0.74);
-    const traits = {...assignedTraits[index],rarity:rarities[index]};
+    const traits = assignedTraits[index];
     const alreadyClaimed = id === 91;
-    return {id,...traits,color:ownedColors.get(id) || traits.color, pool:lp ? (index % 3 === 1 ? POOLS[1] : POOLS[0]) : null, lockedCents:lp,
+    return {id,...traits,pool:lp ? (index % 3 === 1 ? POOLS[1] : POOLS[0]) : null, lockedCents:lp,
       feesAllTimeCents:index === 0 ? cents(1472) : fees,
       fees24hCents:daily,
       individualCents:alreadyClaimed ? 0 : index === 0 ? cents(142.32) : individual,
       collectiveCents:alreadyClaimed ? 0 : index === 0 ? cents(41.68) : rewards - individual,
       claimedCents:alreadyClaimed ? rewards : 0,
-      exampleOwned:ownedColors.has(id),
+      exampleOwned:ownedIds.has(id),
       owner:'0x' + (100000 + id).toString(16).padStart(40, '0'),
       createdOrder:index};
   });
@@ -143,8 +159,12 @@ export function mintPreview(collection) {
   const remaining = Object.fromEntries(Object.entries(supply.rarities).map(([rarity,quota]) => [rarity,quota.remaining]));
   const seed = (Math.imul(collection.length+1,1664525)+1013904223) >>> 0;
   const rarity = drawPreviewRarity(remaining,seed);
+  const used = new Set(collection.map(nft => nft.inventoryId));
+  const available = ART_INVENTORY.filter(entry => entry.rarity === rarity && !used.has(entry.tokenId));
+  if (!available.length) throw new Error('No unused artwork inventory remains for this rarity. Reset the demo.');
+  const traits = inventoryTraits(available[seed % available.length]);
   const id = Math.max(1000, ...collection.map(nft => nft.id)) + 1;
-  const nft = {id,...traitsForPosition(collection.length),rarity,pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
+  const nft = {id,...traits,pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
   return {collection:[...collection,nft], nft};
 }
 

@@ -2,6 +2,21 @@
 
 Recorded on 2026-10-14 from decisions in the project conversation. Update this note when the user changes those decisions. This is durable project context for future work in these repositories.
 
+## Eight-color artwork expansion — 2026-10-15
+
+This current section supersedes the older six-color/72-variant implementation notes below. Preserve the dated notes as historical evidence. Current economics remain a 0.05 ETH dormant mint, $100 net deployed LP activation and 80/10/5/5 LP revenue allocation with equal collective membership; Power is removed. Website actions remain simulations and contracts remain undeployed.
+
+- User-approved base colors are Cyan, Blue, Violet, Emerald, Amber (yellow), Crimson (red), Ivory (warm white) and Onyx (black). Color is purely artwork and independent of rarity or rewards.
+- Allowed bicolor palettes have two distinct colors and at least one of Ivory/Amber/Crimson/Onyx (22 pairs). Tricolor adds Amber/Crimson/Onyx to an allowed bicolor pair with three distinct colors (28 triples). With 8 monochrome palettes, there are 58 unordered colorways.
+- The four approved circuit patterns are Flowing arcs, Segmented panels, Orbital rings and Vertical ribs. Original egg silhouette, texture and rarity finish are preserved; code-native SVG compositions add palette and circuit variation.
+- The finite 1,000-entry artwork inventory is 200 monochrome / 500 bicolor / 300 tricolor. Each style has exact 60/30/10 rarity composition, totaling 600 Commun / 300 Rare / 100 Legendary. A complete palette/pattern/rarity design occurs at most four times; Legendary finished designs are unique. Every palette is available in each rarity. Color style and pattern confer no economic benefit.
+- The rendering catalog covers 58 palettes × 4 patterns × 3 rarities × 4 evolutions = 2,784 states, not 2,784 NFTs. Original 72 PNGs remain preserved. Metadata exposes color style, palette, assigned colors, circuit pattern, rarity and evolution separately from royalty weights.
+- First 100 demo NFTs consume fixed inventory entries with 20/50/30 styles and 60/30/10 rarities. New preview mints consume unused inventory entries, preserving full-supply quotas and visual repetition limits. Displayed NFT IDs and fixed inventory slot IDs are separate. Preview randomness is deterministic; no live VRF or transaction is requested.
+- Default owned positions remain Cyan Enhanced #444 and Blue Singularity #128 (claimable), Emerald Enhanced #91 (already claimed), and Violet Dormant #74. Financial examples stay $425,000 LP, 100 NFTs and 20 dormant positions. Storage namespace v7 starts the new inventory without deleting previous namespaces.
+- Artwork filters support contained color, color style, pattern, rarity and evolution. Mint artwork controls are for exploration only; they do not select mint traits. Colors and patterns are visible in NFT detail/portfolio traits, while LP and royalty economics remain unchanged.
+- Public pages omit repository/source links and prompts. The footer links to the ZZZ website (`https://zzz.protocol.link/`). X and Telegram use native icon buttons with coming-soon feedback until the user supplies their official URLs. Private repository and deployment documentation keeps its GitHub references.
+- This entry records the implementation candidate. Check final publication evidence before claiming a GitHub/server release. Website rendering and metadata examples do not prove production contract behavior, authentic VRF support or metadata hosting readiness.
+
 ## Two related repositories
 
 | Project | GitHub | Local directory |

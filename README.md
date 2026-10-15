@@ -1,6 +1,6 @@
 # ZZZ PoPL website
 
-A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The interface uses 72 standalone egg artworks: six colors × three rarities × four evolutions. The supplied logo and original illustration JPEGs are preserved.
+A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.
 
 ## Run locally
 
@@ -21,14 +21,14 @@ Open `http://127.0.0.1:4173`. Stop the server with Ctrl+C. For a different port,
 ## Pages and interactions
 
 - Overview: explains the NFT's attached LP and transferable fee rights through an example position, a contribution diagram and a three-step lifecycle. Selecting the example NFT opens the same position details used by Collection. The LP revenue chart shows the 80/10/5/5 allocation, followed by compact collection LP, 24-hour fees, lifetime fees and pool-volume figures. There are no fee calculators, amount inputs or period controls. NFT-sale royalties have a separate section, followed by the color/evolution guide and seven FAQs that start closed. Small arrow links open Collection and Artwork.
-- Collection: starts with exactly $425,000 in example LP across 100 NFTs; 20 are dormant, and three positions exceed $100,000. Shows lifetime and 24-hour gross fees, level composition, a sample activity chart, pool/status/rarity/color/search filters, sorting, pagination and NFT details. Position details keep attached LP, lifetime fees and 24-hour fees together in one row.
-- Artwork: browse 72 variants by palette, rarity and evolution, enlarge each image and download its example metadata. These are artwork variants for the existing 100 example positions, not 72 additional minted NFTs.
-- Mint: previews a 0.05 ETH dormant mint within a 1,000-NFT cap (600 Commun, 300 Rare and 100 Legendary). The initial example has 100 minted NFTs with a 60/30/10 rarity mix; later preview mints draw only from remaining quotas. This deterministic simulation is not a VRF request. Each mint creates a dormant NFT with $0 attached LP and no rewards. Minting increases the NFT count, never collection liquidity. In My NFTs, activate it with at least $100 in ZZZ or USDC value, funding LP in an example ZZZ/WETH or ZZZ/USDC pool. Later contributions increase the permanent LP allocation attached to that same NFT. The artwork controls explore designs; they do not select mint traits.
+- Collection: starts with exactly $425,000 in example LP across 100 NFTs; 20 are dormant, and three positions exceed $100,000. Shows lifetime and 24-hour gross fees, level composition, a sample activity chart, pool/status/rarity/contained-color/color-style/search filters, sorting, pagination and NFT details. Position details keep attached LP, lifetime fees and 24-hour fees together in one row.
+- Artwork: browse 2,784 artwork states by contained color, color style, circuit pattern, rarity and evolution; enlarge each image and download its metadata example. The full rendering library is distinct from the fixed inventory of 1,000 NFTs and the 100 seeded example positions.
+- Mint: previews a 0.05 ETH dormant mint within a 1,000-NFT cap (600 Commun, 300 Rare and 100 Legendary). The initial example has 100 minted NFTs with a 60/30/10 rarity mix; later preview mints draw unused full entries from the fixed inventory within remaining rarity quotas. This deterministic simulation is not a VRF request. Each mint creates a dormant NFT with $0 attached LP and no rewards. Minting increases the NFT count, never collection liquidity. In My NFTs, activate it with at least $100 in ZZZ or USDC value, funding LP in an example ZZZ/WETH or ZZZ/USDC pool. Later contributions increase the permanent LP allocation attached to that same NFT. The artwork controls explore designs; they do not select mint traits.
 - My NFTs: connect an injected browser wallet (EIP-1193/EIP-6963) or the demo wallet to inspect example owned NFTs, attached LP, generated fees and claimable rewards. Individual and bulk simulated claims change funded reward balances without reducing principal or gross fees. Activation and LP additions use separate forms that acknowledge the permanent commitment.
 
-The default connected demo portfolio contains four differently colored NFTs: Cyan Enhanced #444 and Blue Singularity #128 have claimable rewards; Emerald Enhanced #91 is already claimed; Violet Dormant #74 has no rewards. Reset demo restores this baseline; simulated mints can add positions afterward. The v6 saved-state namespace starts the exact-rarity example without replaying obsolete v5 events. Earlier saved events are not deleted.
+The default connected demo portfolio contains four differently colored NFTs: Cyan Enhanced #444 and Blue Singularity #128 have claimable rewards; Emerald Enhanced #91 is already claimed; Violet Dormant #74 has no rewards. Reset demo restores this baseline; simulated mints can add positions afterward. The v7 saved-state namespace starts the finite artwork inventory without replaying obsolete v6 events. Earlier saved events are not deleted.
 
-Demo events persist in browser localStorage under `zzz-popl-preview-v6`. Wallet connections are not persisted. Use Reset demo or remove that storage key to restore the original example dataset.
+Demo events persist in browser localStorage under `zzz-popl-preview-v7`. Wallet connections are not persisted. Use Reset demo or remove that storage key to restore the original example dataset.
 
 ## Important boundary
 
@@ -36,7 +36,7 @@ Contracts are not deployed. Every NFT, LP valuation, fee history, portfolio assi
 
 Connecting a real wallet does not fetch its actual NFTs: it displays the same explicitly labeled example portfolio. The accepted contract configuration is a 0.05 ETH dormant mint, minimum $100 of net deployed LP for activation, an 80/10/5/5 revenue split with equal collective shares across active NFTs, and the capped rarity/royalty rules described below. The aligned Solidity update is under verification and remains undeployed; this website never calls it. Production market integration, a reviewed VRF provider, pricing, bridge transport, staged operations and independent audit remain release gates.
 
-A ZZZ or USDC contribution is entered as a USD-equivalent example. No ZZZ exchange rate or token-quantity quote is simulated. Contributions fund permanent LP attributed to the same NFT; holders can claim funded rewards, never redeem LP principal. Transfers carry the attached LP allocation and fee rights, including unclaimed funded rewards. NFT rarity and color remain fixed, and new contributions receive no retroactive fees.
+A ZZZ or USDC contribution is entered as a USD-equivalent example. No ZZZ exchange rate or token-quantity quote is simulated. Contributions fund permanent LP attributed to the same NFT; holders can claim funded rewards, never redeem LP principal. Transfers carry the attached LP allocation and fee rights, including unclaimed funded rewards. NFT rarity, color style, palette and circuit pattern remain fixed, and new contributions receive no retroactive fees.
 
 Pool share is secondary context, never a progress target. The website remains a simulation and is not approved for real funds. Metadata JSON files are local examples, not contract tokenURI responses.
 
@@ -51,7 +51,7 @@ npm run build
 node server.mjs --dist
 ```
 
-The dependency-free static output is written to `dist/` and can be uploaded to a static host. The build includes the artwork catalog, all 72 PNGs, their 72 metadata JSON files and the artwork manifest. Hash routes work without server rewrites. The Node server above is for local preview; production can serve the static files directly.
+The dependency-free static output is written to `dist/` and can be uploaded to a static host. The build includes the portable palette/inventory catalog, all 2,784 self-contained SVG artwork states, their metadata JSON files and the artwork manifest. Original raster artwork remains preserved in source assets. Hash routes work without server rewrites. The Node server above is for local preview; production can serve the static files directly.
 
 ## Illustrative data and rewards
 
@@ -67,20 +67,41 @@ A 5% marketplace royalty is requested, but payment depends on marketplace suppor
 
 ## Artwork library
 
-NFT artwork uses six palettes (Cyan, Blue, Violet, Emerald, Amber and Crimson), three fixed rarities (Commun, Rare and Legendary), and four LP evolutions:
+The eight base colors are **Cyan, Blue, Violet, Emerald, Amber, Crimson, Ivory and Onyx**. Amber is yellow, Crimson is the project red, Ivory is warm white, and Onyx is black.
 
-| Evolution | Example attached LP |
+- **Monochrome:** any one of the eight colors.
+- **Bicolor:** two distinct colors, including at least one of Ivory, Amber, Crimson or Onyx. This gives 22 unordered pairs.
+- **Tricolor:** an allowed bicolor pair plus Amber, Crimson or Onyx, with no repeated color. This gives 28 unordered triples.
+
+Reversing color order does not create a different palette. All 58 palettes can appear in Commun, Rare or Legendary. Color style, assigned colors and circuit pattern are visual traits only and have no effect on LP rewards or royalty weights.
+
+The four circuit patterns are Flowing arcs, Segmented panels, Orbital rings and Vertical ribs. The self-contained SVGs preserve the existing raster egg material and silhouette while applying consistent palette and circuit detailing. The original 72 PNGs are retained as historical source artwork.
+
+| Color style | Commun | Rare | Legendary | Total NFTs |
+| --- | ---: | ---: | ---: | ---: |
+| Monochrome | 120 | 60 | 20 | 200 |
+| Bicolor | 300 | 150 | 50 | 500 |
+| Tricolor | 180 | 90 | 30 | 300 |
+| Total | 600 | 300 | 100 | 1,000 |
+
+A finite inventory enforces these quotas and permits at most four NFTs with identical palette, circuit pattern and rarity finish. Legendary finished designs are unique. Evolution changes do not create additional NFTs. The rendering catalog covers 58 palettes × 4 patterns × 3 rarities × 4 evolutions = **2,784 artwork states**; only the 1,000 inventory entries are collection slots.
+
+| Evolution | Current attached LP value |
 | --- | --- |
-| Dormant | $0 |
-| Activated | From $100 |
+| Dormant | $0 before activation |
+| Activated | Activation from $100; fallback stage for active positions below Enhanced |
 | Enhanced | From $1,000 |
 | Singularity | From $10,000 |
 
-Activated has a fine luminous border. Enhanced has one brighter, bolder border and stronger egg-seam highlights. Singularity alone has the double border and background light. Legendary has a more reflective platinum finish.
+Activated has a fine luminous border. Enhanced has one brighter, bolder border and stronger egg-seam highlights. Singularity alone has the double border and background light. Legendary keeps its more reflective platinum finish.
 
-All 72 standalone PNGs and 72 example metadata JSONs are in `assets/nfts/`. `artworks.js` is the canonical catalog, and `assets/nfts/manifest.json` records the variants and image hashes. NFT IDs keep their color and rarity through activation, LP addition and claim previews. The cap is a count, not an NFT-ID limit: preview IDs after the seeded examples start at #1001. Rarity totals are exactly 600/300/100; deterministic preview draws consume remaining quotas and do not represent production VRF. Evolution follows current LP value and can downgrade when value falls; the website has no live price feed or market revaluation simulation. Activation eligibility remains a separate lifecycle decision.
+`palette-system.js` defines color rules and the fixed inventory. `artworks.js` exposes the rendering catalog. `assets/nfts/manifest.json` records artwork paths and hashes; `assets/nfts/metadata/` contains the example metadata. Metadata includes Rarity, Color style, Palette, each assigned Color, Circuit pattern and Evolution, with a separate royalty weight. It never makes palette or pattern an economic multiplier.
 
-Generated artwork used the built-in image-generation tool. Prompts and provenance are retained in local project context and the related contract design workspace. Original reference JPEGs remain available as reference assets.
+The first 100 example NFTs consume 100 real inventory slots with a 20/50/30 color-style mix and 60/30/10 rarity counts. Their four default portfolio entries remain monochrome, differently colored and in the requested evolution/claim states. Preview mints consume remaining inventory slots without replacement. An inventory slot identity is distinct from the displayed NFT number; displayed IDs after the seed still start at #1001. Preview draws are deterministic examples, not verifiable randomness.
+
+Rarity, palette and circuit pattern remain unchanged through activation, top-ups and claims. Evolution follows current LP market value and can downgrade; the website has no live price feed. Activation eligibility remains a separate lifecycle decision. Actual contracts, production VRF, hosted metadata integrity and royalty funding require separate production verification.
+
+The original raster artwork was generated using the built-in image-generation tool. The current palette and circuit expansion preserves those materials through code-native SVG compositions; it does not replace the egg texture. Original reference JPEGs remain available.
 
 ## Existing Ubuntu deployment
 

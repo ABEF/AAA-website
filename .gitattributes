@@ -1,0 +1,6 @@
+# Rendered SVG hashes must survive Windows/macOS/Linux checkouts unchanged.
+assets/nfts/*.svg text eol=lf
+assets/nfts/metadata/*.json text eol=lf
+assets/nfts/manifest.json text eol=lf
+assets/nfts/inventory.json text eol=lf
+assets/nfts/sources/*.webp binary

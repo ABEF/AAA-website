@@ -1,0 +1,53 @@
+{
+  "name": "PoPL artwork · Blue · Vertical ribs · Commun · Singularity",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../blue-ribs-commun-singularity.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Commun"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Monochrome"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Blue"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Blue"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Vertical ribs"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Singularity"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 1
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "blue",
+    "color_ids": [
+      "blue"
+    ],
+    "pattern": "ribs",
+    "evolution": "singularity",
+    "royalty_multiplier": 1,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "blue-commun-singularity.png"
+  }
+}

@@ -1,5 +1,7 @@
-import {ARTWORKS} from './artworks.js';
+import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS} from './artworks.js';
+import {validateInventory,metadataAttributes} from './palette-system.js';
 import {readFile,access} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
 const html = await readFile(new URL('./index.html',import.meta.url),'utf8');
 const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
 if (new Set(ids).size !== ids.length) throw new Error('Duplicate HTML element IDs.');
@@ -11,6 +13,20 @@ for (const route of ['overview','collection','artworks','mint','my-nfts']) if (!
 if (!html.includes('Minting and claims are simulated')) throw new Error('Missing demo disclosure.');
 console.log(`Checked ${ids.length} unique element IDs, ${new Set(localFiles).size} local references, application selectors, and all five routes.`);
 
-if (ARTWORKS.length !== 72 || new Set(ARTWORKS.map(art => art.id)).size !== 72) throw new Error('Artwork catalog must have72 unique variants.');
-for (const art of ARTWORKS) { await access(new URL(art.src,import.meta.url)); const metadata = JSON.parse(await readFile(new URL(art.metadata,import.meta.url),'utf8')); if (metadata.attributes.find(trait => trait.trait_type === 'Royalty Weight')?.value !== art.royaltyWeight) throw new Error('Incorrect royalty weight metadata: '+art.id); }
-console.log('Verified72 standalone artwork files and their royalty/evolution metadata.');
+if (PALETTES.length!==8 || COLORWAYS.length!==58 || PATTERNS.length!==4 || ARTWORKS.length!==2784 || new Set(ARTWORKS.map(art=>art.id)).size!==2784) throw new Error('Artwork catalog must have 2,784 unique variants.');
+const manifest=JSON.parse(await readFile(new URL('./assets/nfts/manifest.json',import.meta.url),'utf8'));
+const variants=new Map(manifest.variants.map(art=>[art.id,art]));
+const hashes=new Set();
+for(const art of ARTWORKS){
+  const svg=await readFile(new URL(art.src,import.meta.url),'utf8');
+  if(!svg.startsWith('<svg ') || !svg.includes('data:image/webp;base64,') || /<script|onload=|<foreignObject|href="https?:/i.test(svg)) throw new Error('Invalid/self-contained SVG: '+art.id);
+  const digest=createHash('sha256').update(svg).digest('hex'); hashes.add(digest);
+  if(variants.get(art.id)?.image_sha256!==digest) throw new Error('Artwork hash mismatch: '+art.id);
+  const metadata=JSON.parse(await readFile(new URL(art.metadata,import.meta.url),'utf8'));
+  const expected=metadataAttributes({paletteId:art.paletteId,colorIds:art.colors,colorStyle:art.colorStyle,pattern:art.pattern,rarity:art.rarity},art.evolution);
+  if(metadata.image!==`../${art.id}.svg` || JSON.stringify(metadata.attributes.slice(0,-1))!==JSON.stringify(expected) || metadata.attributes.at(-1)?.value!==art.royaltyWeight) throw new Error('Incorrect artwork metadata: '+art.id);
+}
+if(hashes.size!==ARTWORKS.length) throw new Error('Rendered artwork files must have unique content.');
+const inventory=JSON.parse(await readFile(new URL('./assets/nfts/inventory.json',import.meta.url),'utf8'));
+const validation=validateInventory(inventory.entries);
+console.log(`Verified ${ARTWORKS.length} self-contained artwork/metadata pairs and image hashes; ${validation.supply} inventory entries, at most ${validation.maximumIdenticalArtwork} identical finished looks.`);

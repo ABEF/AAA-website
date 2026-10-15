@@ -1,0 +1,58 @@
+{
+  "name": "PoPL artwork · Cyan / Onyx · Segmented panels · Legendary · Singularity",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../cyan-onyx-panels-legendary-singularity.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Bicolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Cyan / Onyx"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Cyan"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Onyx"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Segmented panels"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Singularity"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 3
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "cyan-onyx",
+    "color_ids": [
+      "cyan",
+      "onyx"
+    ],
+    "pattern": "panels",
+    "evolution": "singularity",
+    "royalty_multiplier": 3,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-legendary-singularity.png"
+  }
+}

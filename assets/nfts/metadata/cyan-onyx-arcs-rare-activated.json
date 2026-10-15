@@ -1,0 +1,58 @@
+{
+  "name": "PoPL artwork · Cyan / Onyx · Flowing arcs · Rare · Activated",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../cyan-onyx-arcs-rare-activated.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Rare"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Bicolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Cyan / Onyx"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Cyan"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Onyx"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Flowing arcs"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Activated"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 2
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "cyan-onyx",
+    "color_ids": [
+      "cyan",
+      "onyx"
+    ],
+    "pattern": "arcs",
+    "evolution": "activated",
+    "royalty_multiplier": 2,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-rare-activated.png"
+  }
+}

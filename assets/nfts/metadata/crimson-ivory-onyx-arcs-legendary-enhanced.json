@@ -1,0 +1,63 @@
+{
+  "name": "PoPL artwork · Crimson / Ivory / Onyx · Flowing arcs · Legendary · Enhanced",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "image": "../crimson-ivory-onyx-arcs-legendary-enhanced.svg",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Color style",
+      "value": "Tricolor"
+    },
+    {
+      "trait_type": "Palette",
+      "value": "Crimson / Ivory / Onyx"
+    },
+    {
+      "trait_type": "Color 1",
+      "value": "Crimson"
+    },
+    {
+      "trait_type": "Color 2",
+      "value": "Ivory"
+    },
+    {
+      "trait_type": "Color 3",
+      "value": "Onyx"
+    },
+    {
+      "trait_type": "Circuit pattern",
+      "value": "Flowing arcs"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Enhanced"
+    },
+    {
+      "trait_type": "Royalty Weight",
+      "value": 3
+    }
+  ],
+  "properties": {
+    "visual_only": [
+      "Color style",
+      "Palette",
+      "Colors",
+      "Circuit pattern"
+    ],
+    "palette_id": "crimson-ivory-onyx",
+    "color_ids": [
+      "crimson",
+      "ivory",
+      "onyx"
+    ],
+    "pattern": "arcs",
+    "evolution": "enhanced",
+    "royalty_multiplier": 3,
+    "activation_required": true,
+    "example": true,
+    "source_artwork": "cyan-legendary-enhanced.png"
+  }
+}
