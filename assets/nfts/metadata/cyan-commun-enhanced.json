@@ -1,0 +1,34 @@
+{
+  "name": "PoPL \u00b7 Cyan Commun \u00b7 Enhanced",
+  "description": "PoPL egg artwork and NFT metadata preview. Rarity weights a separate NFT-sale royalty pool only after activation; it never multiplies LP fee shares. No live royalty entitlement or on-chain metadata integration is implied.",
+  "image": "../cyan-commun-enhanced.png",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Commun"
+    },
+    {
+      "trait_type": "Color",
+      "value": "Cyan"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Enhanced"
+    },
+    {
+      "display_type": "number",
+      "trait_type": "Royalty Multiplier",
+      "value": 1
+    },
+    {
+      "display_type": "number",
+      "trait_type": "Royalty Weight",
+      "value": 1
+    }
+  ],
+  "properties": {
+    "preview_only": true,
+    "lp_fee_weights": "unchanged_by_rarity",
+    "illustrative_lp_threshold_usd": 1000
+  }
+}

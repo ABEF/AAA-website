@@ -1,0 +1,34 @@
+{
+  "name": "PoPL \u00b7 Amber Legendary \u00b7 Dormant",
+  "description": "PoPL egg artwork and NFT metadata preview. Rarity weights a separate NFT-sale royalty pool only after activation; it never multiplies LP fee shares. No live royalty entitlement or on-chain metadata integration is implied.",
+  "image": "../amber-legendary-dormant.png",
+  "attributes": [
+    {
+      "trait_type": "Rarity",
+      "value": "Legendary"
+    },
+    {
+      "trait_type": "Color",
+      "value": "Amber"
+    },
+    {
+      "trait_type": "Evolution",
+      "value": "Dormant"
+    },
+    {
+      "display_type": "number",
+      "trait_type": "Royalty Multiplier",
+      "value": 3
+    },
+    {
+      "display_type": "number",
+      "trait_type": "Royalty Weight",
+      "value": 0
+    }
+  ],
+  "properties": {
+    "preview_only": true,
+    "lp_fee_weights": "unchanged_by_rarity",
+    "illustrative_lp_threshold_usd": 0
+  }
+}

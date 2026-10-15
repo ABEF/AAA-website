@@ -10,19 +10,19 @@ test('initial collection has exactly $425k liquidity, 100 NFTs, and 20% dormant'
   assert.ok(collection.filter(nft => nft.lockedCents >= 10000000).length >= 3);
   assert.deepEqual(collection,buildDemoCollection());
 });
-test('dormant positions have no fees, Power, or rewards',() => {
+test('dormant positions have no fees or rewards',() => {
   for (const nft of buildDemoCollection().filter(item => item.lockedCents === 0)) {
-    assert.equal(nft.feesAllTimeCents,0); assert.equal(nft.fees24hCents,0); assert.equal(nft.power,0); assert.equal(claimable(nft),0);
+    assert.equal(nft.feesAllTimeCents,0); assert.equal(nft.fees24hCents,0); assert.equal(claimable(nft),0);
   }
 });
-test('featured NFT preserves the supplied $4,270 LP and $184 example',() => {
+test('featured NFT shows the updated $1,432 LP and preserves its $184 claim example',() => {
   const nft = buildDemoCollection().find(item => item.id === 444);
-  assert.equal(nft.lockedCents,427000); assert.equal(claimable(nft),18400);
+  assert.equal(nft.lockedCents,143200); assert.equal(claimable(nft),18400);
 });
 test('level boundaries match the supplied concept',() => {
-  for (const [lp,level] of [[0,'Dormant'],[50000,'Online'],[100000,'Enhanced'],[500000,'Advanced'],[2500000,'Elite'],[10000000,'Singularity']]) assert.equal(getLevel(lp),level);
+  for (const [lp,level] of [[0,'Dormant'],[10000,'Activated'],[50000,'Activated'],[99999,'Activated'],[100000,'Enhanced'],[999999,'Enhanced'],[1000000,'Singularity'],[10000000,'Singularity']]) assert.equal(getLevel(lp),level);
 });
-test('fee illustration distributes whole dollar values 50/30/10/10',() => assert.deepEqual(feeSplit(1000),{owner:50000,collective:30000,compound:10000,buyback:10000}));
+test('fee illustration distributes whole dollar values 80/10/5/5',() => assert.deepEqual(feeSplit(1000),{owner:80000,collective:10000,compound:5000,buyback:5000}));
 test('fee allocation conserves cents including small remainders',() => {
   for (const value of [0,.01,.07,1.99,49.13,1427.01,1000000]) assert.equal(Object.values(feeSplit(value)).reduce((a,b) => a+b,0),Math.round(value*100));
   for (const value of [-1,NaN,Infinity,1000001]) assert.throws(() => feeSplit(value));
@@ -30,11 +30,11 @@ test('fee allocation conserves cents including small remainders',() => {
 test('mint creates a fresh dormant NFT and cannot increase LP',() => {
   const original = buildDemoCollection(); const {collection,nft} = mintPreview(original);
   assert.equal(original.length,100); assert.equal(collection.length,101); assert.equal(getMetrics(collection).liquidity,42500000);
-  assert.equal(nft.id,1001); assert.equal(nft.power,0); assert.equal(nft.exampleOwned,true); assert.equal(claimable(nft),0); assert.equal(nft.pool,null);
+  assert.equal(nft.id,1001); assert.equal(nft.lockedCents,0); assert.equal(nft.exampleOwned,true); assert.equal(claimable(nft),0); assert.equal(nft.pool,null);
 });
-test('dormant mint leaves LP, Power, and claim balances at zero',() => {
+test('dormant mint leaves LP and claim balances at zero',() => {
   const {collection,nft} = mintPreview(buildDemoCollection());
-  assert.equal(getMetrics(collection).liquidity,42500000); assert.equal(nft.lockedCents,0); assert.equal(nft.power,0); assert.equal(getMetrics(collection).dormant,21);
+  assert.equal(getMetrics(collection).liquidity,42500000); assert.equal(nft.lockedCents,0); assert.equal(claimable(nft),0); assert.equal(getMetrics(collection).dormant,21);
 });
 test('repeated minting changes supply only and keeps identifiers unique',() => {
   let collection = buildDemoCollection();
@@ -60,20 +60,25 @@ test('dormant activation preserves identity and updates active collection totals
   const original = buildDemoCollection(); const id = original.find(nft => nft.exampleOwned && !nft.lockedCents).id;
   const {collection} = activatePreview(original,{id,amount:1000,pool:'ZZZ/WETH'});
   assert.equal(collection.length,100); assert.equal(getMetrics(collection).active,81); assert.equal(getMetrics(collection).liquidity,42600000);
-  assert.equal(collection.find(nft => nft.id === id).power,1000); assert.throws(() => activatePreview(collection,{id,amount:1000,pool:'ZZZ/WETH'}));
+  assert.equal(collection.find(nft => nft.id === id).lockedCents,100000); assert.throws(() => activatePreview(collection,{id,amount:1000,pool:'ZZZ/WETH'}));
 });
-test('activation requires at least $500 and an approved pool',() => {
+test('activation requires at least $100 and supported contribution assets and pools',() => {
   const collection = mintPreview(buildDemoCollection()).collection; const id = 1001;
-  for (const amount of [0,499.99,-1,NaN,Infinity,1000001]) assert.throws(() => activatePreview(collection,{id,amount,pool:'ZZZ/WETH'}));
+  for (const amount of [0,99.99,-1,NaN,Infinity,1000001]) assert.throws(() => activatePreview(collection,{id,amount,pool:'ZZZ/WETH'}));
   assert.throws(() => activatePreview(collection,{id,amount:500,pool:'invalid'}));
-  const activated = activatePreview(collection,{id,amount:500,pool:'ZZZ/USDC'}).collection;
-  assert.equal(getMetrics(activated).liquidity,42550000); assert.equal(activated.find(nft => nft.id === id).pool,'ZZZ/USDC');
+  for (const fundingAsset of ['USDC','ZZZ']) {
+    const activated = activatePreview(collection,{id,amount:100,pool:'ZZZ/USDC',fundingAsset}).collection;
+    const nft = activated.find(nft => nft.id === id);
+    assert.equal(getMetrics(activated).liquidity,42510000); assert.equal(nft.pool,'ZZZ/USDC');
+    assert.equal(nft.activationAsset,fundingAsset); assert.equal(nft.lockedCents,10000); assert.equal(nft.feesAllTimeCents,0);
+  }
+  assert.throws(() => activatePreview(collection,{id,amount:100,pool:'ZZZ/USDC',fundingAsset:'BAD'}));
 });
 test('permanent top-ups increase NFT and collection LP without changing rewards',() => {
   const original = buildDemoCollection(); const before = original.find(nft => nft.id === 444);
   const {collection} = increasePreview(original,{id:444,amount:250.75}); const after = collection.find(nft => nft.id === 444);
   assert.equal(after.lockedCents,before.lockedCents+25075); assert.equal(getMetrics(collection).liquidity,42525075);
-  assert.equal(after.power,before.power+250.75); assert.equal(after.pool,before.pool); assert.equal(claimable(after),claimable(before));
+  assert.equal(after.pool,before.pool); assert.equal(claimable(after),claimable(before));
   assert.equal(after.feesAllTimeCents,before.feesAllTimeCents); assert.equal(collection.length,100);
 });
 test('top-ups cannot bypass activation or target foreign NFTs',() => {
@@ -134,6 +139,6 @@ test('daily fee apportionment conserves cents and leaves dormant NFTs at zero',(
   }
 });
 test('24-hour and 10-week displayed allocations preserve the fee budget',() => {
-  assert.deepEqual(feeSplit(864.96),{owner:43248,collective:25949,compound:8650,buyback:8649});
-  assert.deepEqual(feeSplit(60547.20),{owner:3027360,collective:1816416,compound:605472,buyback:605472});
+  assert.deepEqual(feeSplit(864.96),{owner:69197,collective:8649,compound:4325,buyback:4325});
+  assert.deepEqual(feeSplit(60547.20),{owner:4843776,collective:605472,compound:302736,buyback:302736});
 });
