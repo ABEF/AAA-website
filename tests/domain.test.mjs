@@ -19,6 +19,19 @@ test('featured NFT shows the updated $1,432 LP and preserves its $184 claim exam
   const nft = buildDemoCollection().find(item => item.id === 444);
   assert.equal(nft.lockedCents,143200); assert.equal(claimable(nft),18400);
 });
+test('default portfolio spans four colors and the intended evolution and reward states',() => {
+  const owned = buildDemoCollection().filter(nft => nft.exampleOwned);
+  assert.deepEqual(owned.map(nft => [nft.id,nft.color,nft.rarity,nft.lockedCents,getLevel(nft.lockedCents)]),[
+    [444,'cyan','commun',143200,'Enhanced'],
+    [128,'blue','rare',10050000,'Singularity'],
+    [91,'emerald','legendary',120000,'Enhanced'],
+    [74,'violet','legendary',0,'Dormant'],
+  ]);
+  const active = owned.filter(nft => nft.lockedCents > 0);
+  assert.deepEqual(active.filter(nft => claimable(nft) > 0).map(nft => nft.id),[444,128]);
+  assert.equal(claimable(owned.find(nft => nft.id === 444)),18400);
+  assert.deepEqual(active.filter(nft => nft.claimedCents > 0 && claimable(nft) === 0).map(nft => nft.id),[91]);
+});
 test('level boundaries match the supplied concept',() => {
   for (const [lp,level] of [[0,'Dormant'],[10000,'Activated'],[50000,'Activated'],[99999,'Activated'],[100000,'Enhanced'],[999999,'Enhanced'],[1000000,'Singularity'],[10000000,'Singularity']]) assert.equal(getLevel(lp),level);
 });

@@ -26,9 +26,9 @@ Open `http://127.0.0.1:4173`. Stop the server with Ctrl+C. For a different port,
 - Mint: creates a dormant NFT with $0 attached LP and no rewards. Minting increases the NFT count, never collection liquidity. In My NFTs, activate it with at least $100 in ZZZ or USDC value, funding LP in an example ZZZ/WETH or ZZZ/USDC pool. Later contributions increase the permanent LP allocation attached to that same NFT. The artwork controls explore designs; they do not select mint traits.
 - My NFTs: connect an injected browser wallet (EIP-1193/EIP-6963) or the demo wallet to inspect example owned NFTs, attached LP, generated fees and claimable rewards. Individual and bulk simulated claims change funded reward balances without reducing principal or gross fees. Activation and LP additions use separate forms that acknowledge the permanent commitment.
 
-The default connected demo portfolio has one Dormant NFT (#74), two Enhanced NFTs (#444 with $1,432 LP and #91) and one Singularity NFT (#128). Reset demo restores this baseline; simulated mints can add positions afterward.
+The default connected demo portfolio contains four differently colored NFTs: Cyan Enhanced #444 and Blue Singularity #128 have claimable rewards; Emerald Enhanced #91 is already claimed; Violet Dormant #74 has no rewards. Reset demo restores this baseline; simulated mints can add positions afterward. The v5 saved-state namespace starts this revised example without replaying claims from the older v4 demo.
 
-Demo events persist in browser localStorage under `zzz-popl-preview-v4`. Wallet connections are not persisted. Use Reset demo or remove that storage key to restore the original example dataset.
+Demo events persist in browser localStorage under `zzz-popl-preview-v5`. Wallet connections are not persisted. Use Reset demo or remove that storage key to restore the original example dataset.
 
 ## Important boundary
 

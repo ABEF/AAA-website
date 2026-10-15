@@ -210,3 +210,8 @@ Final local verification for the no-Power/label/shortcut/FAQ refinements: all33 
 ## GitHub publication authorized (2026-10-15)
 
 The user requested committing and pushing the accumulated local website work to ABEF/AAA-website. This lifts the local-only restriction for GitHub publication of the website. This request does not update the Ubuntu deployment or authorize any contract publication/deployment. Release verification: all33 Node tests passed, five routes and all72 artwork/metadata pairs checked, image hashes verified and a155-file static build passed. README now describes the final interface; earlier unpublished/local-only statements above describe their historical stage.
+
+
+## Default portfolio refresh (2026-10-15)
+
+The user requested four distinct colors and mixed claim statuses in My NFTs. Defaults: #444 Cyan Commun Enhanced ($1,432 LP; $184 claimable), #128 Blue Rare Singularity ($100,500 LP; existing example rewards claimable), #91 Emerald Legendary Enhanced ($1,200 LP; existing rewards moved to previously claimed), and #74 Violet Legendary Dormant ($0 LP; no rewards). Collection totals remain $425,000 and 100 positions, with 80 active and 20 dormant. Fees and rarity rules stay unchanged. Saved-state namespace is now zzz-popl-preview-v5 so old v4 claim-all actions do not override the requested defaults; old stored events are not deleted. New v5 actions remain persistent, and Reset demo restores this baseline. Follow normal local verification, GitHub publication and Ubuntu deployment for this change. No contract change or real transaction is authorized.

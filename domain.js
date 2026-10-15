@@ -4,7 +4,7 @@ export const FUNDING_ASSETS = ['USDC','ZZZ'];
 export const POOLS = ['ZZZ/WETH', 'ZZZ/USDC'];
 export const LEVELS = EVOLUTIONS.map(level => level.label);
 export const DEMO_ADDRESS = '0x4440000000000000000000000000000000000444';
-export const STORAGE_KEY = 'zzz-popl-preview-v4';
+export const STORAGE_KEY = 'zzz-popl-preview-v5';
 export const COLLECTION_AGE_WEEKS = 10;
 export const COLLECTION_AGE_DAYS = COLLECTION_AGE_WEEKS * 7;
 export const BASE_PROTOCOL_LIQUIDITY_USD = 425000;
@@ -29,19 +29,22 @@ export function buildDemoCollection() {
   locked.push(...raw.map(value => Math.floor(value / rawTotal * remaining)));
   locked[79] += cents(BASE_PROTOCOL_LIQUIDITY_USD) - locked.reduce((a, b) => a + b, 0);
   locked.push(...Array(20).fill(0));
+  const ownedColors = new Map([[444,'cyan'],[128,'blue'],[91,'emerald'],[74,'violet']]);
   const collection = ids.map((id, index) => {
     const lp = locked[index];
     const fees = Math.round(lp * (0.04 + random() * 0.13));
     const daily = Math.round(lp * (0.00015 + random() * 0.00055));
     const rewards = Math.round(fees * (0.06 + random() * 0.14));
     const individual = Math.round(rewards * 0.74);
-    return {id,...traitsForPosition(index), pool:lp ? (index % 3 === 1 ? POOLS[1] : POOLS[0]) : null, lockedCents:lp,
+    const traits = traitsForPosition(index);
+    const alreadyClaimed = id === 91;
+    return {id,...traits,color:ownedColors.get(id) || traits.color, pool:lp ? (index % 3 === 1 ? POOLS[1] : POOLS[0]) : null, lockedCents:lp,
       feesAllTimeCents:index === 0 ? cents(1472) : fees,
       fees24hCents:daily,
-      individualCents:index === 0 ? cents(142.32) : individual,
-      collectiveCents:index === 0 ? cents(41.68) : rewards - individual,
-      claimedCents:0,
-      exampleOwned:[0,1,5,80].includes(index),
+      individualCents:alreadyClaimed ? 0 : index === 0 ? cents(142.32) : individual,
+      collectiveCents:alreadyClaimed ? 0 : index === 0 ? cents(41.68) : rewards - individual,
+      claimedCents:alreadyClaimed ? rewards : 0,
+      exampleOwned:ownedColors.has(id),
       owner:'0x' + (100000 + id).toString(16).padStart(40, '0'),
       createdOrder:index};
   });
