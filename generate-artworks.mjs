@@ -65,8 +65,10 @@ async function render(art){
   const sourceKey=`${originalColor}-${art.rarity}-${art.evolution}`;
   if(!sourceCache.has(sourceKey))sourceCache.set(sourceKey,(await readFile(new URL(`./assets/nfts/sources/${sourceKey}.webp`,import.meta.url))).toString('base64'));
   const colors=art.colors;
-  const light=art.evolution==='dormant'?.1:art.evolution==='activated'?.24:art.evolution==='enhanced'?.4:.58;
-  const width=art.evolution==='dormant'?1.2:art.evolution==='activated'?1.8:art.evolution==='enhanced'?2.6:3.1;
+  // Pattern geometry must be readable even before activation. Evolution still
+  // increases line intensity; the original egg texture and border stay intact.
+  const light=art.evolution==='dormant'?.28:art.evolution==='activated'?.4:art.evolution==='enhanced'?.56:.72;
+  const width=art.evolution==='dormant'?1.6:art.evolution==='activated'?2:art.evolution==='enhanced'?2.8:3.4;
   const patternPaths=pathsFor(art.pattern);
   // Neutral graphite highlights make an Onyx circuit readable; they are light,
   // not an extra assigned color. Ivory is the existing warm white trait.

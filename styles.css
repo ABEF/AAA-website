@@ -282,5 +282,5 @@
 .footer-socials .footer-social-icon:hover{color:var(--cyan);border-color:#368b9a;background:#0d2638}.footer-socials svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}.footer-socials .icon-x{fill:currentColor;stroke:none}
 @media(max-width:600px){.site-footer>.footer-links{gap:16px}.footer-socials{gap:8px}}
 
-.demo-banner-copy{min-width:0;line-height:1.7}.demo-banner-copy strong{font-weight:700;color:#ecf6ff;letter-spacing:.04em;margin-right:8px}.demo-banner-copy>span{color:#a3b0c3}
-@media(max-width:600px){.demo-banner-copy strong{margin-right:4px}}
+.demo-banner{justify-content:space-between}.demo-banner-copy{flex:1;min-width:0;line-height:1.7}.demo-banner-copy strong{font-weight:700;color:#ecf6ff;letter-spacing:.04em;margin-right:8px}.demo-banner-copy>span{color:#a3b0c3}.demo-banner>.demo-label{flex:none;margin-left:auto;min-width:0}
+@media(max-width:600px){.demo-banner-copy strong{margin-right:4px}.demo-banner>.demo-label{flex:none;min-width:0}.demo-banner>.demo-banner-copy{flex:1;min-width:160px}}

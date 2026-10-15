@@ -11,7 +11,7 @@ test('public page omits repository links and source prompts',async () => {
   assert.doesNotMatch(html,/github/i);
   assert.doesNotMatch(app,/github/i);
   assert.doesNotMatch(html,/View\s+source|Read\s+(?:the\s+protocol\s+)?source/i);
-  assert.match(html,/<span class="demo-label">DEVELOPMENT PREVIEW<\/span><span class="demo-banner-copy"><strong>PROOF OF PERMANENT LIQUIDITY<\/strong> <span>\(Minting and claims are simulated; no real assets move\)<\/span>/);
+  assert.match(html,/<span class="demo-banner-copy"><strong>PROOF OF PERMANENT LIQUIDITY<\/strong> <span>\(Minting and claims are simulated; no real assets move\)<\/span><\/span><span class="demo-label">DEVELOPMENT PREVIEW<\/span>/);
   assert.match(html,/href="https:\/\/zzz\.protocol\.link\/"/);
   assert.match(html,/<button\b[^>]*id="footer-x-link"[^>]*aria-label="X"/);
   assert.match(html,/<button\b[^>]*id="footer-telegram-link"[^>]*aria-label="Telegram"/);
