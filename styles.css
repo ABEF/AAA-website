@@ -286,3 +286,21 @@
 @media(max-width:600px){.demo-banner-copy strong{margin-right:4px}.demo-banner>.demo-label{flex:none;min-width:0}.demo-banner>.demo-banner-copy{flex:1;min-width:160px}}
 
 .nft-card-details .royalty-balance b,.nft-detail-rewards .royalty-balance b{color:var(--cyan)}.nft-detail-rewards small{display:block;margin-top:4px;color:var(--muted);font-size:10px;font-weight:400}
+
+/* Click-to-play explainer: preserve the portrait composition at every viewport. */
+.hero-actions{flex-wrap:wrap}
+.explainer-trigger{display:inline-flex;align-items:center;gap:10px;padding:9px 0;border:0;background:none;color:var(--text);font-size:12px;text-align:left;line-height:1.5}
+.explainer-play{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border:1px solid #2b6074;border-radius:50%;background:#0b2235;color:var(--cyan)}
+.explainer-play svg{width:19px;height:19px;fill:currentColor}
+.explainer-duration{color:var(--muted);white-space:nowrap}
+.explainer-trigger:hover{color:var(--cyan)}
+.explainer-trigger:hover .explainer-play{border-color:var(--cyan);background:#103449}
+body:has(#explainer-dialog[open]){overflow:hidden}
+.dialog.explainer-dialog{padding:14px;width:min(calc(100% - 24px),640px);max-width:640px;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);overflow:auto;background:#030915}
+.explainer-dialog .dialog-heading{gap:12px;margin-bottom:10px}
+.explainer-dialog .dialog-heading .eyebrow{font-size:9px;letter-spacing:.1em}
+.explainer-dialog .dialog-heading .icon-button{width:36px;height:36px;flex-shrink:0}
+.explainer-dialog video{display:block;width:auto;height:auto;max-width:100%;max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px);aspect-ratio:4/5;object-fit:contain;margin-inline:auto;background:#030915;border-radius:6px}
+.explainer-footer{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:10px;font-size:10px;color:var(--muted)}
+.explainer-footer a{color:var(--cyan);padding-block:3px}
+@media(max-width:680px){.explainer-trigger{font-size:11px}.dialog.explainer-dialog{padding:12px}.explainer-dialog .dialog-heading .eyebrow{font-size:8px}}

@@ -2,6 +2,13 @@
 
 Recorded on 2026-10-14 from decisions in the project conversation. Update this note when the user changes those decisions. This is durable project context for future work in these repositories.
 
+## Overview explainer video - 2026-10-16
+
+- The Overview hero now places “Understand PoPL · 26 seconds” beside Explore the collection, opening a self-hosted silent video in a dark responsive dialog. This replaces the hero’s How it works shortcut; the lifecycle section and #how-it-works route remain available.
+- The approved video is revision 7: 1080 x 1350, 30 fps, 26 seconds, no audio. Each completed chapter includes two extra seconds of reading time. Original egg artwork, activation-to-NFT-to-vault flow, both fee streams and transfer of both rights remain intact. Video and poster are versioned under assets/videos/.
+- Play starts on the button click, never on page load. Native video controls support pause/seek/replay. Closing, Escape, backdrop click and route changes stop and reset it. The dialog uses native focus handling, a screen-reader explanation, a download link and a no-autoplay preload policy. Local preview now supports MP4 byte ranges; production remains static hosting.
+- Website-only presentation change: no economics, storage state, smart-contract code or wallet transaction behavior changes. Follow the required local verification, commit/push and server deployment order; record final publication evidence outside source.
+
 ## Artwork comparison and royalty preview - 2026-10-15
 
 - Artwork defaults are Cyan / Monochrome / Flowing arcs, with Dormant, Activated, Enhanced and Singularity as four consistent columns. Default rows are Commun, Rare and Legendary. Mixed styles interleave complete evolution families, never individual stages. On narrow screens the comparison scrolls within its own keyboard-accessible region.

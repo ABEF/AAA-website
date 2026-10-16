@@ -53,6 +53,32 @@ function openArtwork(id) {
   $('#illustration-metadata').download = `${art.id}.json`;
   if (!$('#illustration-dialog').open) $('#illustration-dialog').showModal();
 }
+const explainerDialog = $('#explainer-dialog');
+const explainerVideo = $('#explainer-video');
+const explainerStatus = $('#explainer-status');
+$('#open-explainer').addEventListener('click',() => {
+  explainerStatus.hidden = true;
+  explainerVideo.poster = explainerVideo.dataset.poster;
+  if (!explainerDialog.open) explainerDialog.showModal();
+  explainerVideo.currentTime = 0;
+  explainerVideo.play().then(() => {
+    // A quick close may happen while the media request is still pending.
+    if (!explainerDialog.open) explainerVideo.pause();
+  }).catch(() => {
+    if (!explainerDialog.open) return;
+    explainerStatus.textContent = 'Use the play control to start, or download the video below.';
+    explainerStatus.hidden = false;
+  });
+});
+explainerVideo.addEventListener('error',() => {
+  explainerStatus.textContent = 'The video could not load. Please try again or use the download link below.';
+  explainerStatus.hidden = false;
+});
+explainerDialog.addEventListener('close',() => {
+  explainerVideo.pause();
+  explainerVideo.currentTime = 0;
+});
+
 let artColor = 'cyan', artPage = 1, mintEvolution = 'dormant';
 function renderRarityShowcase() {
   $('#rarity-showcase').innerHTML = RARITIES.map(rarity => {
@@ -342,6 +368,7 @@ document.addEventListener('keydown',event => { if (event.key === 'Escape' && !$(
 $$('dialog').forEach(dialog => dialog.addEventListener('click',event => { if (event.target === dialog) { const bounds = dialog.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) dialog.close(); } }));
 
 function route() {
+  if (explainerDialog.open) explainerDialog.close();
   const hash = location.hash.slice(1);
   const selected = ['collection','artworks','mint','my-nfts'].includes(hash) ? hash : 'overview';
   $$('[data-view]').forEach(view => { view.hidden = view.dataset.view !== selected; });
