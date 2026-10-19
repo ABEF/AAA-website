@@ -37,3 +37,28 @@ export function artworkForNft(nft) {
   const pattern=PATTERNS.some(item => item.id === nft.pattern) ? nft.pattern : PATTERNS[0].id;
   return findArtwork(`${palette.id}-${pattern}-${getRarity(nft.rarity).id}-${getEvolution(nft.lockedCents).id}`);
 }
+
+// Labels and CSS classes come only from the fixed artwork color catalogue.
+// Never interpolate arbitrary metadata or inline styles into trait markup.
+export function paletteTrait(colorIds) {
+  const colors=Array.isArray(colorIds)?colorIds.map(id=>PALETTES.find(c=>c.id===id)):[];
+  if(!colors.length||colors.length>3||colors.some(c=>!c))return '<span class="palette-trait">Unknown palette</span>';
+  return '<span class="palette-trait">'+colors.map(c=>`<span class="trait-color trait-color-${c.id}">${c.label}</span>`).join(' / ')+'</span>';
+}
+
+// Only immutable palette/pattern/rarity identity is preloaded. Evolution selection
+// still comes from confirmed LP state, never a submitted contribution amount.
+export function evolutionArtworks(art) {
+  if(!art||findArtwork(art.id)!==art)return [];
+  return EVOLUTIONS.map(stage=>findArtwork(`${art.paletteId}-${art.pattern}-${art.rarity}-${stage.id}`));
+}
+const warmedEvolutionImages=new Map();
+export function preloadEvolutions(art) {
+  if(typeof Image==='undefined')return;
+  for(const variant of evolutionArtworks(art)) {
+    if(!variant||warmedEvolutionImages.has(variant.src)||warmedEvolutionImages.size>=128)continue;
+    const image=new Image();image.decoding='async';image.fetchPriority='low';
+    warmedEvolutionImages.set(variant.src,image);image.src=variant.src;
+    if(image.decode)image.decode().catch(()=>{}); // A failed preload never changes artwork or rights.
+  }
+}

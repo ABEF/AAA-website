@@ -1,3 +1,52 @@
+## Contribution flow and accepted inputs - 2026-10-19
+
+Latest user clarification: show ZZZ, USDG, USDC and ETH in the contribution
+selector. WETH remains a supported accounting/wrapping asset, not a separate
+selector choice. Never silently substitute TEST-1 for a named input.
+
+Grow/Activate opens a contribution-only dialog; image/details opens the reward
+breakdown. Only the contributed NFT's LP/artwork receives an updating marker.
+Claims refresh claimed reward balances without marking artwork or unrelated NFTs.
+Evolution selection waits for successful execution and confirmed current on-chain
+LP reads. Preloading four fixed-identity states never selects evolution from input.
+Rarity is bold; palette words retain individual colors. The local session on 8892
+is preserved. A separate --named-assets fixture on 8893 has real disposable named
+tokens, six-decimal stables and mock typed conversion; ETH wraps in a separate
+explicit wallet step before exact WETH approval/Entry. This is not qualification
+of production native-ETH/Pons execution. ETH-only LP payouts remain unimplemented.
+
+## Palette lettering and payout audit - 2026-10-19
+
+Each palette name is rendered in its own catalogue color, without a background
+highlight, in demo and local cards/details. Onyx uses readable graphite on dark
+cards. Pattern labels remain hidden; artwork/metadata are unchanged.
+
+The user requires ETH-only holder rewards. Current local LP claims are real
+mock-token payouts, and production LP ledger claims remain source ERC20; only
+royalties have a batch ETH conversion path. Do not rename raw balances as ETH.
+The contract Todo now owns the missing LP settlement path and the named local
+asset/route fixture. Existing 8892 was preserved and wallet A received 100,000
+more disposable input tokens; no claim was submitted by this audit.
+
+## $5 increases and net NFT earnings - 2026-10-19
+
+Rarity, color style, palette and royalty weight share one trait row beneath the NFT name/evolution row, in cards and details. The circuit pattern label is hidden here; artwork/metadata/gallery keep it. Long palettes remain horizontally readable without wrapping.
+
+Activation stays $100; new increases start at $5 original USD-equivalent value,
+with USDC/ZZZ/ETH/USDG choices in the example. The contract candidate and backend
+enforce the same floors and 99% marginal new LP, gas separate. Preserve existing
+v7 events and holdings; legacy smaller additions replay but new writes reject.
+
+Cards/details display individual LP + equal-collective + royalties earned, not
+gross pool fees. Their 24h/all-time labels and regular-weight values share one
+compact line below centered LP attached. Rewards to claim is centered separately.
+Claims never reduce total earned. Saved original demo NFTs have no dated net
+history: show Unavailable for 24h rather than copying gross fees. Local history
+must match NFT, chain and confirmed block; missing prices/components stay null.
+Dormant NFTs omit rewards/history. No accounting reset, public server update or
+existing local-chain restart. Main only; central contract Todo/operator/evidence
+updated. Check Git for publication and source-bound reports for test scope.
+
 # Local contract mode
 
 The existing website can use real, disposable local contract state while retaining
@@ -12,14 +61,14 @@ are used. My NFTs and Collection show confirmed ownership/current LP and real
 processed earnings. Artwork maps actual revealed traits to the existing library.
 Mint ordinals are readable labels; full uint256 strings identify transactions.
 ETH royalties retain raw currency units when a USD price is unavailable. LP
-earnings show individual plus equal-collective components at today's prices.
+earnings combine individual LP, equal-collective and royalties at today's prices; all three must have available prices at the same NFT/chain/block snapshot.
 Previously claimed includes all actual LP and royalty payouts in the history.
 
 Royalty multipliers on local NFT cards come from the revealed rarity: Commun ×1, Rare ×2, Legendary ×3. Dormant cards retain that multiplier in gray; activation enables participation without changing rarity. Unrevealed NFTs show Unrevealed, never an assumed multiplier. This display is separate from the ledger’s zero effective weight before activation.
 
 Mint, transfer, exact approval, Entry activation/top-up and combined claims use
 explicit confirmations. Approval and LP contribution are separate steps. The
-fixture accepts 100–99,999 whole TEST-1, marked at $1 by a mock feed. At least
+updated fixture accepts 100–99,999 whole TEST-1 for activation and 5–99,999 for increases, marked at $1 by a mock feed. Existing running deployments keep their old configuration until intentionally replaced. At least
 99% must become marginal deployed LP; gas is separate. Claim-all is bounded
 to ten NFTs / 32 currency operations per confirmation. A larger wallet requires
 another reviewed batch, never an automatic unbounded transaction sequence.

@@ -149,7 +149,7 @@ test('cancelled read backoff fails closed without a further request',async()=>{
   await assert.rejects(c.request('/state'),/timed out/);assert.equal(calls,1);
 });
 
-import {positionRows,positionFinancialDetails,royaltyTrait,contributionError,sameContribution} from '../local-view.js';
+import {positionRows,positionFinancialDetails,royaltyTrait,contributionError,sameContribution,rewardHistoryUSD,earningsSummary} from '../local-view.js';
 const dormant=()=>({position:{activated:false,current_lp_value:{available:true,raw:'0'}}});
 const active=()=>({position:{activated:true,evolution:'dormant',current_lp_value:{available:false,raw:null}},claimable:{lp:[],royalties:[]},previously_claimed:{available:false}});
 test('dormant cards omit finances and dormant details never read reward payloads',()=>{
@@ -157,14 +157,14 @@ test('dormant cards omit finances and dormant details never read reward payloads
   assert.ok(!positionRows(dormant()).includes('Rewards to claim'));
   const detail=positionFinancialDetails(dormant());
   assert.match(detail,/LP attached/);
-  for(const label of ['Rewards to claim','Previously claimed','Earnings history'])assert.ok(!detail.includes(label),label);
+  for(const label of ['Rewards to claim','Previously claimed','Fees generated'])assert.ok(!detail.includes(label),label);
 });
 test('active cards combine only claimable amounts while detail retains unavailable history',()=>{
   const rows=positionRows(active()),detail=positionFinancialDetails(active());
   assert.match(rows,/Rewards to claim/);assert.match(rows,/<strong>0<\/strong>/);
-  for(const label of ['Previously claimed','Earnings history'])assert.ok(!rows.includes(label),label);
+  for(const label of ['Previously claimed'])assert.ok(!rows.includes(label),label);
   assert.match(detail,/Royalties/);assert.match(detail,/Previously claimed/);
-  assert.match(detail,/History unavailable/);assert.match(detail,/Unavailable/);
+  assert.match(detail,/Fees generated/);assert.match(detail,/Unavailable/);
 });
 test('claim total combines ETH exactly and keeps different currencies distinct',()=>{
   const n=active(),eth={asset:'0x'+'00'.repeat(20),symbol:'ETH',decimals:18};
@@ -224,4 +224,21 @@ test('approval acknowledgement stays bound to the exact deployment wallet NFT an
   const a={session:'a',account:address,id:'123',amount:'100'};
   assert.equal(sameContribution(a,{...a}),true);assert.equal(sameContribution(null,a),false);
   for(const key of Object.keys(a))assert.equal(sameContribution(a,{...a,[key]:'changed'}),false);
+});
+
+test('top-up review accepts five test dollars but activation still needs one hundred',()=>{
+  for(const amount of ['5','6','99','100','99999'])assert.equal(contributionError(amount,true,'increase'),null);
+  for(const amount of ['0','4','4.99','05','5.0','1e1',' 5','5\n',5,null])assert.ok(contributionError(amount,true,'increase'));
+  assert.ok(contributionError('5',true,'activate'));assert.ok(contributionError('5',false,'increase'));
+});
+test('NFT income totals sum net individual collective and royalty USD at the same snapshot',()=>{
+  const n={token_id:'1',chain_id:31337,provenance:{block_hash:'0x'+'a'.repeat(64)},earnings:{available:true,scope:'nft',token_id:'1',chain_id:31337,
+    provenance:{block_hash:'0x'+'a'.repeat(64)},last_24h_usd_at_current_price_18:{lp_individual:'8000000000000000000',lp_collective:'2000000000000000000',royalties:'3000000000000000000',lp_processed:'999999999999999999999'}}};
+  assert.equal(rewardHistoryUSD(n,'last_24h'),'13000000000000000000');
+  assert.match(earningsSummary(n),/\$13.00/);assert.match(earningsSummary(n),/Unavailable/);
+  n.earnings.last_24h_usd_at_current_price_18.royalties=null;assert.equal(rewardHistoryUSD(n,'last_24h'),null);
+  n.earnings.last_24h_usd_at_current_price_18.royalties='-1';assert.equal(rewardHistoryUSD(n,'last_24h'),null);
+  n.earnings.last_24h_usd_at_current_price_18.royalties='0';n.earnings.token_id='2';assert.equal(rewardHistoryUSD(n,'last_24h'),null);
+  n.earnings.token_id='1';n.earnings.provenance.block_hash='0x'+'b'.repeat(64);assert.equal(rewardHistoryUSD(n,'last_24h'),null);
+  assert.match(earningsSummary({get earnings(){throw new Error('stale financial access');}},'Updating…'),/Updating/);
 });

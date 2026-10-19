@@ -1,3 +1,35 @@
+## Palette lettering and payout audit - 2026-10-19
+
+Each palette name is rendered in its own catalogue color, without a background
+highlight, in demo and local cards/details. Onyx uses readable graphite on dark
+cards. Pattern labels remain hidden; artwork/metadata are unchanged.
+
+The user requires ETH-only holder rewards. Current local LP claims are real
+mock-token payouts, and production LP ledger claims remain source ERC20; only
+royalties have a batch ETH conversion path. Do not rename raw balances as ETH.
+The contract Todo now owns the missing LP settlement path and the named local
+asset/route fixture. Existing 8892 was preserved and wallet A received 100,000
+more disposable input tokens; no claim was submitted by this audit.
+
+## $5 increases and net NFT earnings - 2026-10-19
+
+Rarity, color style, palette and royalty weight share one trait row beneath the NFT name/evolution row, in cards and details. The circuit pattern label is hidden here; artwork/metadata/gallery keep it. Long palettes remain horizontally readable without wrapping.
+
+Activation stays $100; new increases start at $5 original USD-equivalent value,
+with USDC/ZZZ/ETH/USDG choices in the example. The contract candidate and backend
+enforce the same floors and 99% marginal new LP, gas separate. Preserve existing
+v7 events and holdings; legacy smaller additions replay but new writes reject.
+
+Cards/details display individual LP + equal-collective + royalties earned, not
+gross pool fees. Their 24h/all-time labels and regular-weight values share one
+compact line below centered LP attached. Rewards to claim is centered separately.
+Claims never reduce total earned. Saved original demo NFTs have no dated net
+history: show Unavailable for 24h rather than copying gross fees. Local history
+must match NFT, chain and confirmed block; missing prices/components stay null.
+Dormant NFTs omit rewards/history. No accounting reset, public server update or
+existing local-chain restart. Main only; central contract Todo/operator/evidence
+updated. Check Git for publication and source-bound reports for test scope.
+
 # Main website interaction state
 
 The default website remains an explicitly labeled simulation. Its `app.js`,
@@ -108,3 +140,5 @@ separate Royalties line; the card total remains LP plus royalties.
 In My NFTs, each card image opens the same position and rewards breakdown as
 its detail link. The image's accessible label names this action. Artwork-only
 enlargement remains available from the image inside the preview breakdown.
+
+Known-operation refresh is scoped by session, wallet and NFT. Claims refresh rewards only; contribution markers affect only the target NFT. Failed/unknown reads remain unavailable. All transaction authorization still requires a fresh snapshot; displayed last-confirmed balances do not authorize spending. Artwork preload is bounded to 128 fixed library URLs.

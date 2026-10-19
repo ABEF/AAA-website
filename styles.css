@@ -316,7 +316,7 @@ body:has(#explainer-dialog[open]){overflow:hidden}
 .preview-activity .is-error,.form-feedback.is-error {color:#ffada9;}
 .nft-card-art {position:relative;}
 .artwork-updating {position:absolute;bottom:12px;left:12px;right:12px;border:1px solid #2c5c73;border-radius:8px;padding:8px 10px;background:#081426e8;color:#b0edff;font-size:.72rem;pointer-events:none;text-align:center;}
-.art-image-button .artwork-previous {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;transition:opacity .65s ease;pointer-events:none;}
+.art-image-button .artwork-previous {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;transition:opacity .2s ease;pointer-events:none;}
 .art-image-button .artwork-previous.is-revealed {opacity:0;}
 @media (prefers-reduced-motion:reduce) {.art-image-button .artwork-previous {transition:none;}}
 
@@ -345,3 +345,35 @@ body:has(#explainer-dialog[open]){overflow:hidden}
 .position-attached-lp>span {color:var(--muted);}
 .position-attached-lp>strong {font-size:16px;font-weight:500;overflow-wrap:anywhere;text-align:right;font-variant-numeric:tabular-nums;}
 .position-attached-lp+.position-reward-total {margin-top:15px;padding-top:0;border:0;}
+
+/* Holder income totals, separate from the remaining claimable balance. */
+/* Keep own earned history compact and separate from the available balance. */
+.position-attached-lp, .position-reward-total { text-align:center; align-items:center; justify-content:center; }
+.position-earnings { display:flex; justify-content:space-evenly; align-items:center; gap:10px; margin:10px 0 18px; padding:9px 7px; border:1px solid var(--line, #26364a); border-radius:8px; background:rgba(28,66,87,.14); white-space:nowrap; overflow-x:auto; font-size:10px; line-height:1.5; }
+.position-earnings > div { display:flex; align-items:baseline; gap:5px; flex-shrink:0; }
+.position-earnings span { color:var(--muted, #91a3b7); font-size:inherit; font-weight:400; }
+.position-earnings .earnings-value { color:var(--text); font-weight:400; }
+.position-breakdown > .position-attached-lp { border-top:0; margin-top:0; padding-top:0; }
+.position-breakdown > .position-earnings:last-child { margin-bottom:0; }
+.nft-card-body { container-type:inline-size; }
+.nft-card-body .position-earnings { font-size:clamp(8px,2.7cqi,10px); gap:6px; padding-inline:5px; }
+.nft-card-body .position-earnings > div { gap:4px; }
+@media(max-width:400px) { .position-breakdown .position-earnings { font-size:9px; gap:6px; padding-inline:5px; } }
+
+/* Traits stay together below the name/evolution row; long palettes scroll safely. */
+.nft-card-traits, .nft-detail-traits { flex-wrap:nowrap; justify-content:space-between; gap:10px; white-space:nowrap; overflow-x:auto; scrollbar-width:thin; padding-bottom:3px; }
+.nft-card-traits > span, .nft-detail-traits > span,
+.nft-card-traits > span:nth-child(3), .nft-card-traits .royalty-trait, .nft-detail-traits .royalty-trait { flex:0 0 auto; font-size:9px; line-height:1.6; }
+
+.nft-card-title, .nft-detail-heading { flex-wrap:nowrap; gap:10px; }
+
+/* Palette traits use colored lettering, without pills or highlighting. */
+.palette-trait .trait-color { background:none; border:0; padding:0; font-weight:400; }
+.trait-color-cyan { color:#27dff2; }.trait-color-blue { color:#3e85ff; }
+.trait-color-violet { color:#b178ff; }.trait-color-emerald { color:#35e6ac; }
+.trait-color-amber { color:#ffbf59; }.trait-color-crimson { color:#ff5378; }
+.trait-color-ivory { color:#f2e9d8; }
+/* Light graphite keeps the Onyx name readable against the dark card. */
+.trait-color-onyx { color:#9a9da3; }
+
+.nft-card-traits > .rarity-tag, .nft-detail-traits > .rarity-tag { font-weight:700; }

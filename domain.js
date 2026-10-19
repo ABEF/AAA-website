@@ -1,9 +1,10 @@
 import {EVOLUTIONS,getEvolution} from './artworks.js';
 import {buildInventory,COLOR_STYLES,RARITIES} from './palette-system.js';
 export const MIN_ACTIVATION_USD = 100;
+export const MIN_TOPUP_USD = 5;
 export const MAX_SUPPLY = 1000;
 export const RARITY_LIMITS = Object.freeze({commun:600,rare:300,legendary:100});
-export const FUNDING_ASSETS = ['USDC','ZZZ'];
+export const FUNDING_ASSETS = ['USDC','ZZZ','ETH','USDG'];
 export const POOLS = ['ZZZ/WETH', 'ZZZ/USDC'];
 export const LEVELS = EVOLUTIONS.map(level => level.label);
 export const DEMO_ADDRESS = '0x4440000000000000000000000000000000000444';
@@ -136,6 +137,11 @@ export const lpClaimable = nft => nft.individualCents + nft.collectiveCents;
 export const royaltyClaimable = nft => nft.royaltiesCents ?? 0;
 export const claimable = nft => lpClaimable(nft) + royaltyClaimable(nft);
 export const previouslyClaimed = nft => (nft.claimedCents ?? 0) + (nft.royaltiesClaimedCents ?? 0);
+// Recorded demo credits survive claims. The old seed has no dated net receipts:
+// do not derive a 24h holder total from gross fees or today's membership.
+export function rewardHistory(nft) {
+  return {allTime:claimable(nft)+previouslyClaimed(nft), last24h:nft.rewards24hCents ?? null};
+}
 export function getMetrics(collection) {
   return collection.reduce((metrics, nft) => {
     metrics.liquidity += nft.lockedCents;
@@ -171,7 +177,7 @@ export function mintPreview(collection) {
   if (!available.length) throw new Error('No unused artwork inventory remains for this rarity. Reset the demo.');
   const traits = inventoryTraits(available[seed % available.length]);
   const id = Math.max(1000, ...collection.map(nft => nft.id)) + 1;
-  const nft = {id,...traits,pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,royaltiesCents:0,royaltiesClaimedCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
+  const nft = {id,...traits,pool:null,lockedCents:0,feesAllTimeCents:0,fees24hCents:0,individualCents:0,collectiveCents:0,claimedCents:0,royaltiesCents:0,royaltiesClaimedCents:0,rewards24hCents:0,exampleOwned:true,owner:DEMO_ADDRESS,createdOrder:collection.length};
   return {collection:[...collection,nft], nft};
 }
 
@@ -180,17 +186,20 @@ export function activatePreview(collection, {id, amount, pool, fundingAsset = 'U
   if (!nft || !nft.exampleOwned) throw new Error('This NFT is not in your example portfolio.');
   if (nft.lockedCents > 0) throw new Error('This NFT is already active.');
   if (!Number.isFinite(amount) || amount < MIN_ACTIVATION_USD || amount > 1000000) throw new Error('Enter an activation value from $100 to $1,000,000.');
-  if (!FUNDING_ASSETS.includes(fundingAsset)) throw new Error('Choose ZZZ or USDC for the example contribution.');
+  if (!FUNDING_ASSETS.includes(fundingAsset)) throw new Error('Choose USDC, ZZZ, ETH or USDG for the example contribution.');
   if (!POOLS.includes(pool)) throw new Error('Choose a supported example pool.');
-  return {collection:collection.map(item => item.id === id ? {...item,pool,activationAsset:fundingAsset,lockedCents:cents(amount)} : item), id};
+  return {collection:collection.map(item => item.id === id ? {...item,pool,activationAsset:fundingAsset,lockedCents:cents(amount),rewards24hCents:0} : item), id};
 }
 
-export function increasePreview(collection, {id, amount, fundingAsset = 'USDC'}) {
+export function increasePreview(collection, contribution) {
+  return applyIncrease(collection, contribution, MIN_TOPUP_USD);
+}
+function applyIncrease(collection, {id, amount, fundingAsset = 'USDC'}, minimum) {
   const nft = collection.find(item => item.id === id);
   if (!nft || !nft.exampleOwned) throw new Error('This NFT is not in your example portfolio.');
-  if (!nft.lockedCents) throw new Error('Activate this dormant NFT with at least $100 in ZZZ or USDC first.');
-  if (!FUNDING_ASSETS.includes(fundingAsset)) throw new Error('Choose ZZZ or USDC for the example contribution.');
-  if (!Number.isFinite(amount) || amount < 0.01 || amount > 1000000) throw new Error('Enter a positive liquidity value, up to $1,000,000.');
+  if (!nft.lockedCents) throw new Error('Activate this dormant NFT with at least $100 in value first.');
+  if (!FUNDING_ASSETS.includes(fundingAsset)) throw new Error('Choose USDC, ZZZ, ETH or USDG for the example contribution.');
+  if (!Number.isFinite(amount) || amount < minimum || amount > 1000000) throw new Error(`Enter an LP top-up value from $${minimum} to $1,000,000.`);
   return {collection:collection.map(item => item.id === id ? {...item,lockedCents:item.lockedCents+cents(amount)} : item), id};
 }
 
@@ -224,7 +233,8 @@ export function replayEvents(events) {
       // Existing v7 claim events predate royalties and must retain their LP-only meaning.
       if (event.type === 'claim') collection = claimPreview(collection,event.ids,{scope:event.scope === undefined ? 'lp' : event.scope}).collection;
       if (event.type === 'activate') collection = activatePreview(collection,event).collection;
-      if (event.type === 'increase') collection = increasePreview(collection,event).collection;
+      // Retain old v7 contributions; new writes must pass the current $5 floor.
+      if (event.type === 'increase') collection = applyIncrease(collection,event,0.01).collection;
     } catch { /* Invalid or obsolete local demo events do not affect the source model. */ }
   }
   return collection;

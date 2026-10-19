@@ -26,8 +26,9 @@ export function preserveArtwork(container,render) {
     const previous=old.get(button.dataset.artOwner)?.querySelector('img'),next=button.querySelector('img');
     if(!previous||!next)continue;
     if(previous.getAttribute('src')===next.getAttribute('src')) { next.replaceWith(previous);continue; }
+    next.loading='eager';next.fetchPriority='high';
     const overlay=previous.cloneNode(false);overlay.className='nft-artwork artwork-previous';overlay.alt='';overlay.setAttribute('aria-hidden','true');button.append(overlay);
-    const finish=()=>{if(!next.naturalWidth){overlay.remove();return;}requestAnimationFrame(()=>requestAnimationFrame(()=>overlay.classList.add('is-revealed')));setTimeout(()=>overlay.remove(),850);};
+    const finish=()=>{if(!next.naturalWidth){overlay.remove();return;}requestAnimationFrame(()=>requestAnimationFrame(()=>overlay.classList.add('is-revealed')));setTimeout(()=>overlay.remove(),300);};
     if(next.complete)finish();else {next.addEventListener('load',finish,{once:true});next.addEventListener('error',()=>overlay.remove(),{once:true});}
   }
 }

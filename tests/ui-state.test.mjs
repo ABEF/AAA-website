@@ -47,7 +47,7 @@ test('large valid log is replayed once per version without changing legacy meani
 test('expired action cannot commit after background suspension; cancellation preserves newer locks',async()=>{
   const {a}=stores();let now=0;const t=new OperationTracker(()=>1,{clock:()=>now});
   const expired=t.begin(['nft:444'],'increase');now=15000;
-  await assert.rejects(a.commit(topup(444,1),'initial',()=>t.assertCurrent(expired)),/expired/);
+  await assert.rejects(a.commit(topup(444,5),'initial',()=>t.assertCurrent(expired)),/expired/);
   assert.equal(a.read().events.length,0);t.cancelAll();
   const newer=t.begin(['nft:444'],'claim');t.finish(expired);assert.equal(t.get('nft:444'),newer);
   t.cancelAll();assert.throws(()=>t.assertCurrent(newer),/no longer current/);
@@ -86,9 +86,9 @@ test('cross-tab resource lock rejects conflicting NFT action, allows another, re
   const running=a.withResources(['nft:444'],async()=>{ready.resolve();await gate.promise;throw new Error('Cancelled');});
   const rejected=assert.rejects(running,/Cancelled/);await ready.promise;
   await assert.rejects(b.withResources(['nft:444'],()=>assert.fail()),/another tab/);
-  await b.withResources(['nft:128'],()=>b.commit(topup(128,1),'initial'));
+  await b.withResources(['nft:128'],()=>b.commit(topup(128,5),'initial'));
   gate.resolve();await rejected;
-  await b.withResources(['nft:444'],()=>b.commit(topup(444,1),'initial'));
+  await b.withResources(['nft:444'],()=>b.commit(topup(444,5),'initial'));
 });
 test('batch cross-tab conflict releases previously acquired resources',async()=>{
   const {a,b}=stores(),gate=deferred(),ready=deferred();
@@ -102,7 +102,7 @@ test('concurrent mints allocate different NFT and artwork inventory IDs',async()
 });
 test('reset invalidates a pending action even when the log was already empty',async()=>{
   const {a,b}=stores(),epoch=a.read().epoch;await b.reset();
-  await assert.rejects(a.commit(topup(444,1),epoch),/reset in another tab/);assert.equal(a.read().events.length,0);
+  await assert.rejects(a.commit(topup(444,5),epoch),/reset in another tab/);assert.equal(a.read().events.length,0);
 });
 test('failed storage write never returns success or changes canonical preview state',async()=>{
   const {a,storage}=stores();storage.fail=true;
@@ -118,12 +118,12 @@ test('corrupt, oversized and full logs fail explicitly, without deleting legacy 
   const {a,storage}=stores();storage.setItem(STORAGE_KEY,'broken');assert.throws(()=>a.read(),/unreadable/);
   storage.setItem(STORAGE_KEY,JSON.stringify(Array(1001).fill({})));assert.throws(()=>a.read(),/invalid/);
   storage.setItem(STORAGE_KEY,JSON.stringify(Array(1000).fill(topup(444,.01))));
-  await assert.rejects(a.commit(topup(444,1),'initial'),/history is full/);assert.equal(a.read().events.length,1000);
+  await assert.rejects(a.commit(topup(444,5),'initial'),/history is full/);assert.equal(a.read().events.length,1000);
   storage.setItem(STORAGE_KEY,JSON.stringify([{type:'claim',ids:[444]}]));
-  await a.commit(topup(444,1),'initial');const n=a.read().collection.find(n=>n.id===444);assert.equal(n.royaltiesCents,1250);assert.equal(n.claimedCents,18400);
+  await a.commit(topup(444,5),'initial');const n=a.read().collection.find(n=>n.id===444);assert.equal(n.royaltiesCents,1250);assert.equal(n.claimedCents,18400);
 });
 test('unsupported locking fails closed without committing',async()=>{
-  const store=new PreviewStore(new Storage(),null);await assert.rejects(store.commit(topup(444,1),'initial'),/cannot safely coordinate/);assert.equal(store.read().events.length,0);
+  const store=new PreviewStore(new Storage(),null);await assert.rejects(store.commit(topup(444,5),'initial'),/cannot safely coordinate/);assert.equal(store.read().events.length,0);
 });
 test('demo connection restores across reload and explicit disconnect clears it',async()=>{
   const storage=new Storage(),a=new WalletConnection(()=>{},storage);a.connectDemo(DEMO_ADDRESS);

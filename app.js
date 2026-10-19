@@ -1,7 +1,7 @@
 import {localMode} from './local-client.js';
 import {createLocalView} from './local-view.js';
-import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight} from './artworks.js';
-import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, previouslyClaimed, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
+import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions} from './artworks.js';
+import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, previouslyClaimed, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
 const {OperationTracker,preserveArtwork} = localMode(location) ? {} : await import('./ui-state.js');
 const {PreviewStore,RESET_KEY,previewChange} = localMode(location) ? {} : await import('./preview-store.js');
@@ -22,9 +22,9 @@ const colorsFor = nft => colorwayFor(nft).colorIds || colorwayFor(nft).colors;
 const paletteLabel = nft => colorwayFor(nft).label;
 const styleLabel = id => COLOR_STYLES.find(style => style.id === id)?.label || 'Monochrome';
 const patternLabel = id => PATTERNS.find(pattern => pattern.id === id)?.label || PATTERNS[0].label;
-const visualTraits = nft => `<span>${styleLabel(colorwayFor(nft).colorStyle)}</span><span>${paletteLabel(nft)}</span><span>${patternLabel(nft.pattern)}</span>`;
+const visualTraits = nft => `<span>${styleLabel(colorwayFor(nft).colorStyle)}</span>${paletteTrait(colorsFor(nft))}`;
 let collection = buildDemoCollection();
-let page = 1, poolFilter = 'all', connecting = false, toastTimer, selectedNFT = null;
+let page = 1, poolFilter = 'all', connecting = false, toastTimer, selectedNFT = null, selectedDetailMode = 'breakdown';
 const providers = [];
 const local = localMode(location) ? createLocalView() : null;
 const store = local ? null : new PreviewStore({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},navigator.locks);
@@ -233,8 +233,9 @@ function renderPortfolio() {
   const owned = collection.filter(nft => nft.exampleOwned), metrics = getMetrics(owned);
   $('#portfolio-address').textContent = `${wallet.state.type === 'demo' ? 'Demo wallet' : wallet.state.name} · ${shortAddress(wallet.state.address)}`;
   $('#my-liquidity').textContent = storageProblem ? 'Unavailable' : money(metrics.liquidity);
-  $('#my-fees-all').textContent = storageProblem ? 'Unavailable' : money(metrics.feesAllTime);
-  $('#my-fees-day').textContent = storageProblem ? 'Unavailable' : money(metrics.fees24h);
+  const histories=owned.map(rewardHistory);
+  $('#my-fees-all').textContent = storageProblem ? 'Unavailable' : money(histories.reduce((total,h)=>total+h.allTime,0));
+  $('#my-fees-day').textContent = storageProblem||histories.some(h=>h.last24h==null) ? 'Unavailable' : money(histories.reduce((total,h)=>total+h.last24h,0));
   $('#my-claimable').textContent = storageProblem ? 'Unavailable' : money(metrics.claimable);
   $('#my-count').textContent = `${owned.length} NFTs · ${metrics.active} active · ${metrics.dormant} dormant`;
   const claimTargets=owned.filter(nft=>claimable(nft)>0);
@@ -242,10 +243,11 @@ function renderPortfolio() {
   $('#claim-all').textContent = metrics.claimable ? 'Preview claim all ↗' : 'No rewards to claim';
   preserveArtwork($('#owned-nfts'),()=>{
     $('#owned-nfts').innerHTML = owned.map(nft => {
+      preloadEvolutions(artworkForNft(nft));
       const op=nftOperation(nft.id),busy=Boolean(op)||Boolean(storageProblem),active=Boolean(nft.lockedCents);
       const updating=op&&['activate','increase'].includes(op.kind);
-      const financials=active?`<div class="position-reward-total"><span>Rewards to claim</span><strong>${storageProblem?'Unavailable':money(claimable(nft))}</strong></div>`:'';
-      return `<article class="nft-card" data-position-id="${nft.id}" aria-busy="${Boolean(op)}"><div class="nft-card-art ${active?'is-active':'is-dormant'}">${artButton(nft,'',true)}${updating?'<span class="artwork-updating">Updating · last saved artwork</span>':''}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${nft.id}</h3><span class="level-badge ${active?'':'dormant'}">${getLevel(nft.lockedCents)}</span></div><div class="nft-card-traits">${rarityLabel(nft)}${visualTraits(nft)}${royaltyTrait(nft)}</div><div class="position-attached-lp"><span>LP attached</span><strong>${storageProblem?'Unavailable':money(nft.lockedCents)}</strong></div>${financials}${op?`<p class="position-progress" role="status">${op.kind==='claim'?'Claiming example fees…':'Updating this example position…'} Other NFTs remain available.</p>`:''}<div class="position-buttons">${active?`<button class="button" data-claim-id="${nft.id}" ${busy||!claimable(nft)?'disabled':''}>${op?.kind==='claim'?'Claiming…':'Claim'}</button><button class="button button-secondary" data-manage-id="${nft.id}" ${busy?'disabled':''}>Grow attached LP</button>`:`<button class="button" data-nft-id="${nft.id}" ${busy?'disabled':''}>${updating?'Activating…':'Activate ↗'}</button>`}</div></div><button class="nft-card-detail-link" data-nft-id="${nft.id}"><span>${active?'Position & reward breakdown':'Activation & NFT details'}</span><span aria-hidden="true">↗</span></button></article>`;
+      const financials=active?`${demoEarnings(nft)}<div class="position-reward-total"><span>Rewards to claim</span><strong>${storageProblem?'Unavailable':money(claimable(nft))}</strong></div>`:'';
+      return `<article class="nft-card" data-position-id="${nft.id}" aria-busy="${Boolean(op)}"><div class="nft-card-art ${active?'is-active':'is-dormant'}">${artButton(nft,'',true)}${updating?'<span class="artwork-updating">Updating · last saved artwork</span>':''}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${nft.id}</h3><span class="level-badge ${active?'':'dormant'}">${getLevel(nft.lockedCents)}</span></div><div class="nft-card-traits">${rarityLabel(nft)}${visualTraits(nft)}${royaltyTrait(nft)}</div><div class="position-attached-lp"><span>LP attached</span><strong>${storageProblem?'Unavailable':money(nft.lockedCents)}</strong></div>${financials}${op?`<p class="position-progress" role="status">${op.kind==='claim'?'Claiming example fees…':'Updating this example position…'} Other NFTs remain available.</p>`:''}<div class="position-buttons">${active?`<button class="button" data-claim-id="${nft.id}" ${busy||!claimable(nft)?'disabled':''}>${op?.kind==='claim'?'Claiming…':'Claim'}</button><button class="button button-secondary" data-manage-id="${nft.id}" ${busy?'disabled':''}>Grow attached LP</button>`:`<button class="button" data-manage-id="${nft.id}" ${busy?'disabled':''}>${updating?'Activating…':'Activate ↗'}</button>`}</div></div><button class="nft-card-detail-link" data-nft-id="${nft.id}"><span>${active?'Position & reward breakdown':'Activation & NFT details'}</span><span aria-hidden="true">↗</span></button></article>`;
     }).join('');
   });
 }
@@ -268,34 +270,38 @@ function renderMint() { updateWallet(); renderMintArt(); }
 function renderAll() { renderMetrics(); renderCollection(); renderPortfolio(); renderMint(); renderRarityShowcase(); renderArtGallery(); }
 function liquidityForm(nft, action) {
   const activation = action === 'activate';
-  return `<form class="liquidity-form" data-liquidity-form novalidate data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option></select>${activation ? `<label class="input-label" for="liquidity-pool-${nft.id}">EXAMPLE LP POOL</label><select name="pool" id="liquidity-pool-${nft.id}"><option value="ZZZ/WETH">ZZZ / ETH</option></select>` : ''}<label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'VALUE TO ADD TO ATTACHED LP'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '0.01'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. The ZZZ quantity depends on its price; no token quote is simulated. Activation accepts $100 in value; at least 99% must become added LP, with network gas separate.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${nftOperation(nft.id) || storageProblem ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p></form>`;
+  return `<form class="liquidity-form" data-liquidity-form novalidate data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option><option value="ETH">ETH</option><option value="USDG">USDG</option></select>${activation ? `<label class="input-label" for="liquidity-pool-${nft.id}">EXAMPLE LP POOL</label><select name="pool" id="liquidity-pool-${nft.id}"><option value="ZZZ/WETH">ZZZ / ETH</option></select>` : ''}<label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'GROW ATTACHED LP · MINIMUM $5'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '5'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. Token quantities depend on their prices; no live quote is provided. Activation starts at $100; LP top-ups start at $5 in value. At least 99% must become added LP; network gas is separate.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${nftOperation(nft.id) || storageProblem ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p></form>`;
 }
 
 function royaltyTrait(nft) {
   return `<span class="royalty-trait ${nft.lockedCents?'':'is-dormant'}" title="${nft.lockedCents?'Royalty share enabled':'Activate to enable this royalty share'}">Royalty weight ×${getRarity(nft.rarity).royaltyMultiplier}</span>`;
 }
 
+function demoEarnings(nft) {
+  const history=rewardHistory(nft), value=n=>storageProblem||n==null?'Unavailable':money(n);
+  return `<div class="position-earnings" aria-label="NFT earnings, LP rewards plus royalties"><div><span>Fees generated · 24h</span><span class="earnings-value">${value(history.last24h)}</span></div><div><span>Fees generated · all time</span><span class="earnings-value">${value(history.allTime)}</span></div></div>`;
+}
 function demoFinancialDetails(nft) {
   const value=amount=>storageProblem?'Unavailable':money(amount);
   const row=(label,amount)=>`<div><span>${label}</span><b>${value(amount)}</b></div>`;
-  const position=`<section class="position-breakdown"><h3>Attached liquidity</h3><div class="breakdown-rows">${row('LP attached',nft.lockedCents)}</div></section>`;
+  const position=`<section class="position-breakdown"><div class="position-attached-lp"><span>LP attached</span><strong>${value(nft.lockedCents)}</strong></div>${nft.lockedCents?demoEarnings(nft):''}</section>`;
   if(!nft.lockedCents)return position+'<p class="small-note">Activate to start earning LP fees and royalties.</p>';
-  return `<section class="position-breakdown claim-breakdown"><div class="position-reward-total"><span>Rewards to claim</span><strong>${value(claimable(nft))}</strong></div><div class="breakdown-rows">${row('LP rewards',nft.individualCents+nft.collectiveCents)}${row('Royalties',royaltyClaimable(nft))}</div></section>${position}<section class="position-breakdown"><h3>Trading-fee history</h3><div class="breakdown-rows">${row('Last 24 hours',nft.fees24hCents)}${row('All time',nft.feesAllTimeCents)}</div><p class="small-note">Gross LP fees generated before allocation.</p></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',previouslyClaimed(nft))}</div></section>`;
+  return `${position}<section class="position-breakdown claim-breakdown"><div class="position-reward-total"><span>Rewards to claim</span><strong>${value(claimable(nft))}</strong></div><div class="breakdown-rows">${row('LP rewards',nft.individualCents+nft.collectiveCents)}${row('Royalties',royaltyClaimable(nft))}</div></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',previouslyClaimed(nft))}</div></section>`;
 }
 
-function renderDetails(id) {
+function renderDetails(id,mode='breakdown') {
   if (local) return;
   const nft = collection.find(item => item.id === id);
   if (!nft) return;
-  selectedNFT=id;
+  selectedNFT=id;selectedDetailMode=mode;
   const owner = nft.exampleOwned && wallet.state ? wallet.state.address : nft.owner;
   let controls = '<p class="small-note">This position belongs to another example owner. Explore your own example holdings in My NFTs.</p>';
   if (nft.exampleOwned) {
     if (!wallet.state) controls = '<button class="button button-full" data-connect>Connect to explore this example NFT ↗</button>';
-    else if (nft.lockedCents) controls = `<button class="button button-full" data-claim-id="${id}" ${!claimable(nft) || nftOperation(id) || storageProblem ? 'disabled' : ''}>${claimable(nft) ? 'Preview reward claim ↗' : 'No rewards ready to claim'}</button><details class="manage-liquidity"><summary>Grow the LP attached to this NFT</summary><p class="activate-intro">Add ZZZ or USDC to grow the LP allocated to this NFT. Its attached LP and the collection total increase; its fee rights remain with the NFT.</p>${liquidityForm(nft,'increase')}</details>`;
-    else controls = `<p class="activate-intro">Bring this dormant NFT online with at least 100 USDC or $100 worth of ZZZ. Your contribution funds its attached LP and activates its reward rights.</p>${liquidityForm(nft,'activate')}`;
+    else if(mode==='contribute')controls=liquidityForm(nft,nft.lockedCents?'increase':'activate');
+    else controls=`${nft.lockedCents?`<button class="button button-full" data-claim-id="${id}" ${!claimable(nft)||nftOperation(id)||storageProblem?'disabled':''}>${claimable(nft)?'Preview reward claim ↗':'No rewards ready to claim'}</button>`:''}<button class="button button-secondary" data-manage-id="${id}">${nft.lockedCents?'Grow attached LP':'Activate your NFT'}</button>`;
   }
-  preserveArtwork($('#nft-dialog-content'),()=>{ $('#nft-dialog-content').innerHTML = `<div class="nft-detail-art">${artButton(nft)}</div><div class="nft-detail-heading"><h2 id="nft-details-title">PoPL #${nft.id}</h2><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div><div class="nft-detail-traits">${rarityLabel(nft)}${visualTraits(nft)}${royaltyTrait(nft)}</div>${demoFinancialDetails(nft)}<p class="nft-detail-owner">Example owner: ${escape(owner)}</p>${controls}<p class="small-note">Illustrative dollar values. Principal cannot be claimed; only funded LP rewards and royalties carry claim rights. Activations, LP additions, and claims here are simulations.</p>`; });
+  preserveArtwork($('#nft-dialog-content'),()=>{ $('#nft-dialog-content').innerHTML = `<div class="nft-detail-art">${artButton(nft)}</div><div class="nft-detail-heading"><h2 id="nft-details-title">PoPL #${nft.id}</h2><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div><div class="nft-detail-traits">${rarityLabel(nft)}${visualTraits(nft)}${royaltyTrait(nft)}</div>${mode==='contribute'?`<div class="position-attached-lp"><span>LP attached</span><strong>${money(nft.lockedCents)}</strong></div>`:demoFinancialDetails(nft)}<p class="nft-detail-owner">Example owner: ${escape(owner)}</p>${controls}<p class="small-note">Illustrative dollar values. Principal cannot be claimed; only funded LP rewards and royalties carry claim rights. Activations, LP additions, and claims here are simulations.</p>`; });
   const form=$('#nft-dialog [data-liquidity-form]'); if(form)form.querySelectorAll('input,select,button').forEach(n=>n.disabled=Boolean(nftOperation(id))||Boolean(storageProblem));
   if (!$('#nft-dialog').open) $('#nft-dialog').showModal();
 }
@@ -303,7 +309,7 @@ function renderDetails(id) {
 function refreshDetails(id) {
   const form=$('#nft-dialog [data-liquidity-form]');
   const saved=form?{action:form.dataset.action,values:Object.fromEntries(new FormData(form)),open:form.closest('details')?.open}:null;
-  renderDetails(id);
+  renderDetails(id,selectedDetailMode);
   const next=$('#nft-dialog [data-liquidity-form]');
   if(saved&&next?.dataset.action===saved.action){
     for(const [key,value] of Object.entries(saved.values)){const field=next.elements.namedItem(key);if(field){if(field.type==='checkbox')field.checked=true;else field.value=value;}}
@@ -389,7 +395,7 @@ async function runLiquidity(form) {
     const message=`PoPL #${id}: ${currency.format(amount)} ${action==='activate'?'activation':'LP addition'} saved. No real assets moved.`;
     recordActivity(message,false,activityKey);toast(message);
     if($('#nft-dialog').open&&selectedNFT===id){renderDetails(id);formFeedback($('#nft-dialog [data-liquidity-form]'),message);}
-  }catch(error){formFeedback(form,error.message,true);recordActivity(`PoPL #${id}: ${error.message}`,true,activityKey);}
+  }catch(error){const current=$('#nft-dialog [data-liquidity-form]');formFeedback(current?.dataset.nftId===String(id)?current:form,error.message,true);recordActivity(`PoPL #${id}: ${error.message}`,true,activityKey);}
   finally {if(form.isConnected&&!completed){form.setAttribute('aria-busy','false');form.querySelectorAll('input,select,button').forEach(n=>n.disabled=Boolean(nftOperation(id)));}}
 }
 
@@ -400,7 +406,7 @@ document.addEventListener('submit',event => {
   if(nftOperation(Number(form.dataset.nftId)))return;
   if (!form.checkValidity()) {
     const invalid=[...form.elements].find(n=>n.willValidate&&!n.validity.valid);
-    const message=invalid?.name==='consent'?'Tick the checkbox to confirm that the LP principal cannot be redeemed.':`Enter a value from ${form.dataset.action==='activate'?'$100':'$0.01'} to $1,000,000, with at most two decimal places.`;
+    const message=invalid?.name==='consent'?'Tick the checkbox to confirm that the LP principal cannot be redeemed.':`Enter a value from ${form.dataset.action==='activate'?'$100':'$5'} to $1,000,000, with at most two decimal places.`;
     formFeedback(form,message,true);invalid?.focus();return;
   }
   void runLiquidity(form);
@@ -417,7 +423,7 @@ document.addEventListener('click',async event => {
   if (target.dataset.artworkId) openArtwork(target.dataset.artworkId);
   if (target.dataset.artColor) { artColor = target.dataset.artColor; artPage = 1; renderArtGallery(); }
   if (target.dataset.mintEvolution && EVOLUTIONS.some(state => state.id === target.dataset.mintEvolution)) { mintEvolution = target.dataset.mintEvolution; renderMintArt(); }
-  if (target.dataset.manageId) { renderDetails(Number(target.dataset.manageId)); const details = $('#nft-dialog').querySelector('.manage-liquidity'); if (details) { details.open = true; details.scrollIntoView({block:'nearest'}); } }
+  if (target.dataset.manageId) renderDetails(Number(target.dataset.manageId),'contribute');
   if (target.dataset.claimId) await runClaim([Number(target.dataset.claimId)]);
 
   if (target.dataset.pool) {

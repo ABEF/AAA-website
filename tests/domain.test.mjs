@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildDemoCollection,getMetrics,getLevel,claimable,lpClaimable,royaltyClaimable,previouslyClaimed,feeSplit,mintPreview,claimPreview,activatePreview,increasePreview,replayEvents,MAX_SUPPLY,RARITY_LIMITS,getMintSupply,DEMO_ADDRESS,estimatePoolFees,distributeDailyFees} from '../domain.js';
+import {buildDemoCollection,getMetrics,getLevel,claimable,lpClaimable,royaltyClaimable,previouslyClaimed,feeSplit,mintPreview,claimPreview,activatePreview,increasePreview,replayEvents,rewardHistory,MAX_SUPPLY,RARITY_LIMITS,getMintSupply,DEMO_ADDRESS,estimatePoolFees,distributeDailyFees} from '../domain.js';
 import {WalletConnection,walletError} from '../wallet.js';
 
 test('initial collection has exactly $425k liquidity, 100 NFTs, and 20% dormant',() => {
@@ -301,4 +301,23 @@ test('older NFT fixtures without royalty fields retain their LP-only amounts and
   const result = claimPreview(original,[1]);
   assert.equal(result.amount,100); assert.equal(previouslyClaimed(result.collection[0]),120);
   assert.equal(result.collection[0].royaltiesClaimedCents,0); assert.equal(claimable(result.collection[0]),0);
+});
+
+test('new top-ups require $5 in value for each supported demo source and preserve historical cents',()=>{
+  const original=buildDemoCollection(),before=original.find(n=>n.id===444);
+  for(const fundingAsset of ['ZZZ','ETH','USDG','USDC']) {
+    for(const amount of [0.01,4,4.99,4.999,NaN,Infinity,'5'])assert.throws(()=>increasePreview(original,{id:444,amount,fundingAsset}));
+    const after=increasePreview(original,{id:444,amount:5,fundingAsset}).collection.find(n=>n.id===444);
+    assert.equal(after.lockedCents,before.lockedCents+500);
+    assert.deepEqual(rewardHistory(after),rewardHistory(before));
+  }
+  const old=replayEvents([{type:'increase',id:444,amount:0.01}]).find(n=>n.id===444);
+  assert.equal(old.lockedCents,before.lockedCents+1);
+});
+test('NFT earnings retain only credited rewards through claims and never infer dated net history from gross',()=>{
+  const source=buildDemoCollection(),n=source.find(n=>n.id===444),history=rewardHistory(n);
+  assert.equal(history.allTime,claimable(n)+previouslyClaimed(n));assert.equal(history.last24h,null);
+  assert.equal(rewardHistory({...n,feesAllTimeCents:99999999,fees24hCents:999999}).allTime,history.allTime);
+  const after=claimPreview(source,[444]).collection.find(n=>n.id===444);
+  assert.deepEqual(rewardHistory(after),history);
 });
