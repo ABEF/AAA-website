@@ -1,0 +1,12 @@
+.local-status{display:flex;gap:1.5rem;align-items:center;justify-content:space-between;padding-block:1rem;font-size:.8rem;color:#8dcbd7;overflow-wrap:anywhere}
+.local-status span{max-width:90%;max-height:6rem;overflow:auto}.local-status.is-error{color:#ffb5a5}.local-status button{white-space:nowrap}
+.local-confirm{max-width:660px}.local-confirm h2{font-size:1.8rem}.local-confirm details{margin-top:1rem}.local-confirm code{font-size:.7rem;max-height:100px;overflow:auto;display:block}
+.local-actions{display:flex;gap:1rem;align-items:center;justify-content:space-between;margin:1.4rem 0;flex-wrap:wrap}
+.local-id{overflow-wrap:anywhere;word-break:break-all}.local-empty{grid-column:1/-1;padding:2rem;color:#9aacbf}
+.local-art-unavailable{min-height:220px;display:grid;place-items:center;color:#91a2b8}
+.local-confirm .nft-detail-rewards b{max-width:65%;overflow-wrap:anywhere;text-align:right}
+.nft-card-details b{max-width:58%;overflow-wrap:anywhere;text-align:right}
+.local-confirm .nft-detail-rewards{margin:1.3rem 0}
+[data-local-contribution] input[type=text]{display:block;width:100%;margin-top:.5rem;padding:.9rem;border:1px solid #294357;border-radius:8px;background:#0b1725;color:#e6f4ff;font:inherit}
+#my-claimable{font-size:1.2rem;overflow-wrap:anywhere}#wallet-providers small{overflow-wrap:anywhere}
+@media(max-width:600px){.local-status{align-items:flex-start}.local-confirm .nft-detail-rewards div{display:block}.local-confirm .nft-detail-rewards b{display:block;max-width:100%;text-align:left}.local-actions .button{width:100%}}

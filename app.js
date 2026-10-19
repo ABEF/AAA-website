@@ -1,3 +1,5 @@
+import {localMode} from './local-client.js';
+import {createLocalView} from './local-view.js';
 import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight} from './artworks.js';
 import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, previouslyClaimed, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
@@ -24,6 +26,7 @@ try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); if (A
 let collection = events.length ? replayEvents(events) : buildDemoCollection();
 let page = 1, poolFilter = 'all', operationPending = false, connecting = false, toastTimer;
 const providers = [];
+const local = localMode(location) ? createLocalView() : null;
 const wallet = new WalletConnection(() => { updateWallet(); renderPortfolio(); });
 
 function persist(event) {
@@ -108,7 +111,7 @@ function renderArtGallery() {
   artPage = Math.max(1,Math.min(pages,artPage));
   const shown = matches.slice((artPage-1)*12,artPage*12);
   $('#artwork-gallery').innerHTML = shown.length ? shown.map(art => `<article class="artwork-card" style="--art-accent:${art.accent}"><button type="button" class="art-image-button" data-artwork-id="${art.id}" aria-label="Enlarge ${art.colorLabel} ${patternLabel(art.pattern)} ${art.rarityLabel} ${art.evolutionLabel}"><img class="nft-artwork" src="${art.src}" alt="${art.colorLabel} ${art.rarityLabel} egg · ${patternLabel(art.pattern)} · ${art.evolutionLabel}" width="1024" height="1024" loading="lazy" decoding="async"><span class="art-enlarge" aria-hidden="true">↗</span></button><div class="artwork-card-copy"><div><h2>${art.evolutionLabel}</h2><span class="rarity-tag" data-rarity="${art.rarity}">${art.rarityLabel}</span></div><p>${art.colorLabel}</p><small>${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}</small><span class="level-badge">${art.royaltyWeight ? `Royalty weight ×${art.royaltyWeight}` : 'Dormant · royalty weight 0'}</span></div></article>`).join('') : '<p class="empty-artworks">No artwork matches these filters. Try another color, style or pattern.</p>';
-  $('#art-variant-count').textContent = `${number.format(matches.length)} of ${number.format(ARTWORKS.length)} artwork states · ${collection.length} example NFTs`;
+  $('#art-variant-count').textContent = `${number.format(matches.length)} of ${number.format(ARTWORKS.length)} artwork states · ${local ? '1,000 total supply' : collection.length+' example NFTs'}`;
   $('#art-page-info').textContent = matches.length ? `${(artPage-1)*12+1}–${Math.min(artPage*12,matches.length)} of ${number.format(matches.length)} · Page ${artPage} of ${pages}` : '0 artwork states';
   $('#art-prev').disabled = artPage === 1;
   $('#art-next').disabled = artPage === pages;
@@ -132,6 +135,7 @@ function renderMintArt() {
 
 
 function renderMetrics() {
+  if (local) return local.renderMetrics();
   const metrics = getMetrics(collection);
   const poolLiquidityUSD = BASE_POOL_LIQUIDITY_USD + dollars(metrics.liquidity) - BASE_PROTOCOL_LIQUIDITY_USD;
   const share = dollars(metrics.liquidity) / poolLiquidityUSD;
@@ -159,6 +163,7 @@ function renderMetrics() {
 }
 
 function renderCollection() {
+  if (local) return local.renderCollection();
   const query = $('#nft-search').value.trim().replace(/^#/, '');
   const status = $('#status-filter').value;
   const sort = $('#sort-positions').value;
@@ -177,6 +182,7 @@ function renderCollection() {
 }
 
 function renderPortfolio() {
+  if (local) return local.renderPortfolio();
   const connected = Boolean(wallet.state);
   $('#portfolio-disconnected').hidden = connected;
   $('#portfolio-connected').hidden = !connected;
@@ -196,6 +202,7 @@ function renderPortfolio() {
 }
 
 function updateWallet() {
+  if (local) return local.updateWallet();
   $$('.wallet-button').forEach(button => { button.textContent = wallet.state ? `${wallet.state.type === 'demo' ? 'Demo · ' : ''}${shortAddress(wallet.state.address)}` : 'Connect wallet ↗'; });
   $('#wallet-connected-actions').hidden = !wallet.state;
   $('#connected-wallet-description').textContent = wallet.state ? `Connected: ${wallet.state.name} · ${wallet.state.address}` : '';
@@ -212,10 +219,11 @@ function renderMint() { updateWallet(); renderMintArt(); }
 function renderAll() { renderMetrics(); renderCollection(); renderPortfolio(); renderMint(); renderRarityShowcase(); renderArtGallery(); }
 function liquidityForm(nft, action) {
   const activation = action === 'activate';
-  return `<form class="liquidity-form" data-liquidity-form data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option></select>${activation ? `<label class="input-label" for="liquidity-pool-${nft.id}">EXAMPLE LP POOL</label><select name="pool" id="liquidity-pool-${nft.id}"><option value="ZZZ/WETH">ZZZ / WETH</option><option value="ZZZ/USDC">ZZZ / USDC</option></select>` : ''}<label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'VALUE TO ADD TO ATTACHED LP'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '0.01'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. The ZZZ quantity depends on its price; no token quote is simulated. Activation requires at least $100 of net deployed LP after execution costs.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${operationPending ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button></form>`;
+  return `<form class="liquidity-form" data-liquidity-form data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option></select>${activation ? `<label class="input-label" for="liquidity-pool-${nft.id}">EXAMPLE LP POOL</label><select name="pool" id="liquidity-pool-${nft.id}"><option value="ZZZ/WETH">ZZZ / WETH</option><option value="ZZZ/USDC">ZZZ / USDC</option></select>` : ''}<label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'VALUE TO ADD TO ATTACHED LP'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '0.01'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. The ZZZ quantity depends on its price; no token quote is simulated. Activation accepts $100 in value; at least 99% must become added LP, with network gas separate.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${operationPending ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button></form>`;
 }
 
 function renderDetails(id) {
+  if (local) return;
   const nft = collection.find(item => item.id === id);
   if (!nft) return;
   const owner = nft.exampleOwned && wallet.state ? wallet.state.address : nft.owner;
@@ -243,6 +251,7 @@ function renderProviders() {
   }
 }
 function openWallet() {
+  if (local) return local.openWallet();
   if ($('#nft-dialog').open) $('#nft-dialog').close();
   $('#wallet-message').textContent = ''; $('#wallet-message').classList.remove('is-error'); renderProviders(); updateWallet();
   if (!$('#wallet-dialog').open) $('#wallet-dialog').showModal();
@@ -380,3 +389,4 @@ function route() {
 }
 window.addEventListener('hashchange',route);
 renderAll(); route();
+if (local) void local.refresh();

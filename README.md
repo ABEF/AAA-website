@@ -30,11 +30,18 @@ The default connected demo portfolio contains four differently colored NFTs: Cya
 
 Demo events persist in browser localStorage under `zzz-popl-preview-v7`. Wallet connections are not persisted. Use Reset demo or remove that storage key to restore the original example dataset.
 
+## Local contract integration
+
+The existing website also runs against disposable Anvil contracts at the local
+launcher’s `/app/` mount. See [local integration](LOCAL_INTEGRATION.md) for setup,
+confirmation, gas, ownership, history and recovery. This mode uses local test
+accounts; production extension-wallet signing and public deployment remain open.
+
 ## Important boundary
 
-Contracts are not deployed. Every NFT, LP valuation, fee history, portfolio assignment, mint, activation and claim in this website is illustrative. Browser-wallet connection retrieves a public address and chain identifier only. The application never requests token approvals, signatures, payments or blockchain transactions.
+No public PoPL deployment is configured. In the default static/demo mode, every NFT, LP valuation, fee history, portfolio assignment, mint, activation and claim in this website is illustrative. Browser-wallet connection retrieves a public address and chain identifier only. The default static mode never requests token approvals, signatures, payments or blockchain transactions. The separate local mode explicitly confirms disposable test transactions.
 
-Connecting a real wallet does not fetch its actual NFTs: it displays the same explicitly labeled example portfolio. The accepted contract configuration is a 0.05 ETH dormant mint, minimum $100 of net deployed LP for activation, an 80/10/5/5 revenue split with equal collective shares across active NFTs, and the capped rarity/royalty rules described below. The aligned Solidity update is under verification and remains undeployed; this website never calls it. Production market integration, a reviewed VRF provider, pricing, bridge transport, staged operations and independent audit remain release gates.
+Connecting a real wallet does not fetch its actual NFTs: it displays the same explicitly labeled example portfolio. The accepted contract configuration is a 0.05 ETH dormant mint, minimum $100 contributed value with at least 99% deployed as LP and gas separate, an 80/10/5/5 revenue split with equal collective shares across active NFTs, and the capped rarity/royalty rules described below. The aligned Solidity update is under verification and remains undeployed; the default simulation does not call it. The local mode uses its compiled core with mock venue/feed/randomness dependencies. Production market integration, a reviewed VRF provider, pricing, bridge transport, staged operations and independent audit remain release gates.
 
 A ZZZ or USDC contribution is entered as a USD-equivalent example. No ZZZ exchange rate or token-quantity quote is simulated. Contributions fund permanent LP attributed to the same NFT; holders can claim funded rewards, never redeem LP principal. Transfers carry the attached LP allocation and fee rights, including unclaimed funded rewards. NFT rarity, color style, palette and circuit pattern remain fixed, and new contributions receive no retroactive fees.
 

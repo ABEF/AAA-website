@@ -9,7 +9,7 @@
     "start": "node server.mjs",
     "build": "node build.mjs",
     "artworks:generate": "node generate-artworks.mjs",
-    "test": "node --test tests/domain.test.mjs tests/artworks.test.mjs",
-    "check": "node --check app.js && node --check domain.js && node --check artworks.js && node --check palette-system.js && node --check generate-artworks.mjs && node --check wallet.js && node check.mjs"
+    "test": "node --test tests/domain.test.mjs tests/artworks.test.mjs tests/local-client.test.mjs",
+    "check": "node --check app.js && node --check domain.js && node --check artworks.js && node --check palette-system.js && node --check generate-artworks.mjs && node --check wallet.js && node --check local-client.js && node --check local-view.js && node check.mjs"
   }
 }

@@ -1,3 +1,16 @@
+## Local contract integration - 2026-10-19
+
+The accepted scope is local integration before public deployment. Read
+[LOCAL_INTEGRATION.md](LOCAL_INTEGRATION.md). The launcher's exact HTTP loopback
+/app/ mount uses the existing design with confirmed ownership, current LP,
+earnings, raw royalties and lifetime claims. Explicit confirmations cover
+mint/approval/Entry/top-up/transfer/bounded combined claims; pending operation
+IDs recover lost responses. Production extension-wallet signing remains open.
+Default public/static mode is still a simulation; v7 storage/artwork are preserved.
+Activation wording is gross $100 with 99% deployed and gas separate, superseding
+older net-$100 notes. Use main, update contract Todo/features/operator procedures,
+and check Git for publication. No public server deployment or monitor restart.
+
 # AAA / ZZZ PoPL website instructions
 
 Read `PROJECT_CONTEXT.md` when starting work on this project. It records the related smart contract repository and accepted product, data, and visual decisions.

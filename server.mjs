@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 const root = fileURLToPath(new URL(process.argv.includes('--dist') ? './dist/' : './',import.meta.url));
 const port = Number(process.env.PORT || 4173);
 if (!Number.isSafeInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be a number from 1 to 65535.');
-const allowed = new Set(['index.html','styles.css','app.js','domain.js','wallet.js','assets/logo.jpg','assets/collec.jpg','assets/nft.jpg','assets/favicon.svg','assets/videos/popl-explainer-v7.mp4','assets/videos/popl-explainer-v7.png','artworks.js','palette-system.js','assets/nfts/manifest.json','assets/nfts/inventory.json',...ARTWORKS.flatMap(art => [art.src.slice(2),art.metadata.slice(2)])]);
+const allowed = new Set(['index.html','styles.css','app.js','domain.js','wallet.js','local-client.js','local-view.js','local-view.css','assets/logo.jpg','assets/collec.jpg','assets/nft.jpg','assets/favicon.svg','assets/videos/popl-explainer-v7.mp4','assets/videos/popl-explainer-v7.png','artworks.js','palette-system.js','assets/nfts/manifest.json','assets/nfts/inventory.json',...ARTWORKS.flatMap(art => [art.src.slice(2),art.metadata.slice(2)])]);
 const mime = {'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.jpg':'image/jpeg','.svg':'image/svg+xml','.png':'image/png','.mp4':'video/mp4','.json':'application/json; charset=utf-8'};
 const server = createServer(async (request,response) => {
   if (!['GET','HEAD'].includes(request.method)) { response.writeHead(405,{'Allow':'GET, HEAD'}); response.end('Method not allowed'); return; }
