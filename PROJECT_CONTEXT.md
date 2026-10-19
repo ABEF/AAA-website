@@ -1,3 +1,12 @@
+## NFT breakdown copy - 2026-10-19
+
+Removed the repeated principal disclaimer below Attached liquidity in both the
+main-site and local-integration NFT breakdown. Other principal disclosures remain.
+Gross trading-fee history still means fees before the 80/10/5/5 allocation, distinct
+from claimable LP rewards and royalties. This is presentation-only: no accounting,
+operator procedure or central Todo status changes. Earlier test evidence retains
+its original scope; this copy follow-up uses syntax/build and browser verification.
+
 ## NFT card traits and reward summary - 2026-10-19
 
 My NFTs places the fixed NFT-sale royalty weight below the artwork pattern using

@@ -276,7 +276,7 @@ function royaltyTrait(nft) {
 function demoFinancialDetails(nft) {
   const value=amount=>storageProblem?'Unavailable':money(amount);
   const row=(label,amount)=>`<div><span>${label}</span><b>${value(amount)}</b></div>`;
-  const position=`<section class="position-breakdown"><h3>Attached liquidity</h3><div class="breakdown-rows">${row('LP attached',nft.lockedCents)}</div><p class="small-note">LP stays attached to this NFT; principal cannot be claimed.</p></section>`;
+  const position=`<section class="position-breakdown"><h3>Attached liquidity</h3><div class="breakdown-rows">${row('LP attached',nft.lockedCents)}</div></section>`;
   if(!nft.lockedCents)return position+'<p class="small-note">Activate to start earning LP fees and royalties.</p>';
   return `<section class="position-breakdown claim-breakdown"><div class="position-reward-total"><span>Rewards to claim</span><strong>${value(claimable(nft))}</strong></div><div class="breakdown-rows">${row('LP rewards',nft.individualCents+nft.collectiveCents)}${row('Royalties',royaltyClaimable(nft))}</div></section>${position}<section class="position-breakdown"><h3>Trading-fee history</h3><div class="breakdown-rows">${row('Last 24 hours',nft.fees24hCents)}${row('All time',nft.feesAllTimeCents)}</div><p class="small-note">Gross LP fees generated before allocation.</p></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',previouslyClaimed(nft))}</div></section>`;
 }
