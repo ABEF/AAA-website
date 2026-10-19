@@ -107,3 +107,13 @@ Only the NFT receiving a confirmed activation/top-up shows the artwork Updating
 badge during balance refresh. Other artwork stays visible without that badge;
 stale financial values/actions still wait for the confirmed portfolio snapshot.
 A plain refresh or token approval does not label every artwork as changing.
+
+### Confirmation resilience
+
+The website rejects missing/nonfinite or over-60-second draft lifetimes, counts
+elapsed preparation, and checks monotonic/wall expiry plus current chain/account/
+revision before execute. Losing confirmed state blocks confirmation. Context extras
+cannot override the selected wallet/action. Existing duplicate-operation and lost-
+response recovery remain in force; no new automatic writes. Reload JS without
+restarting the current disposable session. The production API's new parallel
+read/unsigned workers do not change this local signer's serial mutation lock.

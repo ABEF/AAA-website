@@ -12,14 +12,31 @@ export function previewChange(collection,event) {
 }
 
 // Demo-only persistence. Chain data and signed transactions must never use this log.
+function freezeSnapshot(value) {
+  const pending=[value];
+  while(pending.length) {
+    const item=pending.pop();
+    if(!item||typeof item!=='object'||Object.isFrozen(item))continue;
+    for(const child of Object.values(item))pending.push(child);
+    Object.freeze(item);
+  }
+  return value;
+}
+
 export class PreviewStore {
+  #cached=null;
   constructor(storage,locks) { this.storage=storage;this.locks=locks; }
   read() {
-    const raw=this.storage.getItem(STORAGE_KEY)||'[]';
+    const raw=this.storage.getItem(STORAGE_KEY)||'[]',epoch=this.epoch();
+    // Check persistence on every read, but replay at most once per exact version.
+    // One immutable snapshot only: no unbounded cache or mutable shared balances.
+    if(this.#cached?.raw===raw&&this.#cached.epoch===epoch)return this.#cached.value;
+    this.#cached=null;
     if(raw.length>1000000)throw new Error('Saved preview is too large. Reset the example collection to continue.');
     let events;try {events=JSON.parse(raw);}catch {throw new Error('Saved preview is unreadable. Reset the example collection to continue.');}
     if(!Array.isArray(events)||events.length>1000)throw new Error('Saved preview is invalid. Reset the example collection to continue.');
-    return {events,collection:replayEvents(events),epoch:this.epoch()};
+    const value=freezeSnapshot({events,collection:replayEvents(events),epoch});
+    this.#cached={raw,epoch,value};return value;
   }
   epoch() {return this.storage.getItem(RESET_KEY)||'initial';}
   async lock(name,options,action) {

@@ -21,7 +21,12 @@ to a tab refresh its saved state; they never resubmit an action. Reset changes
 an epoch, invalidating old work even if the log was empty. The 1,000-event bound,
 corrupt storage, failed persistence and missing Web Locks produce explicit errors,
 not silently lost events or false success. Legacy LP-only claim events still replay.
-This is local demo persistence, never a production ownership or transaction ledger.
+The latest unchanged storage string/reset epoch reuses one immutable snapshot,
+avoiding repeated event replay. Every read still checks persistence; errors are
+not concealed by the cache. New events/reset invalidate it. Unsent previews expire
+after 15 seconds using wall and monotonic clocks; pagehide cancels them, while
+ordinary switching between tabs does not. Back/forward restoration cannot resume
+an old intent. This is demo persistence, never a production transaction ledger.
 
 Wallet choice persists in tab session storage. Browser restoration asks only
 `eth_accounts` and `eth_chainId`, and requires one matching provider identity.
@@ -64,3 +69,19 @@ reconciliation after refresh, and no automatic financial resubmission. Distinct
 users must not share one browser/demo log or a global server mutation lock.
 Qualify shared-pool quote changes and multiple devices against the real service.
 Track those remaining requirements in the contract repository's central Todo.
+
+## Resilience verification - 2026-10-19
+
+The affected UI-state, local-client/view and domain/wallet scope passes 90 tests,
+including immutable-cache invalidation, storage errors, parallel intents, duplicate
+confirmation and expiry/context rejection. Build remains 5,588 files. Main-site
+reload retains the current wallet/positions; Grow attached LP details render
+without console errors. Existing user example holdings were preserved.
+
+The local adapter also validates a finite 1-60 second preparation lifetime,
+counts preparation time, checks wall and monotonic deadlines, and rechecks chain,
+account, revision and confirmed state before execution. Extra input cannot replace
+the selected operation/wallet. It preserves the existing unresolved-operation
+recovery rather than creating retries. Reload the page for this JS update; the
+running local service and its serial signing lock remain unchanged. Public wallet
+integration and multi-device production qualification are still open.

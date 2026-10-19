@@ -147,3 +147,9 @@ Before replacing the demo ledger, provide reviewed chain/deployment addresses an
 Verify the separate funded rarity-weighted NFT-sale royalty ledger and its 100%-received accounting; do not reuse LP revenue allocations or infer royalty enforcement from metadata. Production rarity assignment needs reviewed VRF integration, remaining-quota accounting and failure/retry operations. Activation and LP additions need reviewed token approvals, pool parameters, minimum liquidity, deadlines and wallet-confirmed transactions matching the final ABI. Claims must use the actual rewards ABI and current NFT ownership. Verify those integrations against the release checklist before enabling real funds.
 
 The public protocol repository is [ABEF/AAA](https://github.com/ABEF/AAA). This website repository is [ABEF/AAA-website](https://github.com/ABEF/AAA-website). See [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for accepted product decisions and the related repository paths, and [AGENTS.md](AGENTS.md) for repository instructions.
+
+The [resilience follow-up](FRONTEND_STATE.md#resilience-verification---2026-10-19)
+adds immutable preview caching, expired/navigation-cancelled intents and strict
+local confirmation lifetime/context checks. The associated contract repository
+has bounded parallel read/unsigned-preparation services; neither change turns
+the public simulation into live wallet transactions. Scoped checks: 90 JS passes.

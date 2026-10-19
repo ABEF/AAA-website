@@ -8,7 +8,46 @@ function setup(handler){const entries=new Map(),calls=[];const storage={getItem:
   const c=new LocalClient({storage,random:()=> 'b'.repeat(32),fetcher:async(path,options)=>{calls.push([path,options]);const result=await handler(path,options);return {ok:true,json:async()=>result};}});return {c,storage,entries,calls};}
 const ready=async handler=>{const env=setup(handler);await env.c.refresh();env.c.select(address);return env;};
 const base=(path)=>path==='/session'?session:state();
-const draft=c=>({draft_id:'c'.repeat(32),account:address,chain_id:31337,revision:0,expires_in_seconds:60,clientVersion:c.version,clientExpiry:Date.now()+60000});
+const draft=c=>({draft_id:'c'.repeat(32),account:address,chain_id:31337,revision:0,expires_in_seconds:60,clientVersion:c.version,clientExpiry:Date.now()+60000,clientDeadline:performance.now()+60000});
+
+test('malformed or unbounded draft lifetimes never reach confirmation',async()=>{
+  for(const expires_in_seconds of [undefined,null,true,NaN,Infinity,-1,0,61,1.5,'60']) {
+    const {c,calls}=await ready(path=>path==='/prepare'?{...draft({version:2}),expires_in_seconds}:base(path));
+    await assert.rejects(c.prepare('mint'),/Invalid transaction confirmation/);
+    assert.equal(calls.filter(([p])=>p==='/action').length,0);
+  }
+});
+test('preparation time is part of expiry; slow drafts fail before confirmation',async()=>{
+  let now=0;const {c}=await ready(path=>{if(path!=='/prepare')return base(path);now=60000;return draft(c);});
+  c.clock=()=>now;await assert.rejects(c.prepare('mint'),/expired while preparing/);
+});
+test('nonfinite expiry, changed chain/revision and missing state never submit',async()=>{
+  const {c,calls}=await ready(base);
+  for(const change of [{clientExpiry:NaN},{clientDeadline:NaN},{clientDeadline:Infinity},{clientExpiry:undefined},{chain_id:1},{revision:1},{draft_id:'invalid'}])
+    await assert.rejects(c.execute({...draft(c),...change}));
+  c.state=null;await assert.rejects(c.execute(draft(c)));
+  assert.equal(calls.filter(([p])=>p==='/action').length,0);
+});
+test('monotonic deadline still expires after wall clock moves backwards',async()=>{
+  let now=10;const {c,calls}=await ready(path=>path==='/prepare'?draft(c):base(path));c.clock=()=>now;
+  const prepared=await c.prepare('mint');now=60010;
+  const real=Date.now;Date.now=()=>0;
+  try{await assert.rejects(c.execute(prepared),/expired/);}finally{Date.now=real;}
+  assert.equal(calls.filter(([p])=>p==='/action').length,0);
+});
+test('request extras cannot override the selected wallet or operation',async()=>{
+  const {c,calls}=await ready(path=>path==='/prepare'?draft(c):base(path));
+  await c.prepare('mint',{account:other,action:'transfer'});
+  const body=JSON.parse(calls.find(([p])=>p==='/prepare')[1].body);
+  assert.equal(body.account,address);assert.equal(body.action,'mint');
+});
+test('overlapping confirmations submit one operation; refresh invalidates old drafts',async()=>{
+  let resolve;const {c,calls}=await ready(path=>path==='/action'?new Promise(r=>resolve=r):base(path));
+  const confirmed=draft(c),first=c.execute(confirmed);
+  await assert.rejects(c.execute(confirmed));assert.equal(calls.filter(([p])=>p==='/action').length,1);
+  resolve({status:'confirmed',uncertain:false});await first;await c.refresh();
+  await assert.rejects(c.execute(confirmed));assert.equal(calls.filter(([p])=>p==='/action').length,1);
+});
 test('local adapter requires exact loopback mount; never query or production hostname',()=>{
   assert.equal(localMode({hostname:'127.0.0.1',pathname:'/app/',protocol:'http:'}),true);
   for(const change of [{hostname:'popldemo.0xwave.com'},{pathname:'/'},{protocol:'https:'},{hostname:'localhost'},{hostname:'127.0.0.1.evil'}])assert.equal(localMode({hostname:'127.0.0.1',pathname:'/app/',protocol:'http:',...change}),false);

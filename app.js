@@ -67,6 +67,9 @@ window.addEventListener('storage',event=>{
 });
 // Returning to a background tab rechecks saved state; it does not resubmit actions.
 window.addEventListener('pageshow',()=>{if(!local)syncSavedPreview();});
+// A page restored from the back/forward cache must never finish an old intent.
+// Merely switching tabs does not cancel independent ongoing actions.
+window.addEventListener('pagehide',()=>{if(!local)operations.cancelAll();});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!local)syncSavedPreview();});
 
 function toast(message) {

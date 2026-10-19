@@ -54,8 +54,8 @@ const waitForRead=(milliseconds,signal)=>new Promise((resolve,reject)=>{
 });
 
 export class LocalClient {
-  constructor({fetcher=(...args)=>fetch(...args),storage=sessionStorage,random=()=>crypto.randomUUID().replaceAll('-',''),pause=waitForRead,onSession=()=>{}}={}) {
-    this.fetcher=fetcher;this.storage=storage;this.random=random;this.pause=pause;this.refreshing=null;this.accounts=[];this.onSession=onSession;this.walletKey='popl-local-website-wallet-v1';
+  constructor({fetcher=(...args)=>fetch(...args),storage=sessionStorage,random=()=>crypto.randomUUID().replaceAll('-',''),pause=waitForRead,onSession=()=>{},clock=()=>performance.now()}={}) {
+    this.clock=clock;this.fetcher=fetcher;this.storage=storage;this.random=random;this.pause=pause;this.refreshing=null;this.accounts=[];this.onSession=onSession;this.walletKey='popl-local-website-wallet-v1';
     this.key='popl-local-website-pending-v1';this.session=null;this.state=null;this.account=null;this.busy=false;this.pending=null;this.version=0;
   }
   async request(path,body) {
@@ -123,14 +123,16 @@ export class LocalClient {
   }
   async prepare(action, extras={}) {
     if(!this.state||!this.account||this.pending||this.state.uncertain)throw new Error('Refresh and select a local test wallet first');
-    const version=this.version,account=this.account;
-    const draft=await this.request('/prepare',{action,account,...extras});
+    const version=this.version,account=this.account,started=this.clock(),wallStarted=Date.now();
+    const draft=await this.request('/prepare',{...extras,action,account});
     if(this.version!==version||this.account!==account)throw new Error('Wallet or state changed. Prepare again');
-    if(draft.chain_id!==31337||draft.account!==account||draft.revision!==this.state.revision||!/^[a-f0-9]{32}$/.test(draft.draft_id))throw new Error('Invalid transaction confirmation');
-    return {...draft,clientVersion:version,clientExpiry:Date.now()+draft.expires_in_seconds*1000};
+    if(!draft||draft.chain_id!==31337||draft.account!==account||draft.revision!==this.state.revision||!/^[a-f0-9]{32}$/.test(draft.draft_id)||!Number.isInteger(draft.expires_in_seconds)||draft.expires_in_seconds<1||draft.expires_in_seconds>60)throw new Error('Invalid transaction confirmation');
+    const duration=draft.expires_in_seconds*1000;
+    if(this.clock()-started>=duration||Date.now()-wallStarted>=duration)throw new Error('Confirmation expired while preparing. Prepare again');
+    return {...draft,clientVersion:version,clientExpiry:wallStarted+duration,clientDeadline:started+duration};
   }
   async execute(draft) {
-    if(this.pending||draft.clientVersion!==this.version||draft.account!==this.account||Date.now()>=draft.clientExpiry)throw new Error('Confirmation expired or wallet changed. Prepare again');
+    if(!draft||!this.state||this.state.uncertain||this.pending||draft.chain_id!==31337||draft.revision!==this.state.revision||!/^[a-f0-9]{32}$/.test(draft.draft_id)||draft.clientVersion!==this.version||draft.account!==this.account||!Number.isFinite(draft.clientExpiry)||!Number.isFinite(draft.clientDeadline)||Date.now()>=draft.clientExpiry||this.clock()>=draft.clientDeadline||draft.clientDeadline-this.clock()>60000)throw new Error('Confirmation expired or wallet changed. Prepare again');
     const envelope={operation_id:this.random(),revision:draft.revision,payload:{action:'execute',account:this.account,draft_id:draft.draft_id}};
     this.pending={session:this.session.token,envelope};
     try {this.storage.setItem(this.key,JSON.stringify(this.pending));}

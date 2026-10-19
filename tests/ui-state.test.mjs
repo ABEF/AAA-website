@@ -25,6 +25,34 @@ class Locks {
 const stores=()=>{const storage=new Storage(),locks=new Locks();return {storage,locks,a:new PreviewStore(storage,locks),b:new PreviewStore(storage,locks)};};
 const topup=(id,amount)=>({type:'increase',id,amount,fundingAsset:'USDC'});
 
+test('unchanged snapshot is reused immutably; external writes and resets invalidate it',async()=>{
+  const {a,b}=stores(),first=a.read();assert.equal(a.read(),first);
+  assert.throws(()=>first.collection[0].lockedCents=1,TypeError);
+  assert.throws(()=>first.events.push({type:'mint'}),TypeError);
+  await b.commit(topup(444,100),'initial');const next=a.read();assert.notEqual(next,first);
+  assert.equal(next.collection.find(n=>n.id===444).lockedCents,153200);assert.equal(a.read(),next);
+  await b.reset();const reset=a.read();assert.notEqual(reset,next);assert.notEqual(reset.epoch,first.epoch);
+});
+test('cached state never conceals broken storage or a changed malformed log',()=>{
+  const {a,storage}=stores();a.read();const original=storage.getItem.bind(storage);
+  storage.getItem=()=>{throw Error('Storage denied');};assert.throws(()=>a.read(),/denied/);
+  storage.getItem=original;storage.setItem(STORAGE_KEY,'broken');assert.throws(()=>a.read(),/unreadable/);
+  storage.setItem(STORAGE_KEY,'[]');assert.equal(a.read().events.length,0);
+});
+test('large valid log is replayed once per version without changing legacy meaning',()=>{
+  const {a,storage}=stores();storage.setItem(STORAGE_KEY,JSON.stringify(Array(1000).fill(topup(444,.01))));
+  const first=a.read();for(let i=0;i<100;i++)assert.equal(a.read(),first);
+  assert.equal(first.collection.find(n=>n.id===444).lockedCents,144200);
+});
+test('expired action cannot commit after background suspension; cancellation preserves newer locks',async()=>{
+  const {a}=stores();let now=0;const t=new OperationTracker(()=>1,{clock:()=>now});
+  const expired=t.begin(['nft:444'],'increase');now=15000;
+  await assert.rejects(a.commit(topup(444,1),'initial',()=>t.assertCurrent(expired)),/expired/);
+  assert.equal(a.read().events.length,0);t.cancelAll();
+  const newer=t.begin(['nft:444'],'claim');t.finish(expired);assert.equal(t.get('nft:444'),newer);
+  t.cancelAll();assert.throws(()=>t.assertCurrent(newer),/no longer current/);
+});
+
 test('independent NFT actions run together; overlapping batch acquires no partial resources',()=>{
   const t=new OperationTracker(()=>1),a=t.begin(['nft:444'],'increase'),b=t.begin(['nft:128'],'claim');
   assert.throws(()=>t.begin(['nft:91','nft:444'],'claim'),/already pending/);
