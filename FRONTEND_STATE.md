@@ -104,3 +104,7 @@ governed switches; this UI is not an on-chain deployment.
 
 NFT breakdowns show one LP rewards line (individual plus collective) and a
 separate Royalties line; the card total remains LP plus royalties.
+
+In My NFTs, each card image opens the same position and rewards breakdown as
+its detail link. The image's accessible label names this action. Artwork-only
+enlargement remains available from the image inside the preview breakdown.

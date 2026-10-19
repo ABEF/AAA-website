@@ -1,3 +1,12 @@
+## Portfolio image navigation - 2026-10-19
+
+Clicking an NFT image in My NFTs opens that NFT's position and rewards breakdown,
+matching its detail link and the existing local-contract adapter. The image inside
+the preview breakdown can still open enlarged artwork. Accessible button labels
+describe the new action. No balances, transaction behavior, operator procedures
+or central Todo status changed. Verify this small navigation change with syntax,
+build and browser checks; unchanged accounting tests need no rerun.
+
 ## NFT breakdown copy - 2026-10-19
 
 Removed the repeated principal disclaimer below Attached liquidity in both the
