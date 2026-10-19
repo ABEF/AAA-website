@@ -180,7 +180,7 @@ test('claim total combines ETH exactly and keeps different currencies distinct',
 test('royalty trait keeps revealed rarity weight while dormant, unknown draws stay unknown',()=>{
   for(const [rarity,weight] of [['Commun',1],['Rare',2],['Legendary',3]]) {
     const n={position:{activated:false},traits_ready:true,traits:{rarity}};
-    assert.match(royaltyTrait(n),new RegExp('NFT-sale royalty weight ×'+weight));
+    assert.match(royaltyTrait(n),new RegExp('Royalty weight ×'+weight));
     assert.match(royaltyTrait(n),/is-dormant/);
     n.position.activated=true;assert.ok(!royaltyTrait(n).includes('is-dormant'));
   }

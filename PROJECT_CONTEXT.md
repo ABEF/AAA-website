@@ -344,3 +344,6 @@ The activation form offers only ZZZ / ETH (WETH accounting identity). Pool label
 are omitted from NFT detail views. Existing legacy demo records are preserved.
 The contract candidate permits one contribution pool at a time, with future
 governed switches; this UI is not an on-chain deployment.
+
+NFT breakdowns show one LP rewards line (individual plus collective) and a
+separate Royalties line; the card total remains LP plus royalties.

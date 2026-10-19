@@ -90,7 +90,7 @@ function openArtwork(id) {
   $('#illustration-image').src = art.src;
   $('#illustration-image').alt = `${art.colorLabel} ${art.rarityLabel} egg NFT · ${art.evolutionLabel}`;
   $('#illustration-title').textContent = `${art.colorLabel} · ${art.rarityLabel} · ${art.evolutionLabel}`;
-  $('#illustration-note').textContent = `${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}. ${art.evolution === 'dormant' ? `Dormant: zero royalty weight. ${art.rarityLabel} becomes ×${art.royaltyMultiplier} after activation.` : `NFT-sale royalty weight ×${art.royaltyWeight}.`} Colors and circuit patterns are visual traits only; LP fees are unchanged. Artwork and metadata preview.`;
+  $('#illustration-note').textContent = `${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}. ${art.evolution === 'dormant' ? `Dormant: zero royalty weight. ${art.rarityLabel} becomes ×${art.royaltyMultiplier} after activation.` : `Royalty weight ×${art.royaltyWeight}.`} Colors and circuit patterns are visual traits only; LP fees are unchanged. Artwork and metadata preview.`;
   $('#illustration-metadata').href = art.metadata;
   $('#illustration-metadata').download = `${art.id}.json`;
   if (!$('#illustration-dialog').open) $('#illustration-dialog').showModal();
@@ -270,7 +270,7 @@ function liquidityForm(nft, action) {
 }
 
 function royaltyTrait(nft) {
-  return `<span class="royalty-trait ${nft.lockedCents?'':'is-dormant'}" title="${nft.lockedCents?'Royalty share enabled':'Activate to enable this royalty share'}">NFT-sale royalty weight ×${getRarity(nft.rarity).royaltyMultiplier}</span>`;
+  return `<span class="royalty-trait ${nft.lockedCents?'':'is-dormant'}" title="${nft.lockedCents?'Royalty share enabled':'Activate to enable this royalty share'}">Royalty weight ×${getRarity(nft.rarity).royaltyMultiplier}</span>`;
 }
 
 function demoFinancialDetails(nft) {
@@ -278,7 +278,7 @@ function demoFinancialDetails(nft) {
   const row=(label,amount)=>`<div><span>${label}</span><b>${value(amount)}</b></div>`;
   const position=`<section class="position-breakdown"><h3>Attached liquidity</h3><div class="breakdown-rows">${row('LP attached',nft.lockedCents)}</div><p class="small-note">LP stays attached to this NFT; principal cannot be claimed.</p></section>`;
   if(!nft.lockedCents)return position+'<p class="small-note">Activate to start earning LP fees and royalties.</p>';
-  return `<section class="position-breakdown claim-breakdown"><div class="position-reward-total"><span>Rewards to claim</span><strong>${value(claimable(nft))}</strong></div><div class="breakdown-rows">${row('Individual LP fees',nft.individualCents)}${row('Collective rewards',nft.collectiveCents)}${row('Royalties',royaltyClaimable(nft))}</div></section>${position}<section class="position-breakdown"><h3>Trading-fee history</h3><div class="breakdown-rows">${row('Last 24 hours',nft.fees24hCents)}${row('All time',nft.feesAllTimeCents)}</div><p class="small-note">Gross LP fees generated before allocation.</p></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',previouslyClaimed(nft))}</div></section>`;
+  return `<section class="position-breakdown claim-breakdown"><div class="position-reward-total"><span>Rewards to claim</span><strong>${value(claimable(nft))}</strong></div><div class="breakdown-rows">${row('LP rewards',nft.individualCents+nft.collectiveCents)}${row('Royalties',royaltyClaimable(nft))}</div></section>${position}<section class="position-breakdown"><h3>Trading-fee history</h3><div class="breakdown-rows">${row('Last 24 hours',nft.fees24hCents)}${row('All time',nft.feesAllTimeCents)}</div><p class="small-note">Gross LP fees generated before allocation.</p></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',previouslyClaimed(nft))}</div></section>`;
 }
 
 function renderDetails(id) {
