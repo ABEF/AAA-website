@@ -1,3 +1,11 @@
+Orbital rings is unchanged. The user requested a separate Constellation inlays
+concept preview before choosing a replacement; no inventory/metadata change is
+approved. The comparison preserves the existing metallic egg texture.
+
+The NFT detail view omits the Previously claimed frame at the user's request.
+Keep 24h/all-time earnings and current Rewards to claim. Lifetime claim accounting
+remains intact; earnings include claimed and unclaimed rewards, not only payouts.
+
 ## Gallery, sample rewards and confirmed tier celebration - 2026-10-20
 
 Artwork cards have one evenly spaced trait row below evolution: rarity, color
@@ -19,12 +27,18 @@ starting portfolio remains four colors: Dormant, Enhanced, Enhanced, Singularity
 Legendary is a separate rarity, not an evolution. User contributions may evolve it.
 Old undated net 24h earnings remain unavailable. Public amounts are simulations.
 
-After a successful contribution and confirmed higher LP/tier, play a gentle
-1.18-second synthesized sparkle with a 1.35-second highlight. Local mode requires
-a successful receipt plus refreshed current LP in the same session/account.
-Approval, wrapping, claims, failures, ordinary refreshes and same-tier additions
-never celebrate. Wait for the new image; reduced motion suppresses the animation,
-unavailable audio never blocks financial actions. No on-chain behavior changed.
+After a successful contribution and confirmed higher LP/tier, use the supplied
+ACTI clip for activation (3.69 seconds; the user approved its full audible sound)
+and EV for later upward evolutions (1.425 seconds). Only surrounding silence was
+removed; keep originals unchanged. This supersedes the synthesized chime and the
+original 1.5-second ACTI limit. Both are audio-only AAC/MP4 for compatibility with
+existing local fixture asset lists. Prefetch, decode once after a user gesture,
+then start the selected sound and image crossfade in the same render frame.
+Local mode requires a successful receipt plus refreshed increased LP and higher
+evolution in the same session/account. Approval, wrapping, claims, failures,
+ordinary refreshes and same-tier additions never celebrate. Wait for the image;
+reduced motion suppresses the highlight, unavailable audio never blocks financial
+actions. Duplicate card/dialog views play one cue. No on-chain behavior changed.
 Shared effect exports live in artworks.js, already allowed by existing local
 server resource lists; do not add a new required module without compatibility
 checks or force a chain restart. Normal publication is local verification, main

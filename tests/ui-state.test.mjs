@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {OperationTracker} from '../ui-state.js';
-import {confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from '../artworks.js';
+import {confirmedUpgrade,armUpgradeSound,queueUpgrade,transitionArtwork} from '../artworks.js';
 import {PreviewStore} from '../preview-store.js';
 import {STORAGE_KEY,DEMO_ADDRESS,buildDemoCollection,claimable,fundDemoRewards,DEMO_REWARD_ROUND,replayEvents,previouslyClaimed,activatePreview,getLevel} from '../domain.js';
 import {WalletConnection} from '../wallet.js';
@@ -70,19 +70,34 @@ test('celebration requires confirmed LP growth and a real upward evolution',()=>
   for(const delta of [{confirmed:false},{action:'approve'},{action:'claim'},{action:'wrap'},{before:'Unavailable'},{after:'Unavailable'},{previousLP:null},{currentLP:null},{currentLP:'0'},{currentLP:'bad'},{before:'Enhanced'},{before:'Activated'}])assert.equal(confirmedUpgrade({...args,...delta}),false);
 });
 
-test('sparkle is quiet, finite, below 1.5s and unavailable audio is nonfatal',()=>{
-  const stops=[],levels=[];let disconnected=0;
-  const saved=Object.fromEntries(['AudioContext','document','matchMedia'].map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+test('ACTI/EV playback starts in the same frame as confirmed image reveal, once per NFT',async()=>{
+  const events=[],frames=[],timers=new Map();let frame=0,timerId=0;
+  const keys=['AudioContext','document','matchMedia','fetch','requestAnimationFrame','setTimeout','clearTimeout'];
+  const saved=Object.fromEntries(keys.map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+  const set=(k,value)=>Object.defineProperty(globalThis,k,{value,configurable:true,writable:true});
   class Audio {
-    state='running';currentTime=20;destination={};
-    createOscillator(){return {frequency:{},connect(){},start(){},stop(at){stops.push(at-20);this.onended?.();},disconnect(){disconnected++;}};}
-    createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(v){levels.push(v);},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}
+    state='running';destination={};
+    async decodeAudioData(bytes){const kind=new Uint8Array(bytes)[0];return {duration:kind===1?3.69:1.425,kind};}
+    createBufferSource(){return {connect(){},disconnect(){},stop(){},start(){events.push({kind:this.buffer.kind,frame});}};}
+    createGain(){return {gain:{},connect(){},disconnect(){}};}
   }
+  const button=id=>({dataset:{artOwner:id},isConnected:true,append(){},classList:{add(){},remove(){}}});
+  const previous={cloneNode:()=>({classList:{add:()=>events.push({reveal:true,frame})},setAttribute(){},remove(){}})};
+  const next={complete:true,naturalWidth:10};
+  const tick=()=>{frame++;for(const f of frames.splice(0))f();};
   try {
-    Object.defineProperty(globalThis,'AudioContext',{value:Audio,configurable:true});Object.defineProperty(globalThis,'document',{value:{hidden:false},configurable:true});Object.defineProperty(globalThis,'matchMedia',{value:()=>({matches:true}),configurable:true});
-    armUpgradeSound();celebrateUpgrade([{isConnected:true,getClientRects:()=>[{}],querySelector:()=>null}]);
-    assert.equal(stops.length,5);assert.ok(Math.max(...stops)<1.5);assert.ok(Math.max(...levels)<.03);
-    celebrateUpgrade([{isConnected:true,getClientRects:()=>[{}],querySelector:()=>null}]);assert.equal(stops.length,5,'no overlapping chimes');
+    set('AudioContext',Audio);set('document',{hidden:false});set('matchMedia',()=>({matches:true}));
+    set('fetch',async url=>({ok:true,arrayBuffer:async()=>Uint8Array.of(String(url).includes('activation')?1:2).buffer}));
+    set('requestAnimationFrame',fn=>frames.push(fn));set('setTimeout',fn=>{timers.set(++timerId,fn);return timerId;});set('clearTimeout',id=>timers.delete(id));
+    await armUpgradeSound();
+    queueUpgrade('7','activate');transitionArtwork(button('7'),previous,next);transitionArtwork(button('7'),previous,next);
+    tick();assert.equal(events.length,0);tick();
+    assert.equal(events.filter(e=>e.kind===1).length,1);assert.ok(events.every(e=>e.frame===2));
+    queueUpgrade('8','increase');transitionArtwork(button('8'),previous,next);tick();tick();
+    assert.equal(events.filter(e=>e.kind===2).length,1);assert.equal(events.at(-1).frame,4);
+    const sounds=events.filter(e=>e.kind).length;
+    transitionArtwork(button('9'),previous,next);tick();tick();assert.equal(events.filter(e=>e.kind).length,sounds,'ordinary refresh is silent');
+    queueUpgrade('10','claim');transitionArtwork(button('10'),previous,next);tick();tick();assert.equal(events.filter(e=>e.kind).length,sounds,'claims cannot schedule sound');
   }finally{for(const [k,v] of Object.entries(saved))if(v)Object.defineProperty(globalThis,k,v);else delete globalThis[k];}
 });
 

@@ -163,7 +163,7 @@ test('active cards combine only claimable amounts while detail retains unavailab
   const rows=positionRows(active()),detail=positionFinancialDetails(active());
   assert.match(rows,/Rewards to claim/);assert.match(rows,/<strong>0<\/strong>/);
   for(const label of ['Previously claimed'])assert.ok(!rows.includes(label),label);
-  assert.match(detail,/Royalties/);assert.match(detail,/Previously claimed/);
+  assert.match(detail,/Royalties/);assert.doesNotMatch(detail,/Previously claimed/);
   assert.match(detail,/Fees generated/);assert.match(detail,/Unavailable/);
 });
 test('claim total combines ETH exactly and keeps different currencies distinct',()=>{

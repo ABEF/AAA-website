@@ -72,47 +72,87 @@ export function confirmedUpgrade({action,confirmed,before,after,previousLP,curre
   try {return BigInt(currentLP)>BigInt(previousLP)&&BigInt(previousLP)>=0n;}catch{return false;}
 }
 
-let sparkleAudio=null,lastSparkle=-Infinity;
+const upgradeClips={activate:'./assets/audio/activation.mp4',increase:'./assets/audio/evolution.mp4'};
+const encodedClips=new Map(),decodedClips=new Map(),decodingClips=new Map(),revealPlans=new Map();
+let upgradeAudio=null,playingUpgrade=null;
+export function preloadUpgradeSounds() {
+  return Promise.all(Object.entries(upgradeClips).map(async([action,path])=>{
+    if(!encodedClips.has(action))encodedClips.set(action,(async()=>{
+      const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),4000);
+      try {
+        const response=await fetch(new URL(path,import.meta.url),{signal:controller.signal});
+        if(!response.ok)throw new Error('Sound unavailable');
+        const bytes=await response.arrayBuffer();
+        if(!bytes.byteLength||bytes.byteLength>200000)throw new Error('Unexpected sound size');
+        return bytes;
+      }catch{encodedClips.delete(action);return null;}finally{clearTimeout(timer);}
+    })());
+    return encodedClips.get(action);
+  }));
+}
 export function armUpgradeSound() {
-  // Called within the user's contribution/confirmation gesture. Unlock silently.
+  // Unlock only within a user gesture. Fetch/decode never emits sound.
   try {
     const Audio=globalThis.AudioContext||globalThis.webkitAudioContext;
-    if(!Audio)return;
-    sparkleAudio ||= new Audio();
-    if(sparkleAudio.state==='suspended')void sparkleAudio.resume().catch(()=>{});
-  }catch{/* Audio is optional; it can never block a financial flow. */}
+    if(!Audio)return Promise.resolve();
+    upgradeAudio ||= new Audio();
+    if(upgradeAudio.state==='suspended')void upgradeAudio.resume().catch(()=>{});
+    void preloadUpgradeSounds();
+    return Promise.all(Object.keys(upgradeClips).map(action=>{
+      if(decodedClips.has(action))return Promise.resolve();
+      if(!decodingClips.has(action))decodingClips.set(action,(async()=>{
+        try {
+          const bytes=await encodedClips.get(action);if(!bytes)return;
+          const buffer=await upgradeAudio.decodeAudioData(bytes.slice(0));
+          if(buffer.duration<=0||buffer.duration>(action==='activate'?4:1.5))return;
+          decodedClips.set(action,buffer);
+        }catch{/* Optional sound failure never rejects a financial operation. */}
+        finally{decodingClips.delete(action);}
+      })());
+      return decodingClips.get(action);
+    }));
+  }catch{return Promise.resolve();}
 }
-export function celebrateUpgrade(buttons) {
-  if(document.hidden)return;
-  const visible=[...buttons].filter(b=>{
-    if(!b.isConnected||!b.getClientRects().length)return false;
-    const image=b.querySelector('img');
-    if(image&&!image.complete) {
-      const finish=()=>{clearTimeout(timer);image.removeEventListener('load',loaded);image.removeEventListener('error',finish);};
-      const loaded=()=>{finish();if(image.naturalWidth)celebrateUpgrade([b]);};
-      const timer=setTimeout(finish,2000);
-      image.addEventListener('load',loaded,{once:true});image.addEventListener('error',finish,{once:true});
-      return false;
-    }
-    return !image||image.naturalWidth>0;
-  });
-  if(!visible.length)return;
-  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)for(const b of visible) {
-    b.classList.remove('nft-celebrating');void b.offsetWidth;b.classList.add('nft-celebrating');
-    setTimeout(()=>b.classList.remove('nft-celebrating'),1400);
-  }
+export function queueUpgrade(id,action) {
+  if(!Object.hasOwn(upgradeClips,action))return;
+  const key=String(id),plan={action,started:false};
+  revealPlans.set(key,plan);
+  setTimeout(()=>{if(revealPlans.get(key)===plan)revealPlans.delete(key);},5000);
+}
+function playUpgrade(plan) {
+  if(plan.started||document.hidden)return;
+  plan.started=true;
   try {
-    const ctx=sparkleAudio;
-    if(!ctx||ctx.state!=='running'||performance.now()-lastSparkle<1400)return;
-    lastSparkle=performance.now();
-    // Five quiet ascending bell tones; final oscillator ends after 1.18 seconds.
-    [1046.5,1318.5,1568,2093,2637].forEach((frequency,i)=>{
-      const oscillator=ctx.createOscillator(),gain=ctx.createGain(),start=ctx.currentTime+i*.13;
-      oscillator.type='sine';oscillator.frequency.value=frequency;
-      gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.024,start+.012);
-      gain.gain.exponentialRampToValueAtTime(.0001,start+.62);
-      oscillator.connect(gain);gain.connect(ctx.destination);oscillator.start(start);oscillator.stop(start+.66);
-      oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
-    });
-  }catch{/* Keep confirmed state usable if audio is unavailable. */}
+    const buffer=decodedClips.get(plan.action);
+    if(!buffer||upgradeAudio?.state!=='running')return;
+    // One cue for this transition, even if the card and dialog both show it.
+    if(playingUpgrade)playingUpgrade.stop();
+    const source=upgradeAudio.createBufferSource(),gain=upgradeAudio.createGain();
+    source.buffer=buffer;gain.gain.value=.6;source.connect(gain);gain.connect(upgradeAudio.destination);
+    playingUpgrade=source;
+    source.onended=()=>{source.disconnect();gain.disconnect();if(playingUpgrade===source)playingUpgrade=null;};
+    source.start();
+  }catch{/* Never delay a completed transaction for playback. */}
+}
+export function transitionArtwork(button,previous,next) {
+  next.loading='eager';next.fetchPriority='high';
+  const overlay=previous.cloneNode(false);overlay.className='nft-artwork artwork-previous';overlay.alt='';overlay.setAttribute('aria-hidden','true');button.append(overlay);
+  const key=button.dataset.artOwner||button.dataset.localId,plan=revealPlans.get(String(key));
+  const finish=async()=>{
+    if(!next.naturalWidth){overlay.remove();return;}
+    // Audio was prefetched and unlocked by the contribution gesture. Bound any
+    // remaining decode wait; never play a late sound after revealing the image.
+    if(plan&&decodingClips.has(plan.action))await Promise.race([decodingClips.get(plan.action),new Promise(resolve=>setTimeout(resolve,600))]);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      if(!button.isConnected){overlay.remove();return;}
+      // The crossfade and the selected clip start in the very same render frame.
+      overlay.classList.add('is-revealed');
+      if(plan&&revealPlans.get(String(key))===plan&&!document.hidden) {
+        if(!matchMedia('(prefers-reduced-motion: reduce)').matches){button.classList.add('nft-celebrating');setTimeout(()=>button.classList.remove('nft-celebrating'),1400);}
+        playUpgrade(plan);
+      }
+      setTimeout(()=>overlay.remove(),320);
+    }));
+  };
+  if(next.complete)void finish();else {next.addEventListener('load',finish,{once:true});next.addEventListener('error',()=>overlay.remove(),{once:true});}
 }

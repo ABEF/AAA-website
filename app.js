@@ -1,7 +1,7 @@
 import {localMode} from './local-client.js';
 import {createLocalView} from './local-view.js';
-import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from './artworks.js';
-import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, previouslyClaimed, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
+import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,queueUpgrade,preloadUpgradeSounds} from './artworks.js';
+import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
 const {OperationTracker,preserveArtwork} = localMode(location) ? {} : await import('./ui-state.js');
 const {PreviewStore,RESET_KEY,previewChange} = localMode(location) ? {} : await import('./preview-store.js');
@@ -285,7 +285,7 @@ function demoFinancialDetails(nft) {
   const row=(label,amount)=>`<div><span>${label}</span><b>${value(amount)}</b></div>`;
   const position=`<section class="position-breakdown"><div class="position-attached-lp"><span>LP attached</span><strong>${value(nft.lockedCents)}</strong></div>${nft.lockedCents?demoEarnings(nft):''}</section>`;
   if(!nft.lockedCents)return position+'<p class="small-note">Activate to start earning LP fees and royalties.</p>';
-  return `${position}<section class="position-breakdown claim-breakdown"><div class="position-reward-total"><span>Rewards to claim</span><strong>${value(claimable(nft))}</strong></div><div class="breakdown-rows">${row('LP rewards',nft.individualCents+nft.collectiveCents)}${row('Royalties',royaltyClaimable(nft))}</div></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',previouslyClaimed(nft))}</div></section>`;
+  return `${position}<section class="position-breakdown claim-breakdown"><div class="position-reward-total"><span>Rewards to claim</span><strong>${value(claimable(nft))}</strong></div><div class="breakdown-rows">${row('LP rewards',nft.individualCents+nft.collectiveCents)}${row('Royalties',royaltyClaimable(nft))}</div></section>`;
 }
 
 function renderDetails(id,mode='breakdown') {
@@ -365,6 +365,8 @@ async function performPreview(event,keys,onProgress=()=>{}) {
       await wait(700);
       return store.commit(event,snapshot.epoch,()=>operations.assertCurrent(op));
     });
+    const previous=snapshot.collection.find(n=>n.id===event.id),next=result.collection.find(n=>n.id===event.id);
+    if(previous&&next&&confirmedUpgrade({action:event.type,confirmed:true,before:getLevel(previous.lockedCents),after:getLevel(next.lockedCents),previousLP:previous.lockedCents,currentLP:next.lockedCents}))queueUpgrade(event.id,event.type);
     collection=result.collection;storageProblem=null;return result;
   }finally {operations.finish(op);refreshDataViews();}
 }
@@ -384,7 +386,7 @@ async function runLiquidity(form) {
   const amount=Number(form.elements.namedItem('amount').value),pool='ZZZ/WETH',fundingAsset=form.elements.namedItem('fundingAsset').value;
   const activityKey=nftKey(id);
   let completed=false;
-  const previous=collection.find(n=>n.id===id);armUpgradeSound();
+  void armUpgradeSound();
   try {
     await performPreview({type:action,id,amount,pool,fundingAsset},[nftKey(id)],()=>{
       formFeedback(form,'Updating this example NFT… You can close this window and use your other NFTs.');
@@ -395,8 +397,6 @@ async function runLiquidity(form) {
     const message=`PoPL #${id}: ${currency.format(amount)} ${action==='activate'?'activation':'LP addition'} saved. No real assets moved.`;
     recordActivity(message,false,activityKey);toast(message);
     if($('#nft-dialog').open&&selectedNFT===id){renderDetails(id);$('#nft-dialog').scrollTo({top:0,behavior:'instant'});formFeedback($('#nft-dialog [data-liquidity-form]'),message);}
-    const next=collection.find(n=>n.id===id);
-    if(previous&&next&&confirmedUpgrade({action,confirmed:true,before:getLevel(previous.lockedCents),after:getLevel(next.lockedCents),previousLP:previous.lockedCents,currentLP:next.lockedCents}))celebrateUpgrade(document.querySelectorAll(`[data-art-owner="${id}"]`));
   }catch(error){const current=$('#nft-dialog [data-liquidity-form]');formFeedback(current?.dataset.nftId===String(id)?current:form,error.message,true);recordActivity(`PoPL #${id}: ${error.message}`,true,activityKey);}
   finally {if(form.isConnected&&!completed){form.setAttribute('aria-busy','false');form.querySelectorAll('input,select,button').forEach(n=>n.disabled=Boolean(nftOperation(id)));}}
 }
@@ -491,6 +491,7 @@ function route() {
 }
 window.addEventListener('hashchange',route);
 renderAll(); route();
+void preloadUpgradeSounds();
 if (local) void local.refresh();
 
 if (!local) {

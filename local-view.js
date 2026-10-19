@@ -1,5 +1,5 @@
 import {LocalClient,escape as e,units,usd,sum,uint,balances,hasClaim} from './local-client.js';
-import {COLORWAYS,PATTERNS,RARITIES,findArtwork,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from './artworks.js';
+import {COLORWAYS,PATTERNS,RARITIES,findArtwork,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,queueUpgrade,transitionArtwork} from './artworks.js';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const short=a=>`${a.slice(0,6)}…${a.slice(-4)}`;
 const text=(s,value)=>{const n=$(s);if(n)n.textContent=value;};
@@ -50,7 +50,7 @@ function claimTotal(n,pendingLabel=null) {
 export function positionFinancialDetails(n) {
   const position=`<section class="position-breakdown"><div class="position-attached-lp"><span>LP attached</span><strong>${e(usd(lpValue(n)))}</strong></div>${n.position.activated?earningsSummary(n):''}</section>`;
   if(!n.position.activated)return position+'<p class="small-note">Activate this NFT to start earning LP fees and royalties.</p>';
-  return `${position}<section class="position-breakdown claim-breakdown">${claimTotal(n)}<div class="breakdown-rows">${row('LP rewards',balances(n.claimable.lp))}${row('Royalties',balances(n.claimable.royalties))}</div></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',n.previously_claimed.available?balances(n.previously_claimed.assets,'total_raw'):'Unavailable')}</div></section>`;
+  return `${position}<section class="position-breakdown claim-breakdown">${claimTotal(n)}<div class="breakdown-rows">${row('LP rewards',balances(n.claimable.lp))}${row('Royalties',balances(n.claimable.royalties))}</div></section>`;
 }
 
 // A display snapshot never authorizes another transaction. Unknown/session-changed
@@ -81,16 +81,7 @@ function withArtworkContinuity(container, render) {
     if(prior.getAttribute('src')===next.getAttribute('src')) {
       old.disabled=button.disabled;button.replaceWith(old);continue;
     }
-    next.loading='eager';next.fetchPriority='high';
-    const overlay=prior.cloneNode(false);overlay.className='nft-artwork local-art-previous';overlay.alt='';overlay.setAttribute('aria-hidden','true');
-    button.append(overlay);
-    const finish=()=>{
-      if(!next.naturalWidth){overlay.remove();return;}
-      // Two frames establish the overlay before fading, including cached images.
-      requestAnimationFrame(()=>requestAnimationFrame(()=>overlay.classList.add('is-revealed')));
-      setTimeout(()=>overlay.remove(),300);
-    };
-    if(next.complete)finish();else {next.addEventListener('load',finish,{once:true});next.addEventListener('error',()=>overlay.remove(),{once:true});}
+    transitionArtwork(button,prior,next);
   }
 }
 
@@ -273,6 +264,8 @@ export function createLocalView() {
       stale=true;render();
       status(outcome.status==='confirmed'?`Confirmed ${draft.action}. Reading updated balances…`:`Transaction failed: ${outcome.error}`,outcome.status!=='confirmed');
       await c.refresh();stale=false;
+      const next=c.state?.nfts.find(n=>n.token_id===draft.targetId);
+      if(session===c.session.token&&account===c.account&&previous&&next?.position.activated&&confirmedUpgrade({action:draft.action,confirmed:outcome?.status==='confirmed',before:previous.position.evolution,after:next.position.evolution,previousLP:lpValue(previous),currentLP:lpValue(next)}))queueUpgrade(draft.targetId,draft.action);
       const hashes=outcome.transactions.join(', ');
       status(`${outcome.status==='confirmed'?'Confirmed '+draft.action:outcome.error}${draft.action==='approve'?' · Approval only. Open the NFT and review its LP contribution next.':''} · ${hashes}`,outcome.status!=='confirmed');
       if(outcome.status==='confirmed'&&draft.action==='mint')location.hash='my-nfts';
@@ -280,8 +273,6 @@ export function createLocalView() {
     }catch(err){stale=true;status(outcome?.status==='confirmed'?`Confirmed ${draft.action}. Balance refresh failed: ${err.message}. Refresh balances only; do not repeat this transaction. · ${outcome.transactions.join(', ')}`:`${err.message}. Refresh to recover; do not submit a new action.`,true);}
     finally{busy=false;if(!stale){updatingNFT=null;refreshScope=null;}render();if(!stale&&$('#nft-dialog').open&&selected)details(selected,selectedMode);
       if(!stale&&outcome?.status==='confirmed'&&['activate','increase'].includes(draft.action)&&$('#nft-dialog').open&&selected===draft.targetId)$('#nft-dialog').scrollTo({top:0,behavior:'instant'});
-      const next=c.state?.nfts.find(n=>n.token_id===draft.targetId);
-      if(!stale&&session===c.session.token&&account===c.account&&previous&&next&&confirmedUpgrade({action:draft.action,confirmed:outcome?.status==='confirmed',before:previous.position.evolution,after:next.position.evolution,previousLP:lpValue(previous),currentLP:lpValue(next)}))celebrateUpgrade(document.querySelectorAll(`.art-image-button[data-local-id="${draft.targetId}"]`));
     }
   }
   document.addEventListener('click',event=>{

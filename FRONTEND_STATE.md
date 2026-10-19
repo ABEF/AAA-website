@@ -1,3 +1,7 @@
+The NFT detail view omits the Previously claimed frame at the user's request.
+Keep 24h/all-time earnings and current Rewards to claim. Lifetime claim accounting
+remains intact; earnings include claimed and unclaimed rewards, not only payouts.
+
 ## Palette lettering and payout audit - 2026-10-19
 
 Each palette name is rendered in its own catalogue color, without a background
@@ -154,7 +158,10 @@ claim past income. This feature is never loaded as local-chain funding.
 Activation/top-up celebration uses the before/after confirmed evolution and LP,
 only after success. The local path also retains session/account identity and
 waits for the post-receipt read. Missing state, rejected transactions, approval,
-wrapping and claims cannot trigger it. The one-shot sound ends at 1.18 seconds;
-visual motion ends at 1.35 seconds and respects reduced-motion preferences.
-Image-load failure suppresses celebration, audio failure is nonfatal. These are
-presentation changes with no new contract or backend operator procedure.
+wrapping and claims cannot trigger it. ACTI plays for activation, EV for later
+upward evolution, synchronized with the confirmed image crossfade. The supplied
+clips retain all audible content: ACTI 3.69 seconds (explicitly approved exception
+to the original 1.5-second limit), EV 1.425 seconds. Audio is prefetched and decoded
+once after a user gesture; card/dialog duplicates never play twice. Reduced motion
+suppresses the highlight. Image-load failure suppresses celebration, audio failure
+is nonfatal. These are presentation changes with no new contract or backend call.
