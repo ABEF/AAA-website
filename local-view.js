@@ -1,4 +1,5 @@
 import {LocalClient,escape as e,units,usd,sum,uint,balances,hasClaim} from './local-client.js';
+import {confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from './ui-state.js';
 import {COLORWAYS,PATTERNS,RARITIES,findArtwork,paletteTrait,preloadEvolutions} from './artworks.js';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const short=a=>`${a.slice(0,6)}…${a.slice(-4)}`;
@@ -134,7 +135,6 @@ export function createLocalView() {
   text('#nft-dialog .eyebrow','CONFIRMED LOCAL POSITION');
   text('.collection-analytics .small-note','');$('.collection-analytics').hidden=true;
   text('[data-view="collection"] .metric-grid article:nth-child(2) > span:last-child','Actual processed local revenue');
-  $$('.pool-filters button').forEach((n,i)=>{n.hidden=i>0;});text('.pool-filters button','TEST-1 / TEST-2');
   text('.compact-metrics-values > div:last-child span','Pool volume · 24h');text('.compact-metrics-values > div:last-child strong','Unavailable');
   text('.artwork-explainer > div:last-child p','1,000 total supply · local fixture capped at 20 mints.');
   const liveFaq=$$('.faq-list details').find(d=>d.querySelector('summary').textContent==='Is this live?');
@@ -210,8 +210,7 @@ export function createLocalView() {
     if(n&&!stale)$('#overview-example-art').disabled=false;
   }
   function renderCollection() {
-    text('.pool-filters button',c.state?.input_assets?'ZZZ / ETH':'TEST-1 / TEST-2');
-    if(stale){$('#positions-body').innerHTML=`<tr><td colspan="6">${busy?'Updating confirmed collection…':'Confirmed local collection unavailable. Refresh to inspect it.'}</td></tr>`;return;}
+    if(stale){$('#positions-body').innerHTML=`<tr><td colspan="5">${busy?'Updating confirmed collection…':'Confirmed local collection unavailable. Refresh to inspect it.'}</td></tr>`;return;}
     const query=$('#nft-search').value.trim().replace(/^#/,'');
     let items=c.state.nfts.filter(n=>{
       const art=artFor(n),value=id=>$(id).value;
@@ -222,7 +221,7 @@ export function createLocalView() {
     if(sort==='newest')items.sort((a,b)=>b.mint_ordinal-a.mint_ordinal);
     if(['liquidity','fees'].includes(sort))items.sort((a,b)=>{const v=n=>BigInt((sort==='liquidity'?lpValue(n):earned(n,'all_time'))||'0');return v(a)===v(b)?0:v(a)>v(b)?-1:1;});
     const pages=Math.max(1,Math.ceil(items.length/8));page=Math.max(1,Math.min(page,pages));
-    $('#positions-body').innerHTML=items.slice((page-1)*8,page*8).map(n=>`<tr><td><div class="position-identity"><div class="position-art">${buttonArt(n)}</div><div><span class="nft-name">PoPL #${n.mint_ordinal}</span><span class="position-traits">${e(n.traits?.rarity||'Unrevealed')} · ${e(n.position.evolution||'Unavailable')}</span></div></div></td><td>${c.state?.input_assets?'ZZZ / ETH':'TEST-1 / TEST-2'}</td><td>${usd(lpValue(n))}</td><td>${usd(earned(n,'all_time'))}</td><td>${usd(earned(n,'last_24h'))}</td><td><button class="position-view" data-local-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}">↗</button></td></tr>`).join('')||'<tr><td colspan="6">No matching local NFTs.</td></tr>';
+    $('#positions-body').innerHTML=items.slice((page-1)*8,page*8).map(n=>`<tr><td><div class="position-identity"><div class="position-art">${buttonArt(n)}</div><div><span class="nft-name">PoPL #${n.mint_ordinal}</span><span class="position-traits">${e(n.traits?.rarity||'Unrevealed')} · ${e(n.position.evolution||'Unavailable')}</span></div></div></td><td>${usd(lpValue(n))}</td><td>${usd(earned(n,'all_time'))}</td><td>${usd(earned(n,'last_24h'))}</td><td><button class="position-view" data-local-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}">↗</button></td></tr>`).join('')||'<tr><td colspan="5">No matching local NFTs.</td></tr>';
     text('#result-count',`${items.length} local positions`);text('#page-info',`Page ${page} of ${pages}`);$('#page-prev').disabled=page===1;$('#page-next').disabled=page===pages;
   }
   function details(id,mode='breakdown') {
@@ -265,7 +264,9 @@ export function createLocalView() {
     finally{busy=false;render();contributionBusy(false);}
   }
   async function execute() {
-    if(!confirmDraft||busy)return;const draft=confirmDraft;let outcome=null;closeConfirmation();refreshScope=operationScope(draft,c.session.token,c.account);busy=true;render();status('Submitting to the disposable local chain…');
+    if(!confirmDraft||busy)return;const draft=confirmDraft;let outcome=null;
+    const previous=c.state?.nfts.find(n=>n.token_id===draft.targetId),session=c.session.token,account=c.account;
+    if(['activate','increase'].includes(draft.action))armUpgradeSound();closeConfirmation();refreshScope=operationScope(draft,c.session.token,c.account);busy=true;render();status('Submitting to the disposable local chain…');
     try {
       outcome=await c.execute(draft);
       if(outcome.status==='confirmed'&&['approve','wrap'].includes(draft.action))approvedContribution=draft.contributionContext;
@@ -278,7 +279,11 @@ export function createLocalView() {
       if(outcome.status==='confirmed'&&draft.action==='mint')location.hash='my-nfts';
       if(outcome.status==='confirmed'&&['approve','wrap','activate','increase','claim'].includes(draft.action)&&draft.targetId&&selected)details(selected,['approve','wrap'].includes(draft.action)?'contribute':'breakdown');
     }catch(err){stale=true;status(outcome?.status==='confirmed'?`Confirmed ${draft.action}. Balance refresh failed: ${err.message}. Refresh balances only; do not repeat this transaction. · ${outcome.transactions.join(', ')}`:`${err.message}. Refresh to recover; do not submit a new action.`,true);}
-    finally{busy=false;if(!stale){updatingNFT=null;refreshScope=null;}render();if(!stale&&$('#nft-dialog').open&&selected)details(selected,selectedMode);}
+    finally{busy=false;if(!stale){updatingNFT=null;refreshScope=null;}render();if(!stale&&$('#nft-dialog').open&&selected)details(selected,selectedMode);
+      if(!stale&&outcome?.status==='confirmed'&&['activate','increase'].includes(draft.action)&&$('#nft-dialog').open&&selected===draft.targetId)$('#nft-dialog').scrollTo({top:0,behavior:'instant'});
+      const next=c.state?.nfts.find(n=>n.token_id===draft.targetId);
+      if(!stale&&session===c.session.token&&account===c.account&&previous&&next&&confirmedUpgrade({action:draft.action,confirmed:outcome?.status==='confirmed',before:previous.position.evolution,after:next.position.evolution,previousLP:lpValue(previous),currentLP:lpValue(next)}))celebrateUpgrade(document.querySelectorAll(`.art-image-button[data-local-id="${draft.targetId}"]`));
+    }
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;

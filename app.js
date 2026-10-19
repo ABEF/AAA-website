@@ -3,7 +3,7 @@ import {createLocalView} from './local-view.js';
 import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions} from './artworks.js';
 import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, previouslyClaimed, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
-const {OperationTracker,preserveArtwork} = localMode(location) ? {} : await import('./ui-state.js');
+const {OperationTracker,preserveArtwork,confirmedUpgrade,armUpgradeSound,celebrateUpgrade} = localMode(location) ? {} : await import('./ui-state.js');
 const {PreviewStore,RESET_KEY,previewChange} = localMode(location) ? {} : await import('./preview-store.js');
 
 const $ = selector => document.querySelector(selector);
@@ -13,7 +13,6 @@ const wholeCurrency = new Intl.NumberFormat('en-US',{style:'currency',currency:'
 const number = new Intl.NumberFormat('en-US');
 const money = value => currency.format(dollars(value));
 const wholeMoney = value => wholeCurrency.format(dollars(value));
-const poolName = nft => nft.pool ? nft.pool.replace('/', ' / ') : 'Not activated';
 const shortAddress = value => `${value.slice(0,6)}…${value.slice(-4)}`;
 const escape = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const wait = duration => new Promise(resolve => setTimeout(resolve,duration));
@@ -24,7 +23,7 @@ const styleLabel = id => COLOR_STYLES.find(style => style.id === id)?.label || '
 const patternLabel = id => PATTERNS.find(pattern => pattern.id === id)?.label || PATTERNS[0].label;
 const visualTraits = nft => `<span>${styleLabel(colorwayFor(nft).colorStyle)}</span>${paletteTrait(colorsFor(nft))}`;
 let collection = buildDemoCollection();
-let page = 1, poolFilter = 'all', connecting = false, toastTimer, selectedNFT = null, selectedDetailMode = 'breakdown';
+let page = 1, connecting = false, toastTimer, selectedNFT = null, selectedDetailMode = 'breakdown';
 const providers = [];
 const local = localMode(location) ? createLocalView() : null;
 const store = local ? null : new PreviewStore({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},navigator.locks);
@@ -151,7 +150,7 @@ function renderArtGallery() {
   const pages = Math.max(1,Math.ceil(matches.length / 12));
   artPage = Math.max(1,Math.min(pages,artPage));
   const shown = matches.slice((artPage-1)*12,artPage*12);
-  $('#artwork-gallery').innerHTML = shown.length ? shown.map(art => `<article class="artwork-card" style="--art-accent:${art.accent}"><button type="button" class="art-image-button" data-artwork-id="${art.id}" aria-label="Enlarge ${art.colorLabel} ${patternLabel(art.pattern)} ${art.rarityLabel} ${art.evolutionLabel}"><img class="nft-artwork" src="${art.src}" alt="${art.colorLabel} ${art.rarityLabel} egg · ${patternLabel(art.pattern)} · ${art.evolutionLabel}" width="1024" height="1024" loading="lazy" decoding="async"><span class="art-enlarge" aria-hidden="true">↗</span></button><div class="artwork-card-copy"><div><h2>${art.evolutionLabel}</h2><span class="rarity-tag" data-rarity="${art.rarity}">${art.rarityLabel}</span></div><p>${art.colorLabel}</p><small>${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}</small><span class="level-badge">${art.royaltyWeight ? `Royalty weight ×${art.royaltyWeight}` : 'Dormant · royalty weight 0'}</span></div></article>`).join('') : '<p class="empty-artworks">No artwork matches these filters. Try another color, style or pattern.</p>';
+  $('#artwork-gallery').innerHTML = shown.length ? shown.map(art => `<article class="artwork-card" style="--art-accent:${art.accent}"><button type="button" class="art-image-button" data-artwork-id="${art.id}" aria-label="Enlarge ${art.colorLabel} ${patternLabel(art.pattern)} ${art.rarityLabel} ${art.evolutionLabel}"><img class="nft-artwork" src="${art.src}" alt="${art.colorLabel} ${art.rarityLabel} egg · ${patternLabel(art.pattern)} · ${art.evolutionLabel}" width="1024" height="1024" loading="lazy" decoding="async"><span class="art-enlarge" aria-hidden="true">↗</span></button><div class="artwork-card-copy"><h2>${art.evolutionLabel}</h2><div class="artwork-card-traits"><span class="rarity-tag" data-rarity="${art.rarity}">${art.rarityLabel}</span><span>${styleLabel(art.colorStyle)}</span>${paletteTrait(art.colors)}<span class="royalty-trait${art.evolution === 'dormant' ? ' is-dormant' : ''}"${art.evolution === 'dormant' ? ' title="Royalty eligibility begins after activation"' : ''}>Royalty weight ×${art.royaltyMultiplier}</span></div></div></article>`).join('') : '<p class="empty-artworks">No artwork matches these filters. Try another color, style or pattern.</p>';
   $('#art-variant-count').textContent = `${number.format(matches.length)} of ${number.format(ARTWORKS.length)} artwork states · ${local ? '1,000 total supply' : collection.length+' example NFTs'}`;
   $('#art-page-info').textContent = matches.length ? `${(artPage-1)*12+1}–${Math.min(artPage*12,matches.length)} of ${number.format(matches.length)} · Page ${artPage} of ${pages}` : '0 artwork states';
   $('#art-prev').disabled = artPage === 1;
@@ -208,14 +207,14 @@ function renderCollection() {
   const query = $('#nft-search').value.trim().replace(/^#/, '');
   const status = $('#status-filter').value;
   const sort = $('#sort-positions').value;
-  let matches = collection.filter(nft => (!query || String(nft.id).includes(query)) && (poolFilter === 'all' || nft.pool === poolFilter) && (status === 'all' || (status === 'active' ? nft.lockedCents > 0 : nft.lockedCents === 0)) && ($('#rarity-filter').value === 'all' || nft.rarity === $('#rarity-filter').value) && ($('#color-filter').value === 'all' || colorsFor(nft).includes($('#color-filter').value)) && ($('#color-style-filter').value === 'all' || colorwayFor(nft).colorStyle === $('#color-style-filter').value));
+  let matches = collection.filter(nft => (!query || String(nft.id).includes(query)) && (status === 'all' || (status === 'active' ? nft.lockedCents > 0 : nft.lockedCents === 0)) && ($('#rarity-filter').value === 'all' || nft.rarity === $('#rarity-filter').value) && ($('#color-filter').value === 'all' || colorsFor(nft).includes($('#color-filter').value)) && ($('#color-style-filter').value === 'all' || colorwayFor(nft).colorStyle === $('#color-style-filter').value));
   if (sort === 'liquidity') matches.sort((a,b) => b.lockedCents-a.lockedCents);
   if (sort === 'fees') matches.sort((a,b) => b.feesAllTimeCents-a.feesAllTimeCents);
   if (sort === 'newest') matches.sort((a,b) => b.createdOrder-a.createdOrder);
   const pageCount = Math.max(1,Math.ceil(matches.length / 8));
   page = Math.min(pageCount,Math.max(1,page));
   const shown = matches.slice((page-1)*8,page*8);
-  $('#positions-body').innerHTML = shown.length ? shown.map(nft => `<tr><td><div class="position-identity"><button type="button" class="position-art" style="--art-accent:${colorwayFor(nft).accent}" data-artwork-id="${artworkForNft(nft).id}" aria-label="Enlarge artwork for PoPL ${nft.id}"><img src="${artworkForNft(nft).src}" alt="" width="51" height="51" loading="lazy" decoding="async"></button><div><span class="nft-name">PoPL #${nft.id}</span><span class="position-traits">${getRarity(nft.rarity).label} · ${styleLabel(colorwayFor(nft).colorStyle)}<br>${paletteLabel(nft)}</span><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div></div></td><td class="position-pool">${poolName(nft)}</td><td>${money(nft.lockedCents)}</td><td class="position-fee">${money(nft.feesAllTimeCents)}</td><td class="position-fee">${money(nft.fees24hCents)}</td><td><button class="position-view" data-nft-id="${nft.id}" aria-label="View PoPL NFT ${nft.id}">↗</button></td></tr>`).join('') : '<tr><td colspan="6" class="empty-results">No positions match these filters. Try another NFT number or pool.</td></tr>';
+  $('#positions-body').innerHTML = shown.length ? shown.map(nft => `<tr><td><div class="position-identity"><button type="button" class="position-art" style="--art-accent:${colorwayFor(nft).accent}" data-artwork-id="${artworkForNft(nft).id}" aria-label="Enlarge artwork for PoPL ${nft.id}"><img src="${artworkForNft(nft).src}" alt="" width="51" height="51" loading="lazy" decoding="async"></button><div><span class="nft-name">PoPL #${nft.id}</span><span class="position-traits">${getRarity(nft.rarity).label} · ${styleLabel(colorwayFor(nft).colorStyle)}<br>${paletteLabel(nft)}</span><span class="level-badge ${nft.lockedCents ? '' : 'dormant'}">${getLevel(nft.lockedCents)}</span></div></div></td><td>${money(nft.lockedCents)}</td><td class="position-fee">${money(nft.feesAllTimeCents)}</td><td class="position-fee">${money(nft.fees24hCents)}</td><td><button class="position-view" data-nft-id="${nft.id}" aria-label="View PoPL NFT ${nft.id}">↗</button></td></tr>`).join('') : '<tr><td colspan="5" class="empty-results">No positions match these filters. Try another NFT number or trait.</td></tr>';
   $('#result-count').textContent = `${matches.length} position${matches.length === 1 ? '' : 's'}`;
   $('#page-info').textContent = matches.length ? `${(page-1)*8+1}–${Math.min(page*8,matches.length)} of ${matches.length} · Page ${page} of ${pageCount}` : '0 positions';
   $('#page-prev').disabled = page === 1;
@@ -270,7 +269,7 @@ function renderMint() { updateWallet(); renderMintArt(); }
 function renderAll() { renderMetrics(); renderCollection(); renderPortfolio(); renderMint(); renderRarityShowcase(); renderArtGallery(); }
 function liquidityForm(nft, action) {
   const activation = action === 'activate';
-  return `<form class="liquidity-form" data-liquidity-form novalidate data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option><option value="ETH">ETH</option><option value="USDG">USDG</option></select>${activation ? `<label class="input-label" for="liquidity-pool-${nft.id}">EXAMPLE LP POOL</label><select name="pool" id="liquidity-pool-${nft.id}"><option value="ZZZ/WETH">ZZZ / ETH</option></select>` : ''}<label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'GROW ATTACHED LP · MINIMUM $5'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '5'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. Token quantities depend on their prices; no live quote is provided. Activation starts at $100; LP top-ups start at $5 in value. At least 99% must become added LP; network gas is separate.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${nftOperation(nft.id) || storageProblem ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p></form>`;
+  return `<form class="liquidity-form" data-liquidity-form novalidate data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option><option value="ETH">ETH</option><option value="USDG">USDG</option></select><label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'GROW ATTACHED LP · MINIMUM $5'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '5'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. Token quantities depend on their prices; no live quote is provided. Activation starts at $100; LP top-ups start at $5 in value. At least 99% must become added LP; network gas is separate.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${nftOperation(nft.id) || storageProblem ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p></form>`;
 }
 
 function royaltyTrait(nft) {
@@ -382,9 +381,10 @@ async function runClaim(ids) {
 async function runLiquidity(form) {
   if (!wallet.state) return openWallet();
   const id=Number(form.dataset.nftId),action=form.dataset.action;
-  const amount=Number(form.elements.namedItem('amount').value),pool=form.elements.namedItem('pool')?.value,fundingAsset=form.elements.namedItem('fundingAsset').value;
+  const amount=Number(form.elements.namedItem('amount').value),pool='ZZZ/WETH',fundingAsset=form.elements.namedItem('fundingAsset').value;
   const activityKey=nftKey(id);
   let completed=false;
+  const previous=collection.find(n=>n.id===id);armUpgradeSound();
   try {
     await performPreview({type:action,id,amount,pool,fundingAsset},[nftKey(id)],()=>{
       formFeedback(form,'Updating this example NFT… You can close this window and use your other NFTs.');
@@ -394,7 +394,9 @@ async function runLiquidity(form) {
     completed=true;
     const message=`PoPL #${id}: ${currency.format(amount)} ${action==='activate'?'activation':'LP addition'} saved. No real assets moved.`;
     recordActivity(message,false,activityKey);toast(message);
-    if($('#nft-dialog').open&&selectedNFT===id){renderDetails(id);formFeedback($('#nft-dialog [data-liquidity-form]'),message);}
+    if($('#nft-dialog').open&&selectedNFT===id){renderDetails(id);$('#nft-dialog').scrollTo({top:0,behavior:'instant'});formFeedback($('#nft-dialog [data-liquidity-form]'),message);}
+    const next=collection.find(n=>n.id===id);
+    if(previous&&next&&confirmedUpgrade({action,confirmed:true,before:getLevel(previous.lockedCents),after:getLevel(next.lockedCents),previousLP:previous.lockedCents,currentLP:next.lockedCents}))celebrateUpgrade(document.querySelectorAll(`[data-art-owner="${id}"]`));
   }catch(error){const current=$('#nft-dialog [data-liquidity-form]');formFeedback(current?.dataset.nftId===String(id)?current:form,error.message,true);recordActivity(`PoPL #${id}: ${error.message}`,true,activityKey);}
   finally {if(form.isConnected&&!completed){form.setAttribute('aria-busy','false');form.querySelectorAll('input,select,button').forEach(n=>n.disabled=Boolean(nftOperation(id)));}}
 }
@@ -426,10 +428,6 @@ document.addEventListener('click',async event => {
   if (target.dataset.manageId) renderDetails(Number(target.dataset.manageId),'contribute');
   if (target.dataset.claimId) await runClaim([Number(target.dataset.claimId)]);
 
-  if (target.dataset.pool) {
-    poolFilter = target.dataset.pool; page = 1;
-    $$('[data-pool]').forEach(button => { const active = button.dataset.pool === poolFilter; button.classList.toggle('is-active',active); button.setAttribute('aria-pressed',String(active)); }); renderCollection();
-  }
   if (target.dataset.providerIndex !== undefined && !connecting) {
     const item = providers[Number(target.dataset.providerIndex)]; if (!item) return;
     connecting = true; $('#demo-wallet').disabled = true; renderProviders(); $('#wallet-message').textContent = 'Confirm connection in your wallet…';
@@ -495,4 +493,8 @@ window.addEventListener('hashchange',route);
 renderAll(); route();
 if (local) void local.refresh();
 
-if (!local) void wallet.restore(providers);
+if (!local) {
+  void wallet.restore(providers);
+  // Add one sample receipt after saved actions, once across refreshes and tabs.
+  void store.ensureRewardRound().then(()=>syncSavedPreview()).catch(error=>{storageProblem=error.message;refreshDataViews();});
+}

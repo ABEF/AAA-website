@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {OperationTracker} from '../ui-state.js';
+import {OperationTracker,confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from '../ui-state.js';
 import {PreviewStore} from '../preview-store.js';
-import {STORAGE_KEY,DEMO_ADDRESS,buildDemoCollection,claimable} from '../domain.js';
+import {STORAGE_KEY,DEMO_ADDRESS,buildDemoCollection,claimable,fundDemoRewards,DEMO_REWARD_ROUND,replayEvents,previouslyClaimed,activatePreview,getLevel} from '../domain.js';
 import {WalletConnection} from '../wallet.js';
 
 const deferred=()=>{let resolve;const promise=new Promise(r=>resolve=r);return {promise,resolve};};
@@ -24,6 +24,66 @@ class Locks {
 }
 const stores=()=>{const storage=new Storage(),locks=new Locks();return {storage,locks,a:new PreviewStore(storage,locks),b:new PreviewStore(storage,locks)};};
 const topup=(id,amount)=>({type:'increase',id,amount,fundingAsset:'USDC'});
+
+test('funding conserves holder allocation, equal collective and rarity royalties without changing LP or traits',()=>{
+  const before=buildDemoCollection(),{collection:after,split,royaltyReceipt}=fundDemoRewards(before,{round:DEMO_REWARD_ROUND});
+  const delta=key=>after.reduce((s,n,i)=>s+n[key]-before[i][key],0);
+  assert.equal(delta('individualCents'),split.owner);assert.equal(delta('collectiveCents'),split.collective);assert.equal(delta('royaltiesCents'),royaltyReceipt);
+  assert.equal(split.owner+split.collective+split.compound+split.buyback,86496);
+  for(const [i,n] of after.entries()) {
+    assert.deepEqual({...n,individualCents:before[i].individualCents,collectiveCents:before[i].collectiveCents,royaltiesCents:before[i].royaltiesCents},before[i]);
+    if(!n.lockedCents)assert.equal(claimable(n),0);
+  }
+  const increments=after.filter(n=>n.lockedCents).map(n=>n.collectiveCents-before.find(b=>b.id===n.id).collectiveCents);
+  assert.ok(Math.max(...increments)-Math.min(...increments)<=1);
+  const a=before.findIndex(n=>n.id===128),b=before.findIndex(n=>n.id===444);
+  assert.ok(after[a].individualCents-before[a].individualCents>after[b].individualCents-before[b].individualCents);
+  assert.throws(()=>fundDemoRewards(before,{round:'other'}),/Unknown/);
+});
+
+test('fund once across concurrent tabs, preserving old claims and top-ups, and stay claimed after reload',async()=>{
+  const {a,b}=stores();await a.commit({type:'claim',ids:[444,128],scope:'all'},'initial');await a.commit(topup(444,5),'initial');
+  const before=a.read().collection.find(n=>n.id===444),past=previouslyClaimed(before);
+  await Promise.all([a.ensureRewardRound(),b.ensureRewardRound()]);
+  assert.equal(a.read().events.filter(e=>e.type==='fund-rewards').length,1);
+  const funded=a.read().collection.find(n=>n.id===444);assert.ok(claimable(funded)>0);assert.equal(previouslyClaimed(funded),past);assert.equal(funded.lockedCents,before.lockedCents);
+  await a.commit({type:'claim',ids:[444],scope:'all'},'initial');await b.ensureRewardRound();
+  assert.equal(claimable(b.read().collection.find(n=>n.id===444)),0);
+  assert.equal(previouslyClaimed(b.read().collection.find(n=>n.id===444)),past+claimable(funded));
+  const events=a.read().events;assert.deepEqual(replayEvents([...events,{type:'fund-rewards',round:DEMO_REWARD_ROUND}]),a.read().collection);
+});
+
+test('later activation receives no past receipt; defaults retain four colors and evolution stages',()=>{
+  const funded=fundDemoRewards(buildDemoCollection(),{round:DEMO_REWARD_ROUND}).collection;
+  const defaults=funded.filter(n=>n.exampleOwned);
+  assert.deepEqual(defaults.map(n=>getLevel(n.lockedCents)).sort(),['Dormant','Enhanced','Enhanced','Singularity']);
+  assert.equal(new Set(defaults.map(n=>n.color)).size,4);assert.ok(defaults.some(n=>n.rarity==='legendary'));
+  const after=activatePreview(funded,{id:74,amount:100,pool:'ZZZ/WETH'}).collection;
+  assert.equal(claimable(after.find(n=>n.id===74)),0);
+});
+
+test('celebration requires confirmed LP growth and a real upward evolution',()=>{
+  const args={action:'activate',confirmed:true,before:'Dormant',after:'Activated',previousLP:'0',currentLP:'10000'};
+  assert.equal(confirmedUpgrade(args),true);
+  assert.equal(confirmedUpgrade({...args,action:'increase',before:'Enhanced',after:'Singularity',previousLP:1200,currentLP:10000}),true);
+  for(const delta of [{confirmed:false},{action:'approve'},{action:'claim'},{action:'wrap'},{before:'Unavailable'},{after:'Unavailable'},{previousLP:null},{currentLP:null},{currentLP:'0'},{currentLP:'bad'},{before:'Enhanced'},{before:'Activated'}])assert.equal(confirmedUpgrade({...args,...delta}),false);
+});
+
+test('sparkle is quiet, finite, below 1.5s and unavailable audio is nonfatal',()=>{
+  const stops=[],levels=[];let disconnected=0;
+  const saved=Object.fromEntries(['AudioContext','document','matchMedia'].map(k=>[k,Object.getOwnPropertyDescriptor(globalThis,k)]));
+  class Audio {
+    state='running';currentTime=20;destination={};
+    createOscillator(){return {frequency:{},connect(){},start(){},stop(at){stops.push(at-20);this.onended?.();},disconnect(){disconnected++;}};}
+    createGain(){return {gain:{setValueAtTime(){},linearRampToValueAtTime(v){levels.push(v);},exponentialRampToValueAtTime(){}},connect(){},disconnect(){}};}
+  }
+  try {
+    Object.defineProperty(globalThis,'AudioContext',{value:Audio,configurable:true});Object.defineProperty(globalThis,'document',{value:{hidden:false},configurable:true});Object.defineProperty(globalThis,'matchMedia',{value:()=>({matches:true}),configurable:true});
+    armUpgradeSound();celebrateUpgrade([{isConnected:true,getClientRects:()=>[{}],querySelector:()=>null}]);
+    assert.equal(stops.length,5);assert.ok(Math.max(...stops)<1.5);assert.ok(Math.max(...levels)<.03);
+    celebrateUpgrade([{isConnected:true,getClientRects:()=>[{}],querySelector:()=>null}]);assert.equal(stops.length,5,'no overlapping chimes');
+  }finally{for(const [k,v] of Object.entries(saved))if(v)Object.defineProperty(globalThis,k,v);else delete globalThis[k];}
+});
 
 test('unchanged snapshot is reused immutably; external writes and resets invalidate it',async()=>{
   const {a,b}=stores(),first=a.read();assert.equal(a.read(),first);

@@ -226,9 +226,14 @@ export function claimPreview(collection, ids, {scope = 'all'} = {}) {
 
 export function replayEvents(events) {
   let collection = buildDemoCollection();
+  const fundedRounds = new Set();
   if (!Array.isArray(events)) return collection;
   for (const event of events.slice(0,1000)) {
     try {
+      if (event.type === 'fund-rewards' && !fundedRounds.has(event.round)) {
+        collection = fundDemoRewards(collection,event).collection;
+        fundedRounds.add(event.round);
+      }
       if (event.type === 'mint') collection = mintPreview(collection,event).collection;
       // Existing v7 claim events predate royalties and must retain their LP-only meaning.
       if (event.type === 'claim') collection = claimPreview(collection,event.ids,{scope:event.scope === undefined ? 'lp' : event.scope}).collection;
@@ -238,4 +243,26 @@ export function replayEvents(events) {
     } catch { /* Invalid or obsolete local demo events do not affect the source model. */ }
   }
   return collection;
+}
+
+// One explicit sample receipt, appended after saved actions. Never real funds.
+export const DEMO_REWARD_ROUND = 'claim-testing-20261020';
+export function fundDemoRewards(collection,{round}) {
+  if(round!==DEMO_REWARD_ROUND)throw new Error('Unknown example funding round.');
+  const split=feeSplit(864.96),royaltyReceipt=10000;
+  const active=collection.map(n=>n.lockedCents>0);
+  const allocate=(total,weights)=>{
+    const denominator=weights.reduce((s,w)=>s+BigInt(w),0n);
+    if(!denominator)throw new Error('No active example positions to fund.');
+    const parts=weights.map((w,i)=>({i,value:Number(BigInt(total)*BigInt(w)/denominator),remainder:BigInt(total)*BigInt(w)%denominator}));
+    let dust=total-parts.reduce((s,p)=>s+p.value,0);
+    for(const part of [...parts].sort((a,b)=>a.remainder===b.remainder?a.i-b.i:a.remainder>b.remainder?-1:1)) {
+      if(!dust)break;part.value++;dust--;
+    }
+    return parts.map(p=>p.value);
+  };
+  const owners=allocate(split.owner,collection.map(n=>n.lockedCents));
+  const collective=allocate(split.collective,active.map(Boolean).map(Number));
+  const royalties=allocate(royaltyReceipt,collection.map((n,i)=>active[i]?RARITIES.find(r=>r.id===n.rarity).royaltyMultiplier:0));
+  return {collection:collection.map((n,i)=>({...n,individualCents:n.individualCents+owners[i],collectiveCents:n.collectiveCents+collective[i],royaltiesCents:(n.royaltiesCents??0)+royalties[i]})),split,royaltyReceipt};
 }

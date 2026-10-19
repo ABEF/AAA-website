@@ -1,4 +1,4 @@
-import {STORAGE_KEY,replayEvents,mintPreview,claimPreview,activatePreview,increasePreview} from './domain.js';
+import {STORAGE_KEY,replayEvents,mintPreview,claimPreview,activatePreview,increasePreview,fundDemoRewards,DEMO_REWARD_ROUND} from './domain.js';
 
 export const RESET_KEY=`${STORAGE_KEY}:reset`;
 export function previewChange(collection,event) {
@@ -7,6 +7,7 @@ export function previewChange(collection,event) {
     case 'claim': return claimPreview(collection,event.ids,{scope:event.scope});
     case 'activate': return activatePreview(collection,event);
     case 'increase': return increasePreview(collection,event);
+    case 'fund-rewards': return fundDemoRewards(collection,event);
     default: throw new Error('Unknown preview action.');
   }
 }
@@ -60,12 +61,16 @@ export class PreviewStore {
       assertCurrent();
       const latest=this.read();
       if(latest.epoch!==epoch)throw new Error('The preview was reset in another tab. Review the new state before trying again.');
+      if(event.type==='fund-rewards'&&latest.events.some(e=>e?.type===event.type&&e.round===event.round))return {collection:latest.collection};
       if(latest.events.length>=1000)throw new Error('The preview history is full. Reset it before adding more examples.');
       // Revalidate against latest state inside the lock; never publish a stale copy.
       const result=previewChange(latest.collection,event);
       this.storage.setItem(STORAGE_KEY,JSON.stringify([...latest.events,event]));
       return result;
     });
+  }
+  ensureRewardRound() {
+    return this.commit({type:'fund-rewards',round:DEMO_REWARD_ROUND},this.epoch());
   }
   reset() {
     return this.lock('events',{},()=>{

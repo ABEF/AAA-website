@@ -142,3 +142,19 @@ its detail link. The image's accessible label names this action. Artwork-only
 enlargement remains available from the image inside the preview breakdown.
 
 Known-operation refresh is scoped by session, wallet and NFT. Claims refresh rewards only; contribution markers affect only the target NFT. Failed/unknown reads remain unavailable. All transaction authorization still requires a fresh snapshot; displayed last-confirmed balances do not authorize spending. Artwork preload is bounded to 128 fixed library URLs.
+# Demo funding and confirmed tier feedback (2026-10-20)
+
+The one-time `claim-testing-20261020` event is a simulated receipt, not a balance
+reset. It is appended after existing actions under the global preview event lock;
+duplicate writes/replays cannot credit it twice. LP owner credits follow attached
+capital, collective credits equal active membership, royalties active rarity
+weights. Claims preserve lifetime totals. New activation after the event cannot
+claim past income. This feature is never loaded as local-chain funding.
+
+Activation/top-up celebration uses the before/after confirmed evolution and LP,
+only after success. The local path also retains session/account identity and
+waits for the post-receipt read. Missing state, rejected transactions, approval,
+wrapping and claims cannot trigger it. The one-shot sound ends at 1.18 seconds;
+visual motion ends at 1.35 seconds and respects reduced-motion preferences.
+Image-load failure suppresses celebration, audio failure is nonfatal. These are
+presentation changes with no new contract or backend operator procedure.

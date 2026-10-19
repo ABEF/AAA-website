@@ -1,3 +1,32 @@
+## Gallery, sample rewards and confirmed tier celebration - 2026-10-20
+
+Artwork cards have one evenly spaced trait row below evolution: rarity, color
+style, individually colored palette names and fixed royalty multiplier. Hide the
+pattern label here, retaining artwork, filters and metadata. Dormant multipliers
+are gray, not zero. Preserve four evolution columns and horizontal mobile comparison.
+
+Remove the one-choice pool selector and Collection pool filter/column. New demo
+activations still target ZZZ/WETH (ETH display); legacy saved pool IDs remain
+replayable. Local fixture routing and production pool controls are unchanged.
+
+Append one idempotent `claim-testing-20261020` sample funding event after saved
+actions, under the existing cross-tab event lock. The sample $864.96 LP receipt
+allocates 80% by attached LP, 10% equally among active NFTs, with 5%/5% excluded
+from holder balances; a separate $100 royalty receipt uses active rarity weights.
+Preserve principal, traits and cumulative claims. No replay/refill on refresh after
+claiming, no dormant/retroactive entitlement, no reset of saved holdings. The
+starting portfolio remains four colors: Dormant, Enhanced, Enhanced, Singularity;
+Legendary is a separate rarity, not an evolution. User contributions may evolve it.
+Old undated net 24h earnings remain unavailable. Public amounts are simulations.
+
+After a successful contribution and confirmed higher LP/tier, play a gentle
+1.18-second synthesized sparkle with a 1.35-second highlight. Local mode requires
+a successful receipt plus refreshed current LP in the same session/account.
+Approval, wrapping, claims, failures, ordinary refreshes and same-tier additions
+never celebrate. Wait for the new image; reduced motion suppresses the animation,
+unavailable audio never blocks financial actions. No on-chain behavior changed.
+Normal publication is local verification, main commit/push, then website deployment.
+
 ## Contribution flow and accepted inputs - 2026-10-19
 
 Latest user clarification: show ZZZ, USDG, USDC and ETH in the contribution

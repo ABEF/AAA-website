@@ -1,4 +1,57 @@
 // Resource locks are UI coordination, never an authorization or chain nonce lock.
+export function confirmedUpgrade({action,confirmed,before,after,previousLP,currentLP}) {
+  const levels=['dormant','activated','enhanced','singularity'];
+  const from=levels.indexOf(String(before).toLowerCase()),to=levels.indexOf(String(after).toLowerCase());
+  if(!confirmed||!['activate','increase'].includes(action)||from<0||to<=from)return false;
+  if(previousLP==null||currentLP==null)return false;
+  try {return BigInt(currentLP)>BigInt(previousLP)&&BigInt(previousLP)>=0n;}catch{return false;}
+}
+
+let sparkleAudio=null,lastSparkle=-Infinity;
+export function armUpgradeSound() {
+  // Called within the user's contribution/confirmation gesture. Unlock silently.
+  try {
+    const Audio=globalThis.AudioContext||globalThis.webkitAudioContext;
+    if(!Audio)return;
+    sparkleAudio ||= new Audio();
+    if(sparkleAudio.state==='suspended')void sparkleAudio.resume().catch(()=>{});
+  }catch{/* Audio is optional; it can never block a financial flow. */}
+}
+export function celebrateUpgrade(buttons) {
+  if(document.hidden)return;
+  const visible=[...buttons].filter(b=>{
+    if(!b.isConnected||!b.getClientRects().length)return false;
+    const image=b.querySelector('img');
+    if(image&&!image.complete) {
+      const finish=()=>{clearTimeout(timer);image.removeEventListener('load',loaded);image.removeEventListener('error',finish);};
+      const loaded=()=>{finish();if(image.naturalWidth)celebrateUpgrade([b]);};
+      const timer=setTimeout(finish,2000);
+      image.addEventListener('load',loaded,{once:true});image.addEventListener('error',finish,{once:true});
+      return false;
+    }
+    return !image||image.naturalWidth>0;
+  });
+  if(!visible.length)return;
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches)for(const b of visible) {
+    b.classList.remove('nft-celebrating');void b.offsetWidth;b.classList.add('nft-celebrating');
+    setTimeout(()=>b.classList.remove('nft-celebrating'),1400);
+  }
+  try {
+    const ctx=sparkleAudio;
+    if(!ctx||ctx.state!=='running'||performance.now()-lastSparkle<1400)return;
+    lastSparkle=performance.now();
+    // Five quiet ascending bell tones; final oscillator ends after 1.18 seconds.
+    [1046.5,1318.5,1568,2093,2637].forEach((frequency,i)=>{
+      const oscillator=ctx.createOscillator(),gain=ctx.createGain(),start=ctx.currentTime+i*.13;
+      oscillator.type='sine';oscillator.frequency.value=frequency;
+      gain.gain.setValueAtTime(0,start);gain.gain.linearRampToValueAtTime(.024,start+.012);
+      gain.gain.exponentialRampToValueAtTime(.0001,start+.62);
+      oscillator.connect(gain);gain.connect(ctx.destination);oscillator.start(start);oscillator.stop(start+.66);
+      oscillator.onended=()=>{oscillator.disconnect();gain.disconnect();};
+    });
+  }catch{/* Keep confirmed state usable if audio is unavailable. */}
+}
+
 export class OperationTracker {
   constructor(context,{clock=()=>performance.now()}={}) { this.context=context; this.clock=clock; this.pending=new Map(); }
   begin(keys,kind) {
