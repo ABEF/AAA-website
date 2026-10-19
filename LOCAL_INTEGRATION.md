@@ -15,6 +15,8 @@ ETH royalties retain raw currency units when a USD price is unavailable. LP
 earnings show individual plus equal-collective components at today's prices.
 Previously claimed includes all actual LP and royalty payouts in the history.
 
+Royalty multipliers on local NFT cards come from the revealed rarity: Commun ×1, Rare ×2, Legendary ×3. Dormant cards retain that multiplier in gray; activation enables participation without changing rarity. Unrevealed NFTs show Unrevealed, never an assumed multiplier. This display is separate from the ledger’s zero effective weight before activation.
+
 Mint, transfer, exact approval, Entry activation/top-up and combined claims use
 explicit confirmations. Approval and LP contribution are separate steps. The
 fixture accepts 100–99,999 whole TEST-1, marked at $1 by a mock feed. At least
@@ -50,3 +52,5 @@ checks and a static build. The [contract evidence](https://github.com/ABEF/AAA/b
 records server/confirmation checks and actual local receipts. Release remains
 NOT APPROVED. For new behavior, update this guide and the contract operator manual,
 central Todo and feature/evidence reference together.
+
+Dormant NFT details omit the claim button. Activation and transfer remain available; after activation, the claim button is enabled only when confirmed claimable funds exist and local state permits it.

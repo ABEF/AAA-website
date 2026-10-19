@@ -1,3 +1,7 @@
+## Royalty multiplier display - 2026-10-19
+
+Local NFT cards show the fixed revealed rarity multiplier (Commun ×1 / Rare ×2 / Legendary ×3), grayed while dormant. Do not use effective ledger weight zero as the displayed rarity multiplier. Unrevealed remains unknown. This is presentation only; activation eligibility and accounting are unchanged.
+
 ## Local contract integration - 2026-10-19
 
 The accepted scope is local integration before public deployment. Read
@@ -268,3 +272,5 @@ Keep 100 initially minted examples (60 Commun / 30 Rare / 10 Legendary), 80 acti
 A 5% marketplace royalty is requested; payment is not enforced across all marketplaces. All royalties actually received go to the separate active-NFT royalty pool, weighted Commun x1 / Rare x2 / Legendary x3. Rarity never changes LP-fee shares. Evolution follows current LP valuation and may downgrade when value falls; this website has no live market price feed or revaluation simulation. Do not interpret a falling valuation as reversing activation or removing royalty eligibility.
 
 The aligned contract candidate is under verification and undeployed. Reviewed market/VRF provider integrations, valuation, bridge transport, staged operating tests and independent audit remain release gates. This website is still a simulation and never signs or submits transactions. Normal publishing remains local edit/verification, commit and push, then deploy the committed build to Ubuntu and verify the public result; root is coordinating publication for this update.
+
+Dormant NFT details omit the claim button. Activation and transfer remain available; after activation, the claim button is enabled only when confirmed claimable funds exist and local state permits it.
