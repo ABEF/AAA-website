@@ -1,6 +1,14 @@
-Orbital rings is unchanged. The user requested a separate Constellation inlays
-concept preview before choosing a replacement; no inventory/metadata change is
-approved. The comparison preserves the existing metallic egg texture.
+## Approved static twin circuit routes - 2026-10-20
+
+The user explicitly chose **Vertical ribs**, not Orbital rings, for replacement.
+Its display label is now Twin circuit routes: two groups of four continuous
+static traces following opposite sides of the egg, with no chips or animation.
+Keep the original texture, rarity materials, colors and evolution borders.
+Retain stable pattern ID `ribs` / numeric slot 3 and every inventory assignment
+and image path. Only the 696 artwork states and reference metadata in that slot
+change; the other three patterns remain byte-identical. Apply palette colors to
+the traces, with neutral highlight for Onyx. This is visual, with no reward,
+rarity, supply, wallet or on-chain LP/accounting change.
 
 The NFT detail view omits the Previously claimed frame at the user's request.
 Keep 24h/all-time earnings and current Rewards to claim. Lifetime claim accounting
@@ -217,7 +225,7 @@ This current section supersedes the older six-color/72-variant implementation no
 
 - User-approved base colors are Cyan, Blue, Violet, Emerald, Amber (yellow), Crimson (red), Ivory (warm white) and Onyx (black). Color is purely artwork and independent of rarity or rewards.
 - Allowed bicolor palettes have two distinct colors and at least one of Ivory/Amber/Crimson/Onyx (22 pairs). Tricolor adds Amber/Crimson/Onyx to an allowed bicolor pair with three distinct colors (28 triples). With 8 monochrome palettes, there are 58 unordered colorways.
-- The four approved circuit patterns are Flowing arcs, Segmented panels, Orbital rings and Vertical ribs. Original egg silhouette, texture and rarity finish are preserved; code-native SVG compositions add palette and circuit variation.
+- The four approved circuit patterns are Flowing arcs, Segmented panels, Orbital rings and Twin circuit routes (stable ID ribs). Original egg silhouette, texture and rarity finish are preserved; code-native SVG compositions add palette and circuit variation.
 - The finite 1,000-entry artwork inventory is 200 monochrome / 500 bicolor / 300 tricolor. Each style has exact 60/30/10 rarity composition, totaling 600 Commun / 300 Rare / 100 Legendary. A complete palette/pattern/rarity design occurs at most four times; Legendary finished designs are unique. Every palette is available in each rarity. Color style and pattern confer no economic benefit.
 - The rendering catalog covers 58 palettes × 4 patterns × 3 rarities × 4 evolutions = 2,784 states, not 2,784 NFTs. Original 72 PNGs remain preserved. Metadata exposes color style, palette, assigned colors, circuit pattern, rarity and evolution separately from royalty weights.
 - First 100 demo NFTs consume fixed inventory entries with 20/50/30 styles and 60/30/10 rarities. New preview mints consume unused inventory entries, preserving full-supply quotas and visual repetition limits. Displayed NFT IDs and fixed inventory slot IDs are separate. Preview randomness is deterministic; no live VRF or transaction is requested.

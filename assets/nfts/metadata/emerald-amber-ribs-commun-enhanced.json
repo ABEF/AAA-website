@@ -1,5 +1,5 @@
 {
-  "name": "PoPL artwork · Emerald / Amber · Vertical ribs · Commun · Enhanced",
+  "name": "PoPL artwork · Emerald / Amber · Twin circuit routes · Commun · Enhanced",
   "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
   "image": "../emerald-amber-ribs-commun-enhanced.svg",
   "attributes": [
@@ -25,7 +25,7 @@
     },
     {
       "trait_type": "Circuit pattern",
-      "value": "Vertical ribs"
+      "value": "Twin circuit routes"
     },
     {
       "trait_type": "Evolution",

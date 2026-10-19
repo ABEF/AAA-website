@@ -1,5 +1,5 @@
 {
-  "name": "PoPL artwork · Cyan · Vertical ribs · Legendary · Dormant",
+  "name": "PoPL artwork · Cyan · Twin circuit routes · Legendary · Dormant",
   "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
   "image": "../cyan-ribs-legendary-dormant.svg",
   "attributes": [
@@ -21,7 +21,7 @@
     },
     {
       "trait_type": "Circuit pattern",
-      "value": "Vertical ribs"
+      "value": "Twin circuit routes"
     },
     {
       "trait_type": "Evolution",

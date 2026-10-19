@@ -22,7 +22,7 @@ test('public page omits repository links and source prompts',async () => {
 
 test('eight colors and 58 allowed colorways produce 2,784 independent pattern/rarity/evolution paths',() => {
   assert.equal(PALETTES.length,8); assert.equal(COLORWAYS.length,58); assert.equal(PATTERNS.length,4);
-  assert.deepEqual(PATTERNS.map(pattern => [pattern.id,pattern.label]),[['arcs','Flowing arcs'],['panels','Segmented panels'],['orbits','Orbital rings'],['ribs','Vertical ribs']]);
+  assert.deepEqual(PATTERNS.map(pattern => [pattern.id,pattern.label]),[['arcs','Flowing arcs'],['panels','Segmented panels'],['orbits','Orbital rings'],['ribs','Twin circuit routes']]);
   assert.equal(RARITIES.length,3); assert.equal(EVOLUTIONS.length,4);
   assert.equal(ARTWORKS.length,2784); assert.equal(new Set(ARTWORKS.map(art => art.src)).size,2784);
   assert.equal(new Set(ARTWORKS.map(art => art.metadata)).size,2784);
