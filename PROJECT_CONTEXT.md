@@ -25,7 +25,10 @@ a successful receipt plus refreshed current LP in the same session/account.
 Approval, wrapping, claims, failures, ordinary refreshes and same-tier additions
 never celebrate. Wait for the new image; reduced motion suppresses the animation,
 unavailable audio never blocks financial actions. No on-chain behavior changed.
-Normal publication is local verification, main commit/push, then website deployment.
+Shared effect exports live in artworks.js, already allowed by existing local
+server resource lists; do not add a new required module without compatibility
+checks or force a chain restart. Normal publication is local verification, main
+commit/push, then website deployment.
 
 ## Contribution flow and accepted inputs - 2026-10-19
 

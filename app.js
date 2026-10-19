@@ -1,9 +1,9 @@
 import {localMode} from './local-client.js';
 import {createLocalView} from './local-view.js';
-import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions} from './artworks.js';
+import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from './artworks.js';
 import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, previouslyClaimed, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
-const {OperationTracker,preserveArtwork,confirmedUpgrade,armUpgradeSound,celebrateUpgrade} = localMode(location) ? {} : await import('./ui-state.js');
+const {OperationTracker,preserveArtwork} = localMode(location) ? {} : await import('./ui-state.js');
 const {PreviewStore,RESET_KEY,previewChange} = localMode(location) ? {} : await import('./preview-store.js');
 
 const $ = selector => document.querySelector(selector);

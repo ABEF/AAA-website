@@ -1,6 +1,5 @@
 import {LocalClient,escape as e,units,usd,sum,uint,balances,hasClaim} from './local-client.js';
-import {confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from './ui-state.js';
-import {COLORWAYS,PATTERNS,RARITIES,findArtwork,paletteTrait,preloadEvolutions} from './artworks.js';
+import {COLORWAYS,PATTERNS,RARITIES,findArtwork,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,celebrateUpgrade} from './artworks.js';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const short=a=>`${a.slice(0,6)}…${a.slice(-4)}`;
 const text=(s,value)=>{const n=$(s);if(n)n.textContent=value;};
