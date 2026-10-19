@@ -117,3 +117,16 @@ cannot override the selected wallet/action. Existing duplicate-operation and los
 response recovery remain in force; no new automatic writes. Reload JS without
 restarting the current disposable session. The production API's new parallel
 read/unsigned workers do not change this local signer's serial mutation lock.
+
+### Position summary
+
+Cards display fixed royalty weight as a trait and combine LP/royalty claimable
+amounts by currency in Rewards to claim. The breakdown separates attached LP,
+current reward components, 24-hour/all-time earnings and lifetime claimed totals.
+Dormant NFTs omit rewards; stale reads suppress monetary values as before.
+No signer, server or operator-procedure change is needed; reload updated assets.
+
+The activation form offers only ZZZ / ETH (WETH accounting identity). Pool labels
+are omitted from NFT detail views. Existing legacy demo records are preserved.
+The contract candidate permits one contribution pool at a time, with future
+governed switches; this UI is not an on-chain deployment.

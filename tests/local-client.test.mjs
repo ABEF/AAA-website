@@ -149,21 +149,43 @@ test('cancelled read backoff fails closed without a further request',async()=>{
   await assert.rejects(c.request('/state'),/timed out/);assert.equal(calls,1);
 });
 
-import {positionRows,positionFinancialDetails,contributionError,sameContribution} from '../local-view.js';
+import {positionRows,positionFinancialDetails,royaltyTrait,contributionError,sameContribution} from '../local-view.js';
 const dormant=()=>({position:{activated:false,current_lp_value:{available:true,raw:'0'}}});
 const active=()=>({position:{activated:true,evolution:'dormant',current_lp_value:{available:false,raw:null}},claimable:{lp:[],royalties:[]},previously_claimed:{available:false}});
-test('dormant cards/details do not read or show inapplicable reward history',()=>{
-  for(const html of [positionRows(dormant()),positionFinancialDetails(dormant())]) {
-    assert.match(html,/LP [aA][tT][tT][aA][cC][hH][eE][dD]/);
-    for(const label of ['LP FEES','LP fees earned','LP fees to claim','Royalties to claim','Previously claimed','Earnings breakdown'])assert.ok(!html.includes(label),label);
-  }
+test('dormant cards omit finances and dormant details never read reward payloads',()=>{
+  assert.match(positionRows(dormant()),/LP attached/);
+  assert.ok(!positionRows(dormant()).includes('Rewards to claim'));
+  const detail=positionFinancialDetails(dormant());
+  assert.match(detail,/LP attached/);
+  for(const label of ['Rewards to claim','Previously claimed','Earnings history'])assert.ok(!detail.includes(label),label);
 });
-test('activated NFTs retain balances and history even when market evolution is dormant or unavailable',()=>{
+test('active cards combine only claimable amounts while detail retains unavailable history',()=>{
   const rows=positionRows(active()),detail=positionFinancialDetails(active());
-  for(const html of [rows,detail]){assert.match(html,/Royalties to claim/);assert.match(html,/Previously claimed/);assert.match(html,/Unavailable/);}
-  assert.match(detail,/Earnings breakdown/);assert.match(detail,/History unavailable/);
+  assert.match(rows,/Rewards to claim/);assert.match(rows,/<strong>0<\/strong>/);
+  for(const label of ['Previously claimed','Earnings history'])assert.ok(!rows.includes(label),label);
+  assert.match(detail,/Royalties/);assert.match(detail,/Previously claimed/);
+  assert.match(detail,/History unavailable/);assert.match(detail,/Unavailable/);
 });
-
+test('claim total combines ETH exactly and keeps different currencies distinct',()=>{
+  const n=active(),eth={asset:'0x'+'00'.repeat(20),symbol:'ETH',decimals:18};
+  n.claimable.lp=[{...eth,raw:'10000000000000001'}];
+  n.claimable.royalties=[{...eth,raw:'19999999999999999'}];
+  assert.match(positionRows(n),/<strong>0.03 ETH<\/strong>/);
+  n.claimable.royalties.push({asset:address,symbol:'USDG',decimals:6,raw:'2000000'});
+  assert.match(positionRows(n),/0.03 ETH \+ 2 USDG/);
+  n.previously_claimed={available:true,assets:[{...eth,total_raw:'900000000000000000'}]};
+  assert.match(positionFinancialDetails(n),/0.9 ETH/);
+  assert.ok(!positionRows(n).includes('0.9 ETH'));
+});
+test('royalty trait keeps revealed rarity weight while dormant, unknown draws stay unknown',()=>{
+  for(const [rarity,weight] of [['Commun',1],['Rare',2],['Legendary',3]]) {
+    const n={position:{activated:false},traits_ready:true,traits:{rarity}};
+    assert.match(royaltyTrait(n),new RegExp('NFT-sale royalty weight ×'+weight));
+    assert.match(royaltyTrait(n),/is-dormant/);
+    n.position.activated=true;assert.ok(!royaltyTrait(n).includes('is-dormant'));
+  }
+  assert.match(royaltyTrait({position:{activated:false},traits_ready:false}),/unrevealed/);
+});
 
 test('fast session enables wallet selection before slow portfolio completes',async()=>{
   const env=setup(path=>path==='/session'?{...session,accounts:[address,other]}:new Promise(r=>resolve=r));let resolve,ready=false;
@@ -187,12 +209,11 @@ test('malformed cached selections and changed session account inventory never au
   await assert.rejects(env.c.refresh(),/inventory changed/);assert.equal(env.c.state,null);
 });
 
-test('pending identity cards never render cached balances or read financial payloads',()=>{
-  for(const activated of [false,true]) {
-    const html=positionRows({position:{activated}},'Updating…');
-    assert.match(html,/Updating…/);assert.ok(!html.includes('$'));
-    assert.equal(html.includes('Royalties to claim'),activated);
-  }
+test('pending identity cards never read financial payloads or render cached balances',()=>{
+  assert.match(positionRows({position:{activated:false}},'Updating…'),/LP attached/);
+  assert.ok(!positionRows({position:{activated:false}},'Updating…').includes('Rewards to claim'));
+  const html=positionRows({position:{activated:true}},'Updating…');
+  assert.match(html,/Rewards to claim/);assert.match(html,/Updating…/);assert.ok(!html.includes('$'));
 });
 
 test('contribution review exposes invalid amounts and missing acknowledgement',()=>{

@@ -1,3 +1,15 @@
+## NFT card traits and reward summary - 2026-10-19
+
+My NFTs places the fixed NFT-sale royalty weight below the artwork pattern using
+the same trait typography; dormant weights remain gray. Cards show LP attached; active cards also show one
+Rewards to claim total (LP plus royalties). Reward components,
+earnings history and cumulative claims are grouped in the detail breakdown.
+The local adapter sums exact balances only within the same currency; no assumed
+ETH conversion or USD price. Dormant NFTs have no reward section. Saved holdings,
+transactions, backend and contract semantics are unchanged. Thirty-five focused
+JS tests, syntax/build and main-site browser checks pass. Public server unchanged;
+production integration remains open. Use main and Git for publication status.
+
 ## Concurrent website/API resilience - 2026-10-19
 
 Read FRONTEND_STATE.md; API/runbook evidence lives in the contract repository.
@@ -327,3 +339,8 @@ A 5% marketplace royalty is requested; payment is not enforced across all market
 The aligned contract candidate is under verification and undeployed. Reviewed market/VRF provider integrations, valuation, bridge transport, staged operating tests and independent audit remain release gates. This website is still a simulation and never signs or submits transactions. Normal publishing remains local edit/verification, commit and push, then deploy the committed build to Ubuntu and verify the public result; root is coordinating publication for this update.
 
 Dormant NFT details omit the claim button. Activation and transfer remain available; after activation, the claim button is enabled only when confirmed claimable funds exist and local state permits it.
+
+The activation form offers only ZZZ / ETH (WETH accounting identity). Pool labels
+are omitted from NFT detail views. Existing legacy demo records are preserved.
+The contract candidate permits one contribution pool at a time, with future
+governed switches; this UI is not an on-chain deployment.

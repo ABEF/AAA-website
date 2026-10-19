@@ -42,6 +42,17 @@ gray on the card. Active cards have separate Claim and Grow attached LP buttons.
 Previously claimed includes lifetime LP plus royalties. Loaded artwork stays
 stable; changed saved artwork crossfades, respecting reduced-motion preference.
 
+## Position presentation
+
+The royalty multiplier is a fixed trait directly below the pattern, using the
+same typography and gray styling before activation. Cards show LP attached and active cards show one Rewards
+to claim total; the detail view groups claimable components, attached liquidity,
+fee history and lifetime LP-plus-royalty claims. Gross simulated trading-fee
+history remains labeled before allocation. The local adapter preserves exact
+raw currency totals and unavailable history/prices; it does not assume tokens
+are ETH. Dormant cards omit financial summaries and reward controls.
+No transaction, operator permission, service command or economic rule changed.
+
 ## Operator procedure
 
 No contract call, permission or economics change is required. Build with
@@ -85,3 +96,8 @@ the selected operation/wallet. It preserves the existing unresolved-operation
 recovery rather than creating retries. Reload the page for this JS update; the
 running local service and its serial signing lock remain unchanged. Public wallet
 integration and multi-device production qualification are still open.
+
+The activation form offers only ZZZ / ETH (WETH accounting identity). Pool labels
+are omitted from NFT detail views. Existing legacy demo records are preserved.
+The contract candidate permits one contribution pool at a time, with future
+governed switches; this UI is not an on-chain deployment.

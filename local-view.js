@@ -9,10 +9,10 @@ const artFor=n=>n.traits_ready&&n.position.evolution_value_available?findArtwork
 const buttonArt=n=>{const art=artFor(n);return art?`<button class="art-image-button" data-local-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}"><img class="nft-artwork" src="${art.src}" alt="${e(art.colorLabel+' '+art.rarityLabel+' '+art.evolutionLabel)}" width="1024" height="1024" loading="lazy"><span class="art-enlarge">↗</span></button>`:'<div class="local-art-unavailable">Artwork state unavailable</div>';};
 const row=(label,value)=>`<div><span>${label}</span><b>${e(value)}</b></div>`;
 const claimRows=n=>[...n.claimable.lp,...n.claimable.royalties];
-const royaltyBadge=n=>{
+export const royaltyTrait=n=>{
   const multiplier=n.traits_ready?RARITIES.find(r=>r.label===n.traits.rarity)?.royaltyMultiplier:null;
   const active=n.position.activated;
-  return `<span class="local-royalty-weight${active?'':' is-dormant'}" title="${active?'Rarity multiplier for NFT-sale royalties':'Activate this NFT to enable its royalty share'}">ROYALTY WEIGHT<strong>${multiplier?`×${multiplier}`:'Unrevealed'}</strong></span>`;
+  return `<span class="royalty-trait${active?'':' is-dormant'}" title="${active?'Rarity multiplier for NFT-sale royalties':'Activate this NFT to enable its royalty share'}">NFT-sale royalty weight ${multiplier?`×${multiplier}`:'· unrevealed'}</span>`;
 };
 
 
@@ -25,16 +25,19 @@ export const sameContribution=(a,b)=>Boolean(a&&b&&['session','account','id','am
 
 // Pending displays keep identity/artwork only, never cached financial values.
 export function positionRows(n, pendingLabel=null) {
-  if(pendingLabel)return ['LP attached',...(n.position.activated?['LP fees earned · all time','LP fees earned · 24h','LP fees to claim','Royalties to claim','Previously claimed · all time']:[])].map(label=>row(label,pendingLabel)).join('');
-  const lp=row('LP attached',usd(lpValue(n)));
+  const lp=`<div class="position-attached-lp"><span>LP attached</span><strong>${e(pendingLabel||usd(lpValue(n)))}</strong></div>`;
   if(!n.position.activated)return lp;
-  return lp+row('LP fees earned · all time',usd(earned(n,'all_time')))+row('LP fees earned · 24h',usd(earned(n,'last_24h')))+row('LP fees to claim',balances(n.claimable.lp))+row('Royalties to claim',balances(n.claimable.royalties))+row('Previously claimed · all time',n.previously_claimed.available?balances(n.previously_claimed.assets,'total_raw'):'Unavailable');
+  // Sum the same currency exactly; never add unrelated token units or assume a price.
+  return lp+claimTotal(n,pendingLabel);
+}
+function claimTotal(n,pendingLabel=null) {
+  return `<div class="position-reward-total"><span>Rewards to claim</span><strong>${e(pendingLabel||balances(claimRows(n)))}</strong></div>`;
 }
 export function positionFinancialDetails(n) {
-  const lp=`<div><span>LP ATTACHED</span><strong>${usd(lpValue(n))}</strong></div>`;
-  if(!n.position.activated)return `<div class="nft-detail-stats is-dormant">${lp}</div><p class="small-note">Activate this NFT to start earning LP fees and royalties.</p>`;
-  const history=period=>n.earnings?.available?`<div class="nft-detail-rewards">${row('Individual LP fees',usd(n.earnings[period+'_usd_at_current_price_18'].lp_individual))}${row('Collective LP fees',usd(n.earnings[period+'_usd_at_current_price_18'].lp_collective))}${row('Royalties earned',balances(n.earnings[period],'royalties_raw'))}</div>`:'<p>History unavailable</p>';
-  return `<div class="nft-detail-stats">${lp}<div><span>LP FEES · ALL TIME</span><strong>${usd(earned(n,'all_time'))}</strong></div><div><span>LP FEES · 24H</span><strong>${usd(earned(n,'last_24h'))}</strong></div></div><div class="nft-detail-rewards">${row('LP fees to claim · individual + collective',balances(n.claimable.lp))}${row('Royalties to claim',balances(n.claimable.royalties))}${row('Previously claimed · all LP + royalties',n.previously_claimed.available?balances(n.previously_claimed.assets,'total_raw'):'Unavailable')}</div><details class="manage-liquidity"><summary>Earnings breakdown · today’s prices</summary><h3>All time</h3>${history('all_time')}<h3>Last 24 hours</h3>${history('last_24h')}<p class="small-note">ETH USD price unavailable. Claims, transfers and conversions are not new income. Claimable LP components are reported as an exact combined balance.</p></details>`;
+  const position=`<section class="position-breakdown"><h3>Attached liquidity</h3><div class="breakdown-rows">${row('LP attached',usd(lpValue(n)))}</div><p class="small-note">LP stays attached to this NFT; principal cannot be claimed.</p></section>`;
+  if(!n.position.activated)return position+'<p class="small-note">Activate this NFT to start earning LP fees and royalties.</p>';
+  const history=period=>n.earnings?.available?`<div class="breakdown-rows">${row('Individual LP fees',usd(n.earnings[period+'_usd_at_current_price_18'].lp_individual))}${row('Collective rewards',usd(n.earnings[period+'_usd_at_current_price_18'].lp_collective))}${row('Royalties earned',balances(n.earnings[period],'royalties_raw'))}</div>`:'<p class="small-note">History unavailable</p>';
+  return `<section class="position-breakdown claim-breakdown">${claimTotal(n)}<div class="breakdown-rows">${row('LP fees · individual + collective',balances(n.claimable.lp))}${row('Royalties',balances(n.claimable.royalties))}</div></section>${position}<section class="position-breakdown"><h3>Earnings history</h3><details class="earnings-period"><summary>Last 24 hours <span>${usd(earned(n,'last_24h'))} LP fees</span></summary>${history('last_24h')}</details><details class="earnings-period"><summary>All time <span>${usd(earned(n,'all_time'))} LP fees</span></summary>${history('all_time')}</details><p class="small-note">LP history uses today’s available prices. Royalties are shown in their payment currency. Claims, transfers and conversions are not new income.</p></section><section class="position-breakdown"><h3>Previously claimed · all time</h3><div class="breakdown-rows">${row('LP rewards + royalties',n.previously_claimed.available?balances(n.previously_claimed.assets,'total_raw'):'Unavailable')}</div></section>`;
 }
 
 // Reuse loaded artwork on routine renders; crossfade only a confirmed new image.
@@ -144,12 +147,12 @@ export function createLocalView() {
     text('#claim-all',claimCount>10?'Review claims · next 10 NFTs':'Review claim all ↗');
     withArtworkContinuity($('#owned-nfts'),()=>{
       $('#owned-nfts').setAttribute('aria-busy',String(stale&&busy));
-      $('#owned-nfts').innerHTML=items.length?items.map(n=>`<article class="nft-card" data-local-position="${n.token_id}"><div class="nft-card-art">${buttonArt(n)}${stale&&n.token_id===updatingNFT?`<span class="local-art-status" role="status">${busy?'Updating · last confirmed artwork':'Last confirmed artwork · refresh required'}</span>`:''}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span class="level-badge">${e(n.position.evolution||'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div><div class="nft-card-details">${positionRows(n,stale?pendingText:null)}</div><div class="nft-card-claim">${royaltyBadge(n)}${n.position.activated?'':`<button class="button" data-local-id="${n.token_id}" ${blocked()?'disabled':''}>Activate ↗</button>`}</div>${n.position.activated?`<div class="local-position-actions"><button class="button" data-local-action="claim" data-local-token="${n.token_id}" ${blocked()||!hasClaim(n)?'disabled':''}>Claim</button><button class="button button-secondary" data-local-id="${n.token_id}" data-local-grow ${blocked()?'disabled':''}>Grow attached LP</button></div>`:''}</div><button class="nft-card-detail-link" data-local-id="${n.token_id}" ${stale?'disabled':''}><span>Position & reward breakdown</span><span>↗</span></button></article>`).join(''):stale?`<p class="local-empty" role="status">${busy?'Reading your confirmed positions…':'Confirmed state unavailable. Refresh balances to recover; do not repeat an already confirmed transaction.'}</p>`:'<p class="local-empty">No NFTs owned by this wallet. Mint one or transfer an NFT from the other local wallet.</p>';
+      $('#owned-nfts').innerHTML=items.length?items.map(n=>`<article class="nft-card" data-local-position="${n.token_id}"><div class="nft-card-art">${buttonArt(n)}${stale&&n.token_id===updatingNFT?`<span class="local-art-status" role="status">${busy?'Updating · last confirmed artwork':'Last confirmed artwork · refresh required'}</span>`:''}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span class="level-badge">${e(n.position.evolution||'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div>${positionRows(n,stale?pendingText:null)}${n.position.activated?'':`<div class="position-buttons"><button class="button" data-local-id="${n.token_id}" ${blocked()?'disabled':''}>Activate ↗</button></div>`}${n.position.activated?`<div class="local-position-actions"><button class="button" data-local-action="claim" data-local-token="${n.token_id}" ${blocked()||!hasClaim(n)?'disabled':''}>Claim</button><button class="button button-secondary" data-local-id="${n.token_id}" data-local-grow ${blocked()?'disabled':''}>Grow attached LP</button></div>`:''}</div><button class="nft-card-detail-link" data-local-id="${n.token_id}" ${stale?'disabled':''}><span>Position & reward breakdown</span><span>↗</span></button></article>`).join(''):stale?`<p class="local-empty" role="status">${busy?'Reading your confirmed positions…':'Confirmed state unavailable. Refresh balances to recover; do not repeat an already confirmed transaction.'}</p>`:'<p class="local-empty">No NFTs owned by this wallet. Mint one or transfer an NFT from the other local wallet.</p>';
       if(stale)$('#owned-nfts').querySelectorAll('.art-image-button').forEach(b=>b.disabled=true);
     });
   }
   function traits(n) {
-    const art=artFor(n);return art?`<span class="rarity-tag">${e(art.rarityLabel)}</span><span>${e(art.colorLabel)}</span><span>${e(art.patternLabel)}</span>`:'<span>Traits or current evolution unavailable</span>';
+    const art=artFor(n);return (art?`<span class="rarity-tag">${e(art.rarityLabel)}</span><span>${e(art.colorLabel)}</span><span>${e(art.patternLabel)}</span>`:'<span>Traits or current evolution unavailable</span>')+royaltyTrait(n);
   }
   function renderMetrics() {
     const s=c.state,values={};
