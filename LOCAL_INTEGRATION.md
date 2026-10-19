@@ -6,7 +6,7 @@ checkout as `--website`, following the [local stack guide](https://github.com/AB
 Open `http://127.0.0.1:8890/app/#my-nfts` (substitute the launcher's port).
 Normal `npm run dev` and public static hosting still run the labeled simulation.
 
-Choose the Holder or Buyer wallet. These are local unlocked accounts on the
+Choose Test wallet A or Test wallet B. These are local unlocked accounts on the
 launcher's own Anvil child; no browser extension, private key or public funds
 are used. My NFTs and Collection show confirmed ownership/current LP and real
 processed earnings. Artwork maps actual revealed traits to the existing library.
@@ -37,7 +37,7 @@ There is no persistent-chain recovery promise.
 recovery. `local-view.js` renders into the existing layout. Local mode requires
 the exact HTTP loopback `/app/` mount plus the verified launcher handshake.
 The production demo adapter and its v7 storage are unchanged. Read failures
-clear projections; demo balances are never used as fallback. Inline artwork
+clear financial projections (labeled last-confirmed artwork can remain); demo balances are never used as fallback. Inline artwork
 styles are allowed only by the local mounted page's CSP; script/connect sources
 remain same-origin. The launcher exposes only allowlisted public files.
 
@@ -54,3 +54,41 @@ NOT APPROVED. For new behavior, update this guide and the contract operator manu
 central Todo and feature/evidence reference together.
 
 Dormant NFT details omit the claim button. Activation and transfer remain available; after activation, the claim button is enabled only when confirmed claimable funds exist and local state permits it.
+
+## Refresh, evolution and concurrent access
+
+The fast session endpoint exposes only the two disposable public wallet addresses,
+without waiting for indexer/history reads. Selection is saved in tab session
+storage and restored only for that exact deployment; disconnect persists and a
+new chain/session resets selection. This stores no private key or signer.
+
+Dormant cards and details omit fee history, claimable royalties/LP, lifetime claims
+and earnings breakdown. Active cards have separate **Claim** and **Grow attached
+LP** buttons. The latter opens the contribution form; Claim requires funds and
+fresh state. An activated NFT stays eligible if market value lowers its artwork.
+
+On refresh, last-confirmed NFT identity and artwork remain visible with a status
+label; balances show Updating, not a false error or cached amount. Actions wait
+for current data. Actual failures show Unavailable. Confirmed evolution changes
+crossfade after loading the new artwork; reduced-motion removes the animation.
+No optimistic level or rewards are invented from the contribution amount.
+
+Overlapping client refreshes share one request. Only an explicit busy 409 from
+GET /state retries, at most 13 attempts within its 90-second deadline with capped
+backoff. Writes and other errors do not auto-retry. If confirmation succeeds but
+the subsequent balance read fails, refresh the data, never create another payment.
+Same-ID pending recovery and exact revision/ownership/simulation guards remain.
+
+The local launcher intentionally serializes its shared indexer and transactions;
+production needs independent wallet signing and bounded concurrent reads. Shared
+pool quote races, same-NFT ownership/claim races, nonce/replacement handling and
+peak-load rehearsal remain explicit central Todo requirements. This local UI
+improvement is not a claim of production load capacity. The session endpoint
+change was applied with a fresh disposable deployment; original receipts and a
+raw chain snapshot were preserved externally (not qualified persistent recovery).
+
+Focused follow-up checks: 25 local-client/presentation cases and nine local HTTP
+cases; actual local evolution receipts and browser verification are recorded in
+the contract repository's scoped evidence. No unchanged Solidity suite rerun.
+
+The local A/B transfer control exercises ownership changes only. It is not a sale, listing, purchase or marketplace feature. NFT secondary sales take place on external marketplaces such as OpenSea.

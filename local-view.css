@@ -12,3 +12,14 @@
 @media(max-width:600px){.local-status{align-items:flex-start}.local-confirm .nft-detail-rewards div{display:block}.local-confirm .nft-detail-rewards b{display:block;max-width:100%;text-align:left}.local-actions .button{width:100%}}
 
 .nft-card-claim>.local-royalty-weight.is-dormant,.nft-card-claim>.local-royalty-weight.is-dormant strong{color:#8b93a1}
+
+.nft-detail-stats.is-dormant{grid-template-columns:1fr}
+
+.local-position-actions{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-top:15px}.local-position-actions .button{font-size:11px;padding:11px 12px;justify-content:center;gap:0}
+
+.nft-card-art{position:relative}
+.local-art-status{position:absolute;bottom:10px;left:10px;right:10px;padding:8px;border:1px solid #315164;border-radius:8px;background:#071321ed;color:#badbe7;font-size:11px;text-align:center;pointer-events:none}
+.art-image-button .local-art-previous{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;transition:opacity .65s ease;pointer-events:none}
+.art-image-button .local-art-previous.is-revealed{opacity:0}
+.nft-card-art .art-image-button:disabled{opacity:1;cursor:default}
+@media(prefers-reduced-motion:reduce){.art-image-button .local-art-previous{transition:none}}

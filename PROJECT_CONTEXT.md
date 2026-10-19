@@ -1,3 +1,20 @@
+Local wallet labels are Test wallet A / B. The website is not a marketplace: secondary NFT sales happen on OpenSea. The local transfer control is only an ownership-accounting rehearsal.
+
+## Local refresh and evolution - 2026-10-19
+
+Local wallets arrive from the fast /session handshake and persist across navigation
+and soft refresh in tab session storage, bound to the exact disposable deployment.
+Confirmed NFT artwork stays visible with an updating label during slow reads;
+stale balances are masked and transactions disabled. Only a confirmed changed
+evolution image crossfades, after loading; reduced motion skips the animation.
+Dormant cards/details omit rewards/history. Active cards split Claim and Grow
+attached LP. Sticky activation, not current artwork tier, controls eligibility.
+Read contention retries only the explicit busy response within finite bounds;
+confirmed writes never become retryable new actions after a balance-read failure.
+Production multi-user wallet/service qualification remains open; never expose
+the local two-account signer. See LOCAL_INTEGRATION.md and contract evidence.
+Public website/server and paused monitoring remain unchanged. Use main.
+
 ## Royalty multiplier display - 2026-10-19
 
 Local NFT cards show the fixed revealed rarity multiplier (Commun ×1 / Rare ×2 / Legendary ×3), grayed while dormant. Do not use effective ledger weight zero as the displayed rarity multiplier. Unrevealed remains unknown. This is presentation only; activation eligibility and accounting are unchanged.

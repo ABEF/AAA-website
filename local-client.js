@@ -45,30 +45,61 @@ export function validateState(s) {
   return s;
 }
 
+const validAccounts=a=>Array.isArray(a)&&a.length===2&&a.every(v=>/^0x[0-9a-f]{40}$/.test(v))&&new Set(a).size===2;
+const waitForRead=(milliseconds,signal)=>new Promise((resolve,reject)=>{
+  if(signal.aborted)return reject(new Error('Local read timed out'));
+  const aborted=()=>{clearTimeout(timer);reject(new Error('Local read timed out'));};
+  const timer=setTimeout(()=>{signal.removeEventListener('abort',aborted);resolve();},milliseconds);
+  signal.addEventListener('abort',aborted,{once:true});
+});
+
 export class LocalClient {
-  constructor({fetcher=(...args)=>fetch(...args),storage=sessionStorage,random=()=>crypto.randomUUID().replaceAll('-','')}={}) {
-    this.fetcher=fetcher;this.storage=storage;this.random=random;
+  constructor({fetcher=(...args)=>fetch(...args),storage=sessionStorage,random=()=>crypto.randomUUID().replaceAll('-',''),pause=waitForRead,onSession=()=>{}}={}) {
+    this.fetcher=fetcher;this.storage=storage;this.random=random;this.pause=pause;this.refreshing=null;this.accounts=[];this.onSession=onSession;this.walletKey='popl-local-website-wallet-v1';
     this.key='popl-local-website-pending-v1';this.session=null;this.state=null;this.account=null;this.busy=false;this.pending=null;this.version=0;
   }
   async request(path,body) {
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
     try {
-      const response=await this.fetcher(path,{signal:controller.signal,cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json','X-Local-Token':this.session.token},body:JSON.stringify(body)}:{})});
-      const result=await response.json();
-      if (!response.ok) {const error=new Error(result.error||'Local request failed');error.rejected=result.rejected===true;throw error;}
-      return result;
+      for(let attempt=0;;attempt++) {
+        if(controller.signal.aborted)throw new Error('Local request timed out');
+        const response=await this.fetcher(path,{signal:controller.signal,cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json','X-Local-Token':this.session.token},body:JSON.stringify(body)}:{})});
+        const result=await response.json();
+        if(!response.ok) {
+          // Only retry the read endpoint's explicit busy response. Never replay a
+          // write here, or hide a validation/chain/accounting error as contention.
+          if(!body&&path==='/state'&&response.status===409&&result.error==='Local operation in progress; refresh shortly'&&attempt<12) {
+            await this.pause(Math.min(500*2**attempt,3000),controller.signal);continue;
+          }
+          const error=new Error(result.error||'Local request failed');error.rejected=result.rejected===true;throw error;
+        }
+        return result;
+      }
     } finally {clearTimeout(timer);}
   }
-  async refresh() {
+  refresh() {
+    if(this.refreshing)return this.refreshing;
+    this.refreshing=this.refreshState().finally(()=>{this.refreshing=null;});
+    return this.refreshing;
+  }
+  async refreshState() {
     this.state=null;this.version++;
     const session=await this.request('/session');
     if(session.mode!=='LOCAL ANVIL TEST ONLY'||session.chain_id!==31337||!/^[a-f0-9]{64}$/.test(session.token)) throw new Error('This is not the disposable Anvil session');
-    if(this.session?.token!==session.token) this.account=null;
+    if(session.accounts!==undefined&&!validAccounts(session.accounts))throw new Error('Invalid local wallet inventory');
+    if(this.session?.token!==session.token){this.account=null;this.accounts=[];}
     this.session=session;
+    let wallet=null;
+    try {const raw=this.storage.getItem(this.walletKey);if(raw&&raw.length<1024)wallet=JSON.parse(raw);}catch{ /* No cached wallet is assumed. */ }
+    const cached=wallet?.session===session.token&&validAccounts(wallet.accounts);
+    this.accounts=session.accounts||((cached&&wallet.accounts)||[]);
+    if(this.account&&!this.accounts.includes(this.account))this.account=null;
+    if(!this.account&&cached&&this.accounts.includes(wallet.account))this.account=wallet.account;
     let saved;
     try {saved=JSON.parse(this.storage.getItem(this.key)||'null');} catch {throw new Error('Pending-operation storage is unreadable; inspect the local session before continuing');}
     this.pending=saved?.session===session.token?saved:null;
     if(saved&&!this.pending)this.storage.removeItem(this.key);
+    this.onSession();
     let recovered=null;
     if(this.pending) {
       // Recovery repeats only the identical operation ID, never a new intent.
@@ -76,13 +107,18 @@ export class LocalClient {
       if(!['confirmed','failed'].includes(recovered.status)||recovered.uncertain)throw new Error('Submission is unresolved. Inspect local records before restarting');
       this.storage.removeItem(this.key);this.pending=null;
     }
-    this.state=validateState(await this.request('/state'));
-    if(this.account&&!this.state.accounts.includes(this.account))this.account=null;
+    const state=validateState(await this.request('/state'));
+    if(session.accounts&&JSON.stringify(state.accounts)!==JSON.stringify(session.accounts))throw new Error('Local wallet inventory changed');
+    this.state=state;this.accounts=state.accounts;
+    if(this.account&&!this.accounts.includes(this.account))this.account=null;
     return recovered;
   }
   select(account) {
     if(this.busy||this.pending)throw new Error('Resolve the current transaction before changing wallets');
-    if(account!==null&&!this.state?.accounts.includes(account))throw new Error('Unknown local account');
+    if(account!==null&&!this.accounts.includes(account))throw new Error('Unknown local account');
+    // Session storage survives reload/navigation but never selects on a new chain.
+    try {this.storage.setItem(this.walletKey,JSON.stringify({session:this.session.token,accounts:this.accounts,account}));}
+    catch {throw new Error('Wallet selection could not be saved in this browser');}
     this.account=account;this.version++;
   }
   async prepare(action, extras={}) {

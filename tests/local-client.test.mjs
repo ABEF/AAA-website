@@ -63,3 +63,95 @@ test('failed receipt result is terminal, not retried as a fresh transaction',asy
   const result=await c.execute(draft(c));assert.equal(result.status,'failed');assert.equal(c.pending,null);await c.refresh();
   assert.equal(calls.filter(([p])=>p==='/action').length,1);
 });
+
+
+test('only explicit busy state reads retry, with bounded backoff',async()=>{
+  let reads=0;const pauses=[];
+  const c=new LocalClient({storage:{getItem:()=>null},pause:async ms=>pauses.push(ms),fetcher:async path=>{
+    const busy=path==='/state'&&++reads<3;
+    return {ok:!busy,status:busy?409:200,json:async()=>busy?{error:'Local operation in progress; refresh shortly'}:base(path)};
+  }});
+  await c.refresh();assert.equal(reads,3);assert.deepEqual(pauses,[500,1000]);assert.ok(c.state);
+});
+
+test('persistent busy reads stop after 13 attempts and keep state unavailable',async()=>{
+  let reads=0,waits=0;const c=new LocalClient({storage:{getItem:()=>null},pause:async()=>waits++,fetcher:async path=>{
+    if(path==='/session')return {ok:true,json:async()=>session};reads++;
+    return {ok:false,status:409,json:async()=>({error:'Local operation in progress; refresh shortly'})};
+  }});
+  await assert.rejects(c.refresh(),/operation in progress/);assert.equal(reads,13);assert.equal(waits,12);assert.equal(c.state,null);assert.equal(c.refreshing,null);
+});
+
+test('writes and non-busy state errors are never automatically retried',async()=>{
+  for(const [path,body,status,message] of [['/prepare',{},409,'Local operation in progress; refresh shortly'],['/action',{},409,'Local operation in progress; refresh shortly'],['/state',null,503,'Accounting mismatch'],['/state',null,409,'Invalid confirmed state']]) {
+    let calls=0;const c=new LocalClient({storage:{},pause:async()=>assert.fail('unexpected retry'),fetcher:async()=>{calls++;return {ok:false,status,json:async()=>({error:message})};}});c.session=session;
+    await assert.rejects(c.request(path,body));assert.equal(calls,1);
+  }
+});
+
+test('overlapping refresh requests share one confirmed read',async()=>{
+  let resolve,reads=0;const {c}=setup(path=>path==='/session'?session:(reads++,new Promise(r=>resolve=r)));
+  const first=c.refresh(),second=c.refresh();assert.equal(first,second);
+  await new Promise(r=>setImmediate(r));resolve(state());await Promise.all([first,second]);assert.equal(reads,1);assert.equal(c.version,1);
+});
+
+test('confirmed action is not resubmitted when balance reads are busy',async()=>{
+  let writes=0,reads=0;const entries=new Map();
+  const c=new LocalClient({storage:{getItem:k=>entries.get(k)||null,setItem:(k,v)=>entries.set(k,v),removeItem:k=>entries.delete(k)},random:()=> 'b'.repeat(32),pause:async()=>{},fetcher:async path=>{
+    if(path==='/action'){writes++;return {ok:true,json:async()=>({status:'confirmed',uncertain:false})};}
+    if(path==='/state'&&++reads===2)return {ok:false,status:409,json:async()=>({error:'Local operation in progress; refresh shortly'})};
+    return {ok:true,json:async()=>base(path)};
+  }});
+  await c.refresh();c.select(address);await c.execute(draft(c));await c.refresh();assert.equal(writes,1);assert.equal(reads,3);assert.equal(c.pending,null);assert.ok(c.state);
+});
+
+test('cancelled read backoff fails closed without a further request',async()=>{
+  let calls=0;const c=new LocalClient({storage:{},pause:async()=>{throw Error('Local read timed out');},fetcher:async()=>{calls++;return {ok:false,status:409,json:async()=>({error:'Local operation in progress; refresh shortly'})};}});
+  await assert.rejects(c.request('/state'),/timed out/);assert.equal(calls,1);
+});
+
+import {positionRows,positionFinancialDetails} from '../local-view.js';
+const dormant=()=>({position:{activated:false,current_lp_value:{available:true,raw:'0'}}});
+const active=()=>({position:{activated:true,evolution:'dormant',current_lp_value:{available:false,raw:null}},claimable:{lp:[],royalties:[]},previously_claimed:{available:false}});
+test('dormant cards/details do not read or show inapplicable reward history',()=>{
+  for(const html of [positionRows(dormant()),positionFinancialDetails(dormant())]) {
+    assert.match(html,/LP [aA][tT][tT][aA][cC][hH][eE][dD]/);
+    for(const label of ['LP FEES','LP fees earned','LP fees to claim','Royalties to claim','Previously claimed','Earnings breakdown'])assert.ok(!html.includes(label),label);
+  }
+});
+test('activated NFTs retain balances and history even when market evolution is dormant or unavailable',()=>{
+  const rows=positionRows(active()),detail=positionFinancialDetails(active());
+  for(const html of [rows,detail]){assert.match(html,/Royalties to claim/);assert.match(html,/Previously claimed/);assert.match(html,/Unavailable/);}
+  assert.match(detail,/Earnings breakdown/);assert.match(detail,/History unavailable/);
+});
+
+
+test('fast session enables wallet selection before slow portfolio completes',async()=>{
+  const env=setup(path=>path==='/session'?{...session,accounts:[address,other]}:new Promise(r=>resolve=r));let resolve,ready=false;
+  env.c.onSession=()=>{ready=true;env.c.select(address);};const loading=env.c.refresh();
+  await new Promise(r=>setImmediate(r));assert.equal(ready,true);assert.equal(env.c.account,address);assert.equal(env.c.state,null);
+  resolve(state());await loading;assert.equal(env.c.account,address);
+});
+test('wallet selection survives reload, explicit disconnect persists, new session resets it',async()=>{
+  const {c,storage}=await ready(path=>path==='/session'?{...session,accounts:[address,other]}:state());
+  const reload=new LocalClient({storage,fetcher:async path=>({ok:true,json:async()=>path==='/session'?{...session,accounts:[address,other]}:state()})});
+  await reload.refresh();assert.equal(reload.account,address);reload.select(null);await c.refresh();assert.equal(c.account,address);
+  // A reloaded tab respects the explicit disconnected record.
+  const fresh=new LocalClient({storage,fetcher:reload.fetcher});await fresh.refresh();assert.equal(fresh.account,null);
+  reload.select(address);reload.fetcher=async path=>({ok:true,json:async()=>path==='/session'?{...session,token:'e'.repeat(64),accounts:[address,other]}:state()});
+  await reload.refresh();assert.equal(reload.account,null);
+});
+test('malformed cached selections and changed session account inventory never authorize a wallet',async()=>{
+  const env=setup(path=>path==='/session'?{...session,accounts:[address,other]}:state());
+  env.storage.setItem(env.c.walletKey,JSON.stringify({session:token,accounts:[address,address],account:address}));await env.c.refresh();assert.equal(env.c.account,null);
+  env.c.fetcher=async path=>({ok:true,json:async()=>path==='/session'?{...session,accounts:[address,other]}:{...state(),accounts:[other,address]}});
+  await assert.rejects(env.c.refresh(),/inventory changed/);assert.equal(env.c.state,null);
+});
+
+test('pending identity cards never render cached balances or read financial payloads',()=>{
+  for(const activated of [false,true]) {
+    const html=positionRows({position:{activated}},'Updating…');
+    assert.match(html,/Updating…/);assert.ok(!html.includes('$'));
+    assert.equal(html.includes('Royalties to claim'),activated);
+  }
+});
