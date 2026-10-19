@@ -16,6 +16,13 @@ const royaltyBadge=n=>{
 };
 
 
+export function contributionError(amount, consent) {
+  if(typeof amount!=='string'||!(/^[1-9][0-9]{2,4}$/).test(amount))return 'Enter a whole amount from 100 to 99,999 TEST-1.';
+  if(consent!==true)return 'Tick the checkbox to confirm that the LP principal cannot be redeemed.';
+  return null;
+}
+export const sameContribution=(a,b)=>Boolean(a&&b&&['session','account','id','amount'].every(key=>a[key]===b[key]));
+
 // Pending displays keep identity/artwork only, never cached financial values.
 export function positionRows(n, pendingLabel=null) {
   if(pendingLabel)return ['LP attached',...(n.position.activated?['LP fees earned · all time','LP fees earned · 24h','LP fees to claim','Royalties to claim','Previously claimed · all time']:[])].map(label=>row(label,pendingLabel)).join('');
@@ -54,11 +61,20 @@ function withArtworkContinuity(container, render) {
 
 export function createLocalView() {
   const c=new LocalClient();let busy=false,stale=true,page=1,selected=null,confirmDraft=null,sequence=0;
-  const contributionAmounts=new Map();let lastSnapshot=null,lastSnapshotSession=null;
+  const contributionAmounts=new Map();let lastSnapshot=null,lastSnapshotSession=null,approvedContribution=null,updatingNFT=null;
   const bar=document.createElement('div');bar.className='container local-status';bar.innerHTML='<span role="status">Connecting to local contracts…</span><button class="text-link" data-local-refresh>Refresh ↻</button>';document.querySelector('main').before(bar);
   const dialog=document.createElement('dialog');dialog.className='dialog local-confirm';dialog.setAttribute('aria-label','Confirm local transaction');document.body.append(dialog);
   const css=document.createElement('link');css.rel='stylesheet';css.href='./local-view.css';document.head.append(css);
-  const status=(message,error=false)=>{bar.firstElementChild.textContent=message;bar.classList.toggle('is-error',error);};
+  const status=(message,error=false)=>{
+    bar.firstElementChild.textContent=message;bar.classList.toggle('is-error',error);
+    const feedback=$('#nft-dialog [data-local-feedback]');
+    if(feedback&&$('#nft-dialog').open){feedback.textContent=message;feedback.classList.toggle('is-error',error);}
+  };
+  const contributionBusy=value=>{
+    const f=$('#nft-dialog [data-local-contribution]');if(!f)return;
+    f.setAttribute('aria-busy',String(value));f.querySelectorAll('input,button').forEach(n=>n.disabled=value||blocked());
+    f.querySelector('[type="submit"]').textContent=value?'Preparing transaction…':`Review ${f.dataset.localKind==='activate'?'activation':'LP addition'} ↗`;
+  };
   const blocked=()=>busy||stale||!c.state||c.state.uncertain||Boolean(c.pending);
   const owned=()=>c.state?.nfts.filter(n=>n.owner===c.account)||[];
   const closeConfirmation=()=>{if(confirmDraft)status('Confirmation cancelled. No transaction was sent.');confirmDraft=null;sequence++;if(dialog.open)dialog.close();};
@@ -128,7 +144,7 @@ export function createLocalView() {
     text('#claim-all',claimCount>10?'Review claims · next 10 NFTs':'Review claim all ↗');
     withArtworkContinuity($('#owned-nfts'),()=>{
       $('#owned-nfts').setAttribute('aria-busy',String(stale&&busy));
-      $('#owned-nfts').innerHTML=items.length?items.map(n=>`<article class="nft-card" data-local-position="${n.token_id}"><div class="nft-card-art">${buttonArt(n)}${stale?`<span class="local-art-status" role="status">${busy?'Updating · last confirmed artwork':'Last confirmed artwork · refresh required'}</span>`:''}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span class="level-badge">${e(n.position.evolution||'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div><div class="nft-card-details">${positionRows(n,stale?pendingText:null)}</div><div class="nft-card-claim">${royaltyBadge(n)}${n.position.activated?'':`<button class="button" data-local-id="${n.token_id}" ${blocked()?'disabled':''}>Activate ↗</button>`}</div>${n.position.activated?`<div class="local-position-actions"><button class="button" data-local-action="claim" data-local-token="${n.token_id}" ${blocked()||!hasClaim(n)?'disabled':''}>Claim</button><button class="button button-secondary" data-local-id="${n.token_id}" data-local-grow ${blocked()?'disabled':''}>Grow attached LP</button></div>`:''}</div><button class="nft-card-detail-link" data-local-id="${n.token_id}" ${stale?'disabled':''}><span>Position & reward breakdown</span><span>↗</span></button></article>`).join(''):stale?`<p class="local-empty" role="status">${busy?'Reading your confirmed positions…':'Confirmed state unavailable. Refresh balances to recover; do not repeat an already confirmed transaction.'}</p>`:'<p class="local-empty">No NFTs owned by this wallet. Mint one or transfer an NFT from the other local wallet.</p>';
+      $('#owned-nfts').innerHTML=items.length?items.map(n=>`<article class="nft-card" data-local-position="${n.token_id}"><div class="nft-card-art">${buttonArt(n)}${stale&&n.token_id===updatingNFT?`<span class="local-art-status" role="status">${busy?'Updating · last confirmed artwork':'Last confirmed artwork · refresh required'}</span>`:''}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span class="level-badge">${e(n.position.evolution||'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div><div class="nft-card-details">${positionRows(n,stale?pendingText:null)}</div><div class="nft-card-claim">${royaltyBadge(n)}${n.position.activated?'':`<button class="button" data-local-id="${n.token_id}" ${blocked()?'disabled':''}>Activate ↗</button>`}</div>${n.position.activated?`<div class="local-position-actions"><button class="button" data-local-action="claim" data-local-token="${n.token_id}" ${blocked()||!hasClaim(n)?'disabled':''}>Claim</button><button class="button button-secondary" data-local-id="${n.token_id}" data-local-grow ${blocked()?'disabled':''}>Grow attached LP</button></div>`:''}</div><button class="nft-card-detail-link" data-local-id="${n.token_id}" ${stale?'disabled':''}><span>Position & reward breakdown</span><span>↗</span></button></article>`).join(''):stale?`<p class="local-empty" role="status">${busy?'Reading your confirmed positions…':'Confirmed state unavailable. Refresh balances to recover; do not repeat an already confirmed transaction.'}</p>`:'<p class="local-empty">No NFTs owned by this wallet. Mint one or transfer an NFT from the other local wallet.</p>';
       if(stale)$('#owned-nfts').querySelectorAll('.art-image-button').forEach(b=>b.disabled=true);
     });
   }
@@ -171,35 +187,42 @@ export function createLocalView() {
   function details(id) {
     if(stale)return;const n=c.state.nfts.find(n=>n.token_id===id);if(!n)return;selected=id;
     const mine=n.owner===c.account,active=n.position.activated;
-    withArtworkContinuity($('#nft-dialog-content'),()=>{$('#nft-dialog-content').innerHTML=`<div class="nft-detail-art">${buttonArt(n)}</div><h2 id="nft-details-title">PoPL #${n.mint_ordinal}</h2><div class="nft-card-traits">${traits(n)}</div><p class="small-note">Owner ${e(n.owner)}<br>Full on-chain ID <span class="local-id">${n.token_id}</span></p>${positionFinancialDetails(n)}${mine?`<div class="local-actions">${active?`<button class="button" data-local-action="claim" data-local-token="${id}" ${blocked()||!hasClaim(n)?'disabled':''}>Claim LP fees + royalties</button>`:''}<button class="text-link" data-local-action="transfer" data-local-token="${id}" ${blocked()?'disabled':''}>Transfer to test wallet ${c.account===c.state.accounts[0]?'B':'A'} ↗</button></div><form class="liquidity-form" data-local-contribution="${id}" data-local-kind="${active?'increase':'activate'}"><h3>${active?'Grow attached LP':'Activate your NFT'}</h3><label class="input-label">TEST-1 AMOUNT · 100–99,999<input name="amount" type="text" inputmode="numeric" pattern="[1-9][0-9]{2,4}" value="100" required></label><p class="small-note">TEST-1 is a local $1 test token. At least 99% must become added LP; gas is separate. Approval does not activate the NFT.</p><label class="checkbox-label"><input name="consent" type="checkbox" required><span>The LP principal cannot be redeemed. Only funded fees can be claimed.</span></label><button class="button button-full" ${blocked()?'disabled':''}>Review ${active?'LP addition':'activation'} ↗</button></form>`:'<p class="small-note">Choose the wallet that owns this NFT to manage its position.</p>'}`;
+    withArtworkContinuity($('#nft-dialog-content'),()=>{$('#nft-dialog-content').innerHTML=`<div class="nft-detail-art">${buttonArt(n)}</div><h2 id="nft-details-title">PoPL #${n.mint_ordinal}</h2><div class="nft-card-traits">${traits(n)}</div><p class="small-note">Owner ${e(n.owner)}<br>Full on-chain ID <span class="local-id">${n.token_id}</span></p>${positionFinancialDetails(n)}${mine?`<div class="local-actions">${active?`<button class="button" data-local-action="claim" data-local-token="${id}" ${blocked()||!hasClaim(n)?'disabled':''}>Claim LP fees + royalties</button>`:''}<button class="text-link" data-local-action="transfer" data-local-token="${id}" ${blocked()?'disabled':''}>Transfer to test wallet ${c.account===c.state.accounts[0]?'B':'A'} ↗</button></div><form class="liquidity-form" novalidate data-local-contribution="${id}" data-local-kind="${active?'increase':'activate'}"><h3>${active?'Grow attached LP':'Activate your NFT'}</h3><label class="input-label">TEST-1 AMOUNT · 100–99,999<input name="amount" type="text" inputmode="numeric" pattern="[1-9][0-9]{2,4}" value="100" required></label><p class="small-note">TEST-1 is a local $1 test token. At least 99% must become added LP; gas is separate. Approval does not activate the NFT.</p><label class="checkbox-label"><input name="consent" type="checkbox" required><span>The LP principal cannot be redeemed. Only funded fees can be claimed.</span></label><p class="local-form-feedback" data-local-feedback role="status" aria-live="polite"></p><button type="submit" class="button button-full" ${blocked()?'disabled':''}>Review ${active?'LP addition':'activation'} ↗</button></form>`:'<p class="small-note">Choose the wallet that owns this NFT to manage its position.</p>'}`;
     });
     const input=$('#nft-dialog [name="amount"]');if(input&&contributionAmounts.has(id))input.value=contributionAmounts.get(id);
+    const consent=$('#nft-dialog [name="consent"]');
+    if(consent&&sameContribution(approvedContribution,{session:c.session.token,account:c.account,id,amount:input.value})) {
+      consent.checked=true;$('#nft-dialog [data-local-feedback]').textContent='Token approval confirmed. Review the LP transaction to finish.';
+    }
     if(!$('#nft-dialog').open)$('#nft-dialog').showModal();
   }
   function render(){updateWallet();renderPortfolio();renderMetrics();renderCollection();$$('[data-local-refresh]').forEach(n=>n.disabled=busy);}
   async function refresh() {
     if(busy)return;busy=true;stale=true;closeConfirmation();$('#nft-dialog').close();status('Reading confirmed local contracts…');render();
-    try{const recovered=await c.refresh();stale=false;status(`${recovered?'Recovered '+recovered.status+' operation. ':''}Local block ${c.state.protocol.provenance.block_number} · ETH USD price unavailable · no public funds`);}
+    try{const recovered=await c.refresh();stale=false;updatingNFT=null;status(`${recovered?'Recovered '+recovered.status+' operation. ':''}Local block ${c.state.protocol.provenance.block_number} · ETH USD price unavailable · no public funds`);}
     catch(err){status(`${err.message}. Refresh to recover confirmed state.`,true);}
     finally{busy=false;render();}
   }
   async function prepare(action,extras={}) {
-    if(blocked())return;if(!c.account)return openWallet();
-    busy=true;const current=++sequence;render();status('Simulating the exact local transaction and estimating gas…');
+    if(blocked()){status(busy?'A local operation is already running. Please wait.':'Refresh confirmed balances before reviewing a transaction.',true);return;}if(!c.account)return openWallet();
+    busy=true;const current=++sequence;render();contributionBusy(true);status('Preparing your transaction and estimating gas. Nothing has been sent…');
     try {
       const draft=await c.prepare(action,extras);if(sequence!==current)return;
-      confirmDraft=draft;$('#nft-dialog').close();
+      confirmDraft={...draft,contributionContext:['activate','increase'].includes(action)?{session:c.session.token,account:c.account,id:extras.id,amount:extras.amount}:null};$('#nft-dialog').close();
       const claims=draft.claims.map(a=>`${units(a.simulated_raw,a.decimals)} ${a.symbol} (${a.royalty?'royalties':'LP fees'})`).join(' + ');
       const recipient=draft.action==='transfer'?row('New NFT owner',c.state.accounts.find(a=>a!==draft.account)):'';
       dialog.innerHTML=`<div class="dialog-heading"><p class="eyebrow">LOCAL WALLET · ANVIL 31337</p><button class="icon-button" data-local-cancel aria-label="Cancel transaction">×</button></div><h2>${({approve:'Approve TEST-1',activate:'Activate your NFT',increase:'Add attached LP',mint:'Mint a dormant NFT',claim:'Claim funded fees',transfer:'Transfer your NFT'})[draft.action]}</h2><p class="small-note">${draft.action==='approve'?'Step 1: exact token allowance only. After confirmation, review the LP transaction separately.':draft.action==='transfer'?'Attached LP and all unclaimed rights follow the NFT to the other local wallet.':'Exact calldata simulated against the local deployment. Confirmation expires in 60 seconds.'}</p><div class="nft-detail-rewards">${row('Wallet',short(draft.account))}${row('To',draft.transaction.to)}${recipient}${row('Value',units(BigInt(draft.transaction.value).toString())+' test ETH')}${draft.contribution?row('Contribution',draft.contribution+' TEST-1'):''}${draft.action!=='approve'&&draft.minimum_lp_usd_18?row('Minimum LP added · 99%',usd(draft.minimum_lp_usd_18)):''}${claims?row('Simulated claim',claims):''}${row('Network gas · separate maximum',units(draft.network_gas.max_cost_wei,18,12)+' test ETH')}</div><details><summary>Transaction details</summary><code class="local-id">${e(draft.transaction.data)}</code></details><div class="local-actions"><button class="button button-secondary" data-local-cancel>Cancel</button><button class="button" data-local-confirm>Confirm local transaction</button></div>`;
       dialog.showModal();status('Review the confirmation. No transaction has been sent.');
     }catch(err){status(err.message,true);}
-    finally{busy=false;render();}
+    finally{busy=false;render();contributionBusy(false);}
   }
   async function execute() {
     if(!confirmDraft||busy)return;const draft=confirmDraft;let outcome=null;closeConfirmation();busy=true;render();status('Submitting to the disposable local chain…');
     try {
-      outcome=await c.execute(draft);stale=true;render();
+      outcome=await c.execute(draft);
+      if(outcome.status==='confirmed'&&draft.action==='approve')approvedContribution=draft.contributionContext;
+      if(outcome.status==='confirmed'&&['activate','increase'].includes(draft.action)){approvedContribution=null;updatingNFT=draft.contributionContext?.id||null;}
+      stale=true;render();
       status(outcome.status==='confirmed'?`Confirmed ${draft.action}. Reading updated balances…`:`Transaction failed: ${outcome.error}`,outcome.status!=='confirmed');
       await c.refresh();stale=false;
       const hashes=outcome.transactions.join(', ');
@@ -207,7 +230,7 @@ export function createLocalView() {
       if(outcome.status==='confirmed'&&draft.action==='mint')location.hash='my-nfts';
       if(outcome.status==='confirmed'&&['approve','activate','increase','claim'].includes(draft.action)&&selected)details(selected);
     }catch(err){stale=true;status(outcome?.status==='confirmed'?`Confirmed ${draft.action}. Balance refresh failed: ${err.message}. Refresh balances only; do not repeat this transaction. · ${outcome.transactions.join(', ')}`:`${err.message}. Refresh to recover; do not submit a new action.`,true);}
-    finally{busy=false;render();if(!stale&&$('#nft-dialog').open&&selected)details(selected);}
+    finally{busy=false;if(!stale)updatingNFT=null;render();if(!stale&&$('#nft-dialog').open&&selected)details(selected);}
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;
@@ -227,9 +250,19 @@ export function createLocalView() {
   },true);
   document.addEventListener('submit',event=>{
     const f=event.target;if(f.id!=='mint-form'&&!f.matches('[data-local-contribution]'))return;
-    event.preventDefault();event.stopImmediatePropagation();if(!f.reportValidity())return;
+    event.preventDefault();event.stopImmediatePropagation();
+    if(f.matches('[data-local-contribution]')){
+      const message=contributionError(f.elements.amount.value,f.elements.consent.checked);
+      if(message){status(message,true);f.reportValidity();return;}
+    }else if(!f.reportValidity())return;
     if(f.id==='mint-form')void prepare('mint');else {contributionAmounts.set(f.dataset.localContribution,f.elements.amount.value);void prepare(f.dataset.localKind,{id:f.dataset.localContribution,amount:f.elements.amount.value});}
   },true);
+  document.addEventListener('input',event=>{
+    const f=event.target.closest('[data-local-contribution]');if(!f)return;
+    approvedContribution=null;
+    if(event.target.name==='amount')f.elements.consent.checked=false;
+    const feedback=f.querySelector('[data-local-feedback]');feedback.textContent='';feedback.classList.remove('is-error');
+  });
   c.onSession=()=>{updateWallet();renderPortfolio();};
   return {updateWallet,renderPortfolio,renderMetrics,renderCollection,openWallet,refresh,details,render};
 }

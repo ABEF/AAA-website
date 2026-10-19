@@ -92,3 +92,18 @@ cases; actual local evolution receipts and browser verification are recorded in
 the contract repository's scoped evidence. No unchanged Solidity suite rerun.
 
 The local A/B transfer control exercises ownership changes only. It is not a sale, listing, purchase or marketplace feature. NFT secondary sales take place on external marketplaces such as OpenSea.
+
+
+### Activation review feedback and targeted artwork status
+
+Contribution validation, preparation progress and errors appear beside the review
+button inside the NFT dialog. Invalid amounts or missing acknowledgement explain
+what to fix; preparation disables the form and labels the button as preparing.
+After a confirmed approval, the acknowledgement carries to the LP step only for
+the same deployment, wallet, NFT and exact amount. Changing the amount clears it.
+Approval and Entry still require separate explicit transaction confirmations.
+
+Only the NFT receiving a confirmed activation/top-up shows the artwork Updating
+badge during balance refresh. Other artwork stays visible without that badge;
+stale financial values/actions still wait for the confirmed portfolio snapshot.
+A plain refresh or token approval does not label every artwork as changing.

@@ -23,3 +23,5 @@
 .art-image-button .local-art-previous.is-revealed{opacity:0}
 .nft-card-art .art-image-button:disabled{opacity:1;cursor:default}
 @media(prefers-reduced-motion:reduce){.art-image-button .local-art-previous{transition:none}}
+
+.local-form-feedback{font-size:12px;line-height:1.6;color:#a9dae4;margin:12px 0}.local-form-feedback:empty{display:none}.local-form-feedback.is-error{color:#ffb5a5}

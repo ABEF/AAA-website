@@ -110,7 +110,7 @@ test('cancelled read backoff fails closed without a further request',async()=>{
   await assert.rejects(c.request('/state'),/timed out/);assert.equal(calls,1);
 });
 
-import {positionRows,positionFinancialDetails} from '../local-view.js';
+import {positionRows,positionFinancialDetails,contributionError,sameContribution} from '../local-view.js';
 const dormant=()=>({position:{activated:false,current_lp_value:{available:true,raw:'0'}}});
 const active=()=>({position:{activated:true,evolution:'dormant',current_lp_value:{available:false,raw:null}},claimable:{lp:[],royalties:[]},previously_claimed:{available:false}});
 test('dormant cards/details do not read or show inapplicable reward history',()=>{
@@ -154,4 +154,14 @@ test('pending identity cards never render cached balances or read financial payl
     assert.match(html,/Updating…/);assert.ok(!html.includes('$'));
     assert.equal(html.includes('Royalties to claim'),activated);
   }
+});
+
+test('contribution review exposes invalid amounts and missing acknowledgement',()=>{
+  for(const amount of ['', '99', '100000', '-100', '100.5', '1e3', ' 100', '0100', '100\n', null, 100])assert.match(contributionError(amount,true),/whole amount/);
+  for(const amount of ['100','11111','99999']){assert.equal(contributionError(amount,true),null);assert.match(contributionError(amount,false),/checkbox/);}
+});
+test('approval acknowledgement stays bound to the exact deployment wallet NFT and amount',()=>{
+  const a={session:'a',account:address,id:'123',amount:'100'};
+  assert.equal(sameContribution(a,{...a}),true);assert.equal(sameContribution(null,a),false);
+  for(const key of Object.keys(a))assert.equal(sameContribution(a,{...a,[key]:'changed'}),false);
 });

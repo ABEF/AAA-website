@@ -1,3 +1,12 @@
+## Local activation-review follow-up - 2026-10-19
+
+The review form shows validation/progress/errors inside the NFT dialog. Confirmed
+approval preserves acknowledgement only for the same session/account/NFT/amount;
+Entry still requires separate review/confirmation, and amount edits clear it.
+Only the activated/topped-up NFT gets the artwork Updating badge. Other cards
+retain their images while stale financial values/actions remain guarded. UI only;
+reload the page, no service restart/public deployment/contract change. Main only.
+
 Local wallet labels are Test wallet A / B. The website is not a marketplace: secondary NFT sales happen on OpenSea. The local transfer control is only an ownership-accounting rehearsal.
 
 ## Local refresh and evolution - 2026-10-19
