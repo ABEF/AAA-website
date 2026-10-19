@@ -304,3 +304,18 @@ body:has(#explainer-dialog[open]){overflow:hidden}
 .explainer-footer{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:10px;font-size:10px;color:var(--muted)}
 .explainer-footer a{color:var(--cyan);padding-block:3px}
 @media(max-width:680px){.explainer-trigger{font-size:11px}.dialog.explainer-dialog{padding:12px}.explainer-dialog .dialog-heading .eyebrow{font-size:8px}}
+
+/* Per-position progress: unrelated NFTs remain interactive. */
+.position-buttons {display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;}
+.position-buttons .button {flex:1;white-space:nowrap;padding:12px 14px;}
+.royalty-detail.is-dormant {opacity:.5;}
+.position-progress,.form-feedback {font-size:.82rem;line-height:1.6;color:var(--cyan,#36ddea);}
+.form-feedback:empty {display:none;}
+.preview-activity {margin:0 0 24px;padding:12px 18px;border:1px solid #1c3b50;border-radius:12px;background:#081426;font-size:.8rem;color:#9eb6c9;}
+.preview-activity p {margin:4px 0;}
+.preview-activity .is-error,.form-feedback.is-error {color:#ffada9;}
+.nft-card-art {position:relative;}
+.artwork-updating {position:absolute;bottom:12px;left:12px;right:12px;border:1px solid #2c5c73;border-radius:8px;padding:8px 10px;background:#081426e8;color:#b0edff;font-size:.72rem;pointer-events:none;text-align:center;}
+.art-image-button .artwork-previous {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:1;transition:opacity .65s ease;pointer-events:none;}
+.art-image-button .artwork-previous.is-revealed {opacity:0;}
+@media (prefers-reduced-motion:reduce) {.art-image-button .artwork-previous {transition:none;}}

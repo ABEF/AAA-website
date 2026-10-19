@@ -4,40 +4,68 @@ export function walletError(error) {
   if (error?.code === -32002) return 'A wallet request is already open. Check your wallet extension.';
   return 'Could not connect to this wallet. Try again or use the demo wallet.';
 }
-
+const SESSION_KEY='popl-wallet-session-v1';
+const session=()=>{try{return globalThis.sessionStorage;}catch{return null;}};
+async function request(provider,method) {
+  let timer;
+  try {return await Promise.race([provider.request({method}),new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Wallet response timed out. Check the extension before retrying.')),20000);})]);}
+  finally {clearTimeout(timer);}
+}
 export class WalletConnection {
-  constructor(onChange) { this.onChange = onChange; this.provider = null; this.state = null; this.accountsHandler = null; this.chainHandler = null; this.disconnectHandler = null; }
-  async connect(provider, name = 'Browser wallet') {
-    if (!provider || typeof provider.request !== 'function') throw new Error('A browser wallet is not available.');
-    const accounts = await provider.request({method:'eth_requestAccounts'});
-    if (!Array.isArray(accounts) || !validAddress(accounts[0])) throw new Error('No valid account returned by this wallet.');
-    let chainId = null;
-    try { chainId = await provider.request({method:'eth_chainId'}); } catch { /* Chain information is optional for this transaction-free preview. */ }
-    this.clearListeners();
-    this.provider = provider;
-    this.state = {address:accounts[0], name, chainId, type:'browser'};
-    this.accountsHandler = list => {
-      if (!Array.isArray(list) || !validAddress(list[0])) return this.disconnect();
-      this.state = {...this.state,address:list[0]}; this.onChange(this.state);
+  constructor(onChange,storage=session()) {
+    this.onChange=onChange;this.storage=storage;this.provider=null;this.state=null;this.revision=0;this.restoreAttempted=false;
+    this.accountsHandler=null;this.chainHandler=null;this.disconnectHandler=null;
+  }
+  remember() {try {if(this.state)this.storage?.setItem(SESSION_KEY,JSON.stringify(this.state));else this.storage?.removeItem(SESSION_KEY);}catch {/* Connection still works if tab storage is disabled. */}}
+  changed() {this.revision++;this.remember();this.onChange(this.state);}
+  attach(provider,accounts,chainId,name,providerId) {
+    this.clearListeners();this.provider=provider;
+    this.state={address:accounts[0],name,providerId,chainId,type:'browser'};
+    this.accountsHandler=list=>{
+      if(this.provider!==provider)return;
+      if(!Array.isArray(list)||!validAddress(list[0]))return this.disconnect();
+      this.state={...this.state,address:list[0]};this.changed();
     };
-    this.chainHandler = chain => { if (this.state) { this.state = {...this.state,chainId:chain}; this.onChange(this.state); } };
-    this.disconnectHandler = () => this.disconnect();
-    if (typeof provider.on === 'function') {
-      provider.on('accountsChanged',this.accountsHandler);
-      provider.on('chainChanged',this.chainHandler);
-      provider.on('disconnect',this.disconnectHandler);
+    this.chainHandler=chain=>{if(this.provider===provider&&this.state){this.state={...this.state,chainId:chain};this.changed();}};
+    this.disconnectHandler=()=>{if(this.provider===provider)this.disconnect();};
+    if(typeof provider.on==='function') {
+      provider.on('accountsChanged',this.accountsHandler);provider.on('chainChanged',this.chainHandler);provider.on('disconnect',this.disconnectHandler);
     }
-    this.onChange(this.state);
-    return this.state;
+    this.changed();return this.state;
+  }
+  async connect(provider,name='Browser wallet',providerId=name) {
+    if(!provider||typeof provider.request!=='function')throw new Error('A browser wallet is not available.');
+    this.restoreAttempted=true;const attempt=++this.revision;
+    const accounts=await request(provider,'eth_requestAccounts');
+    if(!Array.isArray(accounts)||!validAddress(accounts[0]))throw new Error('No valid account returned by this wallet.');
+    let chainId=null;try {chainId=await request(provider,'eth_chainId');}catch {/* Optional for this transaction-free preview only. */}
+    if(attempt!==this.revision)throw new Error('Connection changed. Retry using the selected wallet.');
+    return this.attach(provider,accounts,chainId,name,providerId);
+  }
+  async restore(providers=[]) {
+    if(this.state||this.restoreAttempted)return false;
+    let saved;try {saved=JSON.parse(this.storage?.getItem(SESSION_KEY)||'null');}catch {return false;}
+    if(!saved||!validAddress(saved.address))return false;
+    if(saved.type==='demo'){this.connectDemo(saved.address);return true;}
+    if(saved.type!=='browser'||!saved.providerId)return false;
+    const matches=providers.filter(p=>p.id===saved.providerId);
+    if(matches.length!==1)return false;
+    this.restoreAttempted=true;const attempt=++this.revision,{provider,name,id}=matches[0];
+    try {
+      const accounts=await request(provider,'eth_accounts');
+      if(!Array.isArray(accounts)||!validAddress(accounts[0]))return false;
+      const chainId=await request(provider,'eth_chainId');
+      if(attempt!==this.revision)return false;
+      this.attach(provider,accounts,chainId,name,id);return true;
+    }catch {return false;}
   }
   connectDemo(address) {
-    this.clearListeners(); this.provider = null;
-    this.state = {address,name:'Demo wallet',chainId:null,type:'demo'}; this.onChange(this.state);
+    if(!validAddress(address))throw new Error('Invalid demo address.');
+    this.restoreAttempted=true;this.clearListeners();this.provider=null;
+    this.state={address,name:'Demo wallet',chainId:null,type:'demo'};this.changed();
   }
   clearListeners() {
-    if (typeof this.provider?.removeListener === 'function') {
-      for (const [event,handler] of [['accountsChanged',this.accountsHandler],['chainChanged',this.chainHandler],['disconnect',this.disconnectHandler]]) if (handler) this.provider.removeListener(event,handler);
-    }
+    if(typeof this.provider?.removeListener==='function')for(const [event,handler] of [['accountsChanged',this.accountsHandler],['chainChanged',this.chainHandler],['disconnect',this.disconnectHandler]])if(handler)this.provider.removeListener(event,handler);
   }
-  disconnect() { this.clearListeners(); this.provider = null; this.state = null; this.onChange(null); }
+  disconnect() {this.restoreAttempted=true;this.clearListeners();this.provider=null;this.state=null;this.changed();}
 }

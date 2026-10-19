@@ -28,7 +28,12 @@ Open `http://127.0.0.1:4173`. Stop the server with Ctrl+C. For a different port,
 
 The default connected demo portfolio contains four differently colored NFTs: Cyan Enhanced #444 and Blue Singularity #128 have claimable rewards; Emerald Enhanced #91 is already claimed; Violet Dormant #74 has no rewards. Reset demo restores this baseline; simulated mints can add positions afterward. The v7 saved-state namespace starts the finite artwork inventory without replaying obsolete v6 events. Earlier saved events are not deleted.
 
-Demo events persist in browser localStorage under `zzz-popl-preview-v7`. Wallet connections are not persisted. Use Reset demo or remove that storage key to restore the original example dataset.
+Demo events persist under `zzz-popl-preview-v7`, with per-NFT operations and
+cross-tab coordination. Wallet choice persists within the tab through navigation
+and refresh; browser wallets restore through public-account reads only. Use
+Reset demo to restore the baseline and invalidate pending previews. The
+[interaction-state guide](FRONTEND_STATE.md) explains concurrency, failure recovery,
+wallet persistence and the remaining production integration boundary.
 
 ## Local contract integration
 
