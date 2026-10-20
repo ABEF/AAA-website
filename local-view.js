@@ -280,7 +280,12 @@ export function createLocalView() {
       if(outcome.status==='confirmed'&&draft.action==='mint')location.hash='my-nfts';
       if(outcome.status==='confirmed'&&!['approve','wrap'].includes(draft.action))dialog.close();
       if(outcome.status==='confirmed'&&['activate','increase','claim'].includes(draft.action)&&draft.targetId&&selected)details(selected,['approve','wrap'].includes(draft.action)?'contribute':'breakdown');
-    }catch(err){stale=true;status(outcome?.status==='confirmed'?`Confirmed ${draft.action}. Balance refresh failed: ${err.message}. Refresh balances only; do not repeat this transaction. · ${outcome.transactions.join(', ')}`:`${err.message}. Refresh to recover; do not submit a new action.`,true);}
+    }catch(err){
+      if(!outcome&&err.rejected&&!c.pending) {
+        stale=true;status('State changed in another wallet. Refreshing before a new review…');
+        try{await c.refresh();stale=false;status('Nothing was submitted. Review the transaction again using the updated balances.');}
+        catch(readError){status(`${readError.message}. Refresh confirmed balances before reviewing again.`,true);}
+      } else {stale=true;status(outcome?.status==='confirmed'?`Confirmed ${draft.action}. Balance refresh failed: ${err.message}. Refresh balances only; do not repeat this transaction. · ${outcome.transactions.join(', ')}`:`${err.message}. Refresh to recover; do not submit a new action.`,true);}}
     finally{busy=false;if(!stale){updatingNFT=null;refreshScope=null;}render();if(!stale&&$('#nft-dialog').open&&selected)details(selected,selectedMode);
       if(!stale&&outcome?.status==='confirmed'&&['activate','increase'].includes(draft.action)&&$('#nft-dialog').open&&selected===draft.targetId)$('#nft-dialog').scrollTo({top:0,behavior:'instant'});
     }
@@ -288,7 +293,7 @@ export function createLocalView() {
       const context=draft.contributionContext;
       if(context)await prepare(draft.requested_action,{id:context.id,amount:context.amount,asset:context.asset});
     }
-    if(!confirmDraft&&dialog.open){dialog.innerHTML='<h2>Review required</h2><p>Use Refresh to inspect confirmed balances before preparing another transaction. Do not repeat a confirmed approval.</p><button class="button" data-local-cancel>Close</button>';}
+    if(!confirmDraft&&dialog.open){dialog.innerHTML=`<h2>Review required</h2><p>${stale?'Use Refresh to inspect confirmed balances before preparing another transaction.':'Review the transaction again using the updated balances.'} Do not repeat a confirmed approval.</p><button class="button" data-local-cancel>Close</button>`;}
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;

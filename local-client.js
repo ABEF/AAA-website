@@ -112,8 +112,13 @@ export class LocalClient {
     let recovered=null;
     if(this.pending) {
       // Recovery repeats only the identical operation ID, never a new intent.
-      recovered=await this.request('/action',this.pending.envelope);
-      if(!['confirmed','failed'].includes(recovered.status)||recovered.uncertain)throw new Error('Submission is unresolved. Inspect local records before restarting');
+      try {recovered=await this.request('/action',this.pending.envelope);}
+      catch(error) {
+        if(!error.rejected)throw error;
+        this.storage.removeItem(this.key);this.pending=null;
+        recovered={status:'rejected',uncertain:false};
+      }
+      if(!['confirmed','failed','rejected'].includes(recovered.status)||recovered.uncertain)throw new Error('Submission is unresolved. Inspect local records before restarting');
       this.storage.removeItem(this.key);this.pending=null;
     }
     const state=validateState(await this.request('/state'));
@@ -132,16 +137,33 @@ export class LocalClient {
   }
   async prepare(action, extras={}) {
     if(!this.state||!this.account||this.pending||this.state.uncertain)throw new Error('Refresh and select a local test wallet first');
-    const version=this.version,account=this.account;let started=this.clock(),wallStarted=Date.now();
-    // Rejected busy attempts create no draft. Lifetime starts conservatively
-    // at the final attempt, while the overall request timeout never resets.
-    const draft=await this.request('/prepare',{...extras,action,account},()=>this.version===version&&this.account===account&&!!this.state&&!this.pending&&!this.state.uncertain,()=>{started=this.clock();wallStarted=Date.now();});
-    if(this.version!==version||this.account!==account)throw new Error('Wallet or state changed. Prepare again');
-    if(!draft||draft.chain_id!==31337||draft.account!==account||draft.revision!==this.state.revision||!/^[a-f0-9]{32}$/.test(draft.draft_id)||!Number.isInteger(draft.expires_in_seconds)||draft.expires_in_seconds<1||draft.expires_in_seconds>60)throw new Error('Invalid transaction confirmation');
-    const duration=draft.expires_in_seconds*1000;
-    if(this.clock()-started>=duration||Date.now()-wallStarted>=duration)throw new Error('Confirmation expired while preparing. Prepare again');
-    return {...draft,clientVersion:version,clientExpiry:wallStarted+duration,clientDeadline:started+duration};
+    const account=this.account,session=this.session.token;
+    let version=this.version;
+    const current=()=>this.version===version&&this.account===account&&this.session.token===session&&!!this.state&&!this.pending&&!this.state.uncertain;
+    // Another browser can advance the shared chain while this page is idle.
+    // Reconcile real confirmed state, never merely overwrite its revision.
+    for(let attempt=0;attempt<3;attempt++) {
+      let started=this.clock(),wallStarted=Date.now();
+      const draft=await this.request('/prepare',{...extras,action,account},current,()=>{started=this.clock();wallStarted=Date.now();});
+      if(!current())throw new Error('Wallet or state changed. Prepare again');
+      if(!draft||draft.chain_id!==31337||draft.account!==account||!Number.isSafeInteger(draft.revision)||draft.revision<this.state.revision||!/^[a-f0-9]{32}$/.test(draft.draft_id)||!Number.isInteger(draft.expires_in_seconds)||draft.expires_in_seconds<1||draft.expires_in_seconds>60)throw new Error('Invalid transaction confirmation');
+      if(draft.revision>this.state.revision) {
+        const state=validateState(await this.request('/state',undefined,current));
+        if(!current())throw new Error('Wallet or state changed. Prepare again');
+        if(JSON.stringify(state.accounts)!==JSON.stringify(this.accounts)||state.revision<draft.revision)throw new Error('Invalid confirmed state after another wallet transaction');
+        if(state.uncertain)throw new Error('Submission state is uncertain. Refresh to inspect confirmed state');
+        this.state=state;this.version++;version=this.version;
+        // If another operation landed during the read, simulate again at that
+        // newer revision. The previous unsigned draft is never submitted.
+        if(state.revision!==draft.revision)continue;
+      }
+      const duration=draft.expires_in_seconds*1000;
+      if(this.clock()-started>=duration||Date.now()-wallStarted>=duration)throw new Error('Confirmation expired while preparing. Prepare again');
+      return {...draft,clientVersion:version,clientExpiry:wallStarted+duration,clientDeadline:started+duration};
+    }
+    throw new Error('Other wallet activity changed the state repeatedly. Wait briefly and review again; nothing was submitted');
   }
+
   async execute(draft) {
     if(!draft||!this.state||this.state.uncertain||this.pending||draft.chain_id!==31337||draft.revision!==this.state.revision||!/^[a-f0-9]{32}$/.test(draft.draft_id)||draft.clientVersion!==this.version||draft.account!==this.account||!Number.isFinite(draft.clientExpiry)||!Number.isFinite(draft.clientDeadline)||Date.now()>=draft.clientExpiry||this.clock()>=draft.clientDeadline||draft.clientDeadline-this.clock()>60000)throw new Error('Confirmation expired or wallet changed. Prepare again');
     const envelope={operation_id:this.random(),revision:draft.revision,payload:{action:'execute',account:this.account,draft_id:draft.draft_id}};

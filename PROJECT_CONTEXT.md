@@ -1,3 +1,15 @@
+## Independent browser sessions - 2026-10-20
+
+Local Chrome/Codex clients now reconcile newer unsigned confirmations against
+confirmed chain state, rather than rejecting them against stale cached revisions.
+The refresh/reprepare path is bounded and never submits. An operation after review
+still requires fresh review; explicit rejection refreshes balances, ambiguous
+responses retain saved-operation recovery. Reload both pages to load the update;
+no service/Anvil restart or NFT/LP reset. Public static behavior is unchanged.
+59 focused checks and concurrent unsigned preparation against running 8898 pass.
+See contract reports/local-wallet-concurrency/VERIFICATION.md. Production wallet
+integration and hosting qualification remain open; no public deployment.
+
 ## Local fixed activation and two-transaction flow - 2026-10-20
 
 The local /app/ profile fixes activation at $100 using the fixture's explicit $1

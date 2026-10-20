@@ -303,3 +303,81 @@ test('slow final preparation attempt still expires after a busy wait',async()=>{
 });
 
 test('activation has a fixed value, larger contributions use grow',()=>{for(const amount of ['101','150','99999'])assert.match(contributionError(amount,true,'activate'),/exactly/);for(const amount of ['8','50'])assert.equal(contributionError(amount,true,'increase'),null);});
+
+
+test('two independent browser wallets reconcile the other wallet operation before confirmation',async()=>{
+  let revision=0;const submissions=[];
+  const handler=(path,options)=>{
+    if(path==='/session')return session;
+    if(path==='/state')return {...state(),revision};
+    const body=JSON.parse(options.body);
+    if(path==='/prepare')return {...draft({version:0}),account:body.account,revision};
+    assert.equal(body.revision,revision);submissions.push(body.payload.account);revision++;
+    return {status:'confirmed',uncertain:false};
+  };
+  const a=await ready(handler),b=await ready(handler);b.c.select(other);
+  await a.c.execute(await a.c.prepare('mint'));
+  assert.equal(b.c.state.revision,0);
+  const second=await b.c.prepare('mint');
+  assert.equal(second.revision,1);assert.equal(b.c.state.revision,1);
+  assert.equal(second.account,other);assert.equal(b.c.pending,null);
+  await b.c.execute(second);
+  await a.c.refresh();await b.c.refresh();
+  assert.deepEqual(submissions,[address,other]);assert.equal(a.c.state.revision,2);assert.equal(b.c.state.revision,2);
+});
+
+test('advancing state during reconciliation reparses and simulates a new unsigned draft',async()=>{
+  let preparations=0,reads=0;
+  const {c,calls}=await ready(path=>path==='/prepare'?{...draft({version:0}),revision:++preparations}:path==='/state'?{...state(),revision:reads++?2:0}:session);
+  const result=await c.prepare('mint');assert.equal(preparations,2);assert.equal(result.revision,2);
+  assert.equal(calls.filter(([p])=>p==='/action').length,0);
+});
+
+test('continuous other-wallet changes have bounded unsigned retries',async()=>{
+  let revision=0,preparations=0,reads=0;
+  const {c,calls}=await ready(path=>path==='/prepare'?{...draft({version:0}),revision:(preparations++,++revision)}:path==='/state'?{...state(),revision:reads++?++revision:0}:session);
+  await assert.rejects(c.prepare('mint'),/changed the state repeatedly/);assert.equal(preparations,3);
+  assert.equal(calls.filter(([p])=>p==='/action').length,0);assert.equal(c.pending,null);
+});
+
+test('reconciliation rejects backwards malformed uncertain or changed-inventory snapshots',async()=>{
+  for(const change of [{revision:0},{revision:'1'},{uncertain:true},{accounts:[address,'0x'+'33'.repeat(20)]}]) {
+    let reads=0;const {c,calls}=await ready(path=>path==='/prepare'?{...draft({version:0}),revision:1}:path==='/state'?{...state(),...(reads++?{revision:1,...change}:{})}:session);
+    await assert.rejects(c.prepare('mint'));assert.equal(calls.filter(([p])=>p==='/action').length,0);
+  }
+  for(const revision of [-1,'1',1.5,Number.MAX_SAFE_INTEGER+1]) {
+    const {c}=await ready(path=>path==='/prepare'?{...draft({version:0}),revision}:base(path));
+    await assert.rejects(c.prepare('mint'),/Invalid transaction confirmation/);
+  }
+});
+
+test('wallet changes during reconciliation cannot rebind the draft to another user',async()=>{
+  let resolve,reads=0;
+  const {c}=await ready(path=>path==='/prepare'?{...draft({version:0}),revision:1}:path==='/state'&&reads++?new Promise(r=>resolve=r):base(path));
+  const preparing=c.prepare('mint');await new Promise(r=>setImmediate(r));
+  c.select(other);resolve({...state(),revision:1});
+  await assert.rejects(preparing,/Wallet or state changed/);assert.equal(c.account,other);assert.equal(c.pending,null);
+});
+
+test('confirmed-state reconciliation time counts against original draft expiry',async()=>{
+  let now=0,reads=0;
+  const {c}=await ready(path=>{if(path==='/prepare')return {...draft({version:0}),revision:1};if(path==='/state'&&reads++){now=60001;return {...state(),revision:1};}return base(path);});
+  c.clock=()=>now;await assert.rejects(c.prepare('mint'),/expired while preparing/);
+});
+
+test('another-wallet change after review never automatically resubmits a rejected action',async()=>{
+  const {c,calls}=await ready(base);let writes=0;
+  c.fetcher=async()=>{writes++;return {ok:false,status:409,json:async()=>({error:'State changed. Refresh before preparing a new action',rejected:true})};};
+  await assert.rejects(c.execute(draft(c)),/State changed/);
+  assert.equal(writes,1);assert.equal(c.pending,null);
+});
+
+test('refresh clears definitely rejected saved intent but retains ambiguous recovery',async()=>{
+  for(const rejected of [true,false]) {
+    const {c,storage}=await ready(base);
+    storage.setItem(c.key,JSON.stringify({session:token,envelope:{operation_id:'b'.repeat(32),revision:0,payload:{}}}));
+    c.fetcher=async path=>path==='/action'?{ok:false,status:409,json:async()=>({error:'State changed',rejected})}:{ok:true,json:async()=>base(path)};
+    if(rejected){const outcome=await c.refresh();assert.equal(outcome.status,'rejected');assert.equal(c.pending,null);assert.ok(c.state);}
+    else {await assert.rejects(c.refresh(),/State changed/);assert.ok(c.pending);assert.equal(c.state,null);}
+  }
+});
