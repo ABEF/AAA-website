@@ -125,16 +125,16 @@ test('only explicit busy state reads retry, with bounded backoff',async()=>{
   await c.refresh();assert.equal(reads,3);assert.deepEqual(pauses,[500,1000]);assert.ok(c.state);
 });
 
-test('persistent busy reads stop after 13 attempts and keep state unavailable',async()=>{
+test('persistent busy reads stop after 30 attempts and keep state unavailable',async()=>{
   let reads=0,waits=0;const c=new LocalClient({storage:{getItem:()=>null},pause:async()=>waits++,fetcher:async path=>{
     if(path==='/session')return {ok:true,json:async()=>session};reads++;
     return {ok:false,status:409,json:async()=>({error:'Local operation in progress; refresh shortly'})};
   }});
-  await assert.rejects(c.refresh(),/operation in progress/);assert.equal(reads,13);assert.equal(waits,12);assert.equal(c.state,null);assert.equal(c.refreshing,null);
+  await assert.rejects(c.refresh(),/operation in progress/);assert.equal(reads,30);assert.equal(waits,29);assert.equal(c.state,null);assert.equal(c.refreshing,null);
 });
 
-test('writes and non-busy state errors are never automatically retried',async()=>{
-  for(const [path,body,status,message] of [['/prepare',{},409,'Local operation in progress; refresh shortly'],['/action',{},409,'Local operation in progress; refresh shortly'],['/state',null,503,'Accounting mismatch'],['/state',null,409,'Invalid confirmed state']]) {
+test('submissions and non-busy preparation/read errors are never automatically retried',async()=>{
+  for(const [path,body,status,message] of [['/prepare',{},409,'State changed. Refresh before preparing a new action'],['/action',{},409,'Local operation in progress; refresh shortly'],['/state',null,503,'Accounting mismatch'],['/state',null,409,'Invalid confirmed state']]) {
     let calls=0;const c=new LocalClient({storage:{},pause:async()=>assert.fail('unexpected retry'),fetcher:async()=>{calls++;return {ok:false,status,json:async()=>({error:message})};}});c.session=session;
     await assert.rejects(c.request(path,body));assert.equal(calls,1);
   }
@@ -253,4 +253,51 @@ test('NFT income totals sum net individual collective and royalty USD at the sam
   n.earnings.last_24h_usd_at_current_price_18.royalties='0';n.earnings.token_id='2';assert.equal(rewardHistoryUSD(n,'last_24h'),null);
   n.earnings.token_id='1';n.earnings.provenance.block_hash='0x'+'b'.repeat(64);assert.equal(rewardHistoryUSD(n,'last_24h'),null);
   assert.match(earningsSummary({get earnings(){throw new Error('stale financial access');}},'Updating…'),/Updating/);
+});
+
+
+test('busy activation preparation retries identical inputs without submitting',async()=>{
+  const {c}=await ready(base);let reads=0;const bodies=[],pauses=[];
+  c.pause=async ms=>pauses.push(ms);
+  c.fetcher=async(path,options)=>{
+    assert.equal(path,'/prepare');bodies.push(options.body);const busy=++reads<3;
+    return {ok:!busy,status:busy?409:200,json:async()=>busy?{error:'Local operation in progress; refresh shortly'}:draft(c)};
+  };
+  const result=await c.prepare('activate',{id:'444',amount:'100',asset:'ZZZ'});
+  assert.equal(result.account,address);assert.equal(c.pending,null);
+  assert.equal(reads,3);assert.equal(new Set(bodies).size,1);
+  assert.deepEqual(JSON.parse(bodies[0]),{id:'444',amount:'100',asset:'ZZZ',action:'activate',account:address});
+  assert.deepEqual(pauses,[500,1000]);
+});
+
+test('account or refresh change cancels queued preparation before another request',async()=>{
+  for(const change of [c=>c.select(other),c=>{c.version++;c.state=null;},c=>{c.pending={};}]) {
+    const {c}=await ready(base);let requests=0;c.pause=async()=>change(c);
+    c.fetcher=async()=>{requests++;return {ok:false,status:409,json:async()=>({error:'Local operation in progress; refresh shortly'})};};
+    await assert.rejects(c.prepare('increase',{id:'444',amount:'5',asset:'ZZZ'}),/Wallet or state changed/);
+    assert.equal(requests,1);
+  }
+});
+
+test('persistent busy preparation is bounded and does not create a pending transaction',async()=>{
+  const {c}=await ready(base);let requests=0;c.pause=async()=>{};
+  c.fetcher=async()=>{requests++;return {ok:false,status:409,json:async()=>({error:'Local operation in progress; refresh shortly'})};};
+  await assert.rejects(c.prepare('activate',{id:'444',amount:'100'}),/operation in progress/);
+  assert.equal(requests,30);assert.equal(c.pending,null);
+});
+
+test('lost preparation responses never retry; busy waiting does not age a nonexistent draft',async()=>{
+  const {c}=await ready(base);let requests=0;
+  c.fetcher=async()=>{requests++;throw Error('Connection lost');};
+  await assert.rejects(c.prepare('mint'),/Connection lost/);assert.equal(requests,1);
+  let now=0;c.clock=()=>now;c.pause=async()=>{now=60001;};requests=0;
+  c.fetcher=async()=>{const busy=++requests===1;return {ok:!busy,status:busy?409:200,json:async()=>busy?{error:'Local operation in progress; refresh shortly'}:draft(c)};};
+  const prepared=await c.prepare('mint');assert.equal(prepared.clientDeadline,120001);
+  now=120001;await assert.rejects(c.execute(prepared),/expired/);assert.equal(c.pending,null);
+});
+
+test('slow final preparation attempt still expires after a busy wait',async()=>{
+  const {c}=await ready(base);let now=0,requests=0;c.clock=()=>now;c.pause=async()=>{now=30000;};
+  c.fetcher=async()=>{const busy=++requests===1;if(!busy)now+=60001;return {ok:!busy,status:busy?409:200,json:async()=>busy?{error:'Local operation in progress; refresh shortly'}:draft(c)};};
+  await assert.rejects(c.prepare('mint'),/expired while preparing/);assert.equal(c.pending,null);
 });

@@ -1,3 +1,17 @@
+## Local preparation and balance contention - 2026-10-20
+
+The local adapter retries only exact pre-handler busy responses for GET /state
+and unsigned POST /prepare (30 attempts maximum, one 90-second request timeout).
+Account/state changes cancel queued preparation. No /action submission or lost
+response is automatically retried. Draft lifetime includes processing from the
+final preparation attempt; rejected busy attempts create no draft. Keep explicit
+approval/Entry confirmations. The running 8896 service serves this code directly;
+reload the page without resetting its NFTs. Forty-three client cases pass and a
+live unsigned activation review recovered after seven busy responses with zero
+submissions and unchanged revision. Contract evidence: reports/local-preparation-busy.
+Local ETH/USD is absent: history USD can be unavailable independently of confirmed
+LP and exact ETH claims. Public signing/hosting qualification remains open.
+
 ## LP reward ETH settlement - 2026-10-20
 
 For the new local contract profile, `claimable.default_settlement=native_eth`

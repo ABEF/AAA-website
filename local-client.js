@@ -63,17 +63,21 @@ export class LocalClient {
     this.clock=clock;this.fetcher=fetcher;this.storage=storage;this.random=random;this.pause=pause;this.refreshing=null;this.accounts=[];this.onSession=onSession;this.walletKey='popl-local-website-wallet-v1';
     this.key='popl-local-website-pending-v1';this.session=null;this.state=null;this.account=null;this.busy=false;this.pending=null;this.version=0;
   }
-  async request(path,body) {
+  async request(path,body,isCurrent=()=>true,onAttempt=()=>{}) {
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),90000);
     try {
       for(let attempt=0;;attempt++) {
         if(controller.signal.aborted)throw new Error('Local request timed out');
+        if(!isCurrent())throw new Error('Wallet or state changed. Prepare again');
+        onAttempt();
         const response=await this.fetcher(path,{signal:controller.signal,cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json','X-Local-Token':this.session.token},body:JSON.stringify(body)}:{})});
         const result=await response.json();
         if(!response.ok) {
-          // Only retry the read endpoint's explicit busy response. Never replay a
-          // write here, or hide a validation/chain/accounting error as contention.
-          if(!body&&path==='/state'&&response.status===409&&result.error==='Local operation in progress; refresh shortly'&&attempt<12) {
+          // /prepare only creates an unsigned confirmation. This exact 409 is
+          // returned before preparation starts, so waiting cannot submit funds.
+          // Never retry /action, lost responses, or validation/accounting errors.
+          const safeBusyRetry=(!body&&path==='/state')||(body&&path==='/prepare');
+          if(safeBusyRetry&&response.status===409&&result.error==='Local operation in progress; refresh shortly'&&attempt<29) {
             await this.pause(Math.min(500*2**attempt,3000),controller.signal);continue;
           }
           const error=new Error(result.error||'Local request failed');error.rejected=result.rejected===true;throw error;
@@ -128,8 +132,10 @@ export class LocalClient {
   }
   async prepare(action, extras={}) {
     if(!this.state||!this.account||this.pending||this.state.uncertain)throw new Error('Refresh and select a local test wallet first');
-    const version=this.version,account=this.account,started=this.clock(),wallStarted=Date.now();
-    const draft=await this.request('/prepare',{...extras,action,account});
+    const version=this.version,account=this.account;let started=this.clock(),wallStarted=Date.now();
+    // Rejected busy attempts create no draft. Lifetime starts conservatively
+    // at the final attempt, while the overall request timeout never resets.
+    const draft=await this.request('/prepare',{...extras,action,account},()=>this.version===version&&this.account===account&&!!this.state&&!this.pending&&!this.state.uncertain,()=>{started=this.clock();wallStarted=Date.now();});
     if(this.version!==version||this.account!==account)throw new Error('Wallet or state changed. Prepare again');
     if(!draft||draft.chain_id!==31337||draft.account!==account||draft.revision!==this.state.revision||!/^[a-f0-9]{32}$/.test(draft.draft_id)||!Number.isInteger(draft.expires_in_seconds)||draft.expires_in_seconds<1||draft.expires_in_seconds>60)throw new Error('Invalid transaction confirmation');
     const duration=draft.expires_in_seconds*1000;
