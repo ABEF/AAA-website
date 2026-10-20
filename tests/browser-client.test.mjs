@@ -458,3 +458,56 @@ test('the connection dialog wires an explicit account chooser separately from no
   assert.match(source,/browserConnect\(Number\(b\.dataset\.browserAccounts\),false,true\)/);
   assert.match(source,/c\.connect\(index,\{chooseAccount\}\)/);
 });
+
+test('normal provider click after rejected account opens chooser instead of repeating old permission',async()=>{
+  const e=connectionFixture({account:'0x'+'99'.repeat(20)});
+  await assert.rejects(e.c.connect(0),/not Test wallet/);
+  let prompts=0;const original=e.provider.request;
+  e.provider.request=async request=>{
+    if(request.method==='wallet_requestPermissions'){prompts++;e.values.account=A;e.c.wallet.accountsHandler([A]);return [];}
+    return original(request);
+  };
+  await e.c.connect(0);
+  assert.equal(prompts,1);assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+  assert.equal(e.values.permissionCount,1);
+  assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('normal provider click after restored wrong account opens the selected wallet chooser',async()=>{
+  const e=connectionFixture({account:'0x'+'99'.repeat(20)});
+  e.c.wallet.attach(e.provider,[e.values.account],e.values.chain,'MetaMask','metamask-test');
+  e.c.attachSigner();
+  let prompts=0;const original=e.provider.request;
+  e.provider.request=async request=>{
+    if(request.method==='wallet_requestPermissions'){prompts++;e.values.account=A;return [];}
+    return original(request);
+  };
+  await e.c.connect(0);
+  assert.equal(prompts,1);assert.equal(e.values.permissionCount,0);
+  assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+});
+test('normal retry after cancelled chooser stays retryable and never loops prompts',async()=>{
+  const e=connectionFixture({account:'0x'+'99'.repeat(20)});
+  await assert.rejects(e.c.connect(0));
+  let prompts=0;const original=e.provider.request;
+  e.provider.request=async request=>{
+    if(request.method==='wallet_requestPermissions'){
+      prompts++;if(prompts===1)throw Object.assign(Error('cancel'),{code:4001});
+      e.values.account=A;return [];
+    }
+    return original(request);
+  };
+  await assert.rejects(e.c.connect(0),/cancelled/);
+  assert.equal(prompts,1);assert.equal(e.c.busy,false);assert.equal(e.c.connectionVerified,false);
+  await e.c.connect(0);
+  assert.equal(prompts,2);assert.equal(e.c.account,A);
+});
+test('normal retry does not prompt when the wallet already corrected its exposed account',async()=>{
+  const e=connectionFixture({account:'0x'+'99'.repeat(20)});
+  await assert.rejects(e.c.connect(0));e.values.account=A;
+  const original=e.provider.request;
+  e.provider.request=async request=>{
+    assert.notEqual(request.method,'wallet_requestPermissions');
+    return original(request);
+  };
+  await e.c.connect(0);assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+});

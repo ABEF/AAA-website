@@ -31,7 +31,7 @@ export class BrowserClient extends LocalClient {
     this.account=state?.address?.toLowerCase()||null;
     const chain=typeof state?.chainId==='string'?state.chainId.toLowerCase():null;
     this.connectionError=this.account&&!this.accounts.includes(this.account)
-      ?`Your wallet exposed ${this.account}. This is not Test wallet A or B. Use “Choose a different account” below to update this site's connected-account permissions and select Test wallet A or B.`
+      ?`Your wallet exposed ${this.account}. This is not Test wallet A or B. Click your wallet button to choose Test wallet A or B, or use “Choose a different account” to update this site's connected-account permissions.`
       :this.account&&chain!=='0x7a69'
         ?'Your wallet is connected to a different network. Use “Switch to the local network” below (chain ID 31337).':null;
     if(this.connectionError){this.account=null;this.connectionVerified=false;}
@@ -71,6 +71,15 @@ export class BrowserClient extends LocalClient {
       // Repeating its permission request can emit accountsChanged and cancel
       // WalletConnection's in-flight authorization even for the same account.
       let reused=false;
+      // Clicking a provider after an inadmissible restored/previous account
+      // must offer selection, not loop through the same old permission.
+      // Re-read first: an external wallet change may already have fixed it.
+      if(!chooseAccount&&this.wallet.provider===p.provider&&this.wallet.state?.address&&
+         !this.accounts.includes(this.wallet.state.address.toLowerCase())) {
+        const exposed=await accountRead(p.provider,'eth_accounts');
+        if(!Array.isArray(exposed)||exposed.some(account=>!validAddress(account)))throw new Error('Wallet returned invalid connected accounts.');
+        chooseAccount=exposed.length>0&&!this.accounts.includes(exposed[0].toLowerCase());
+      }
       if(chooseAccount) {
         // Explicit user gesture only: ask the selected extension to reopen its
         // account permissions, then use fresh accounts rather than saved state
