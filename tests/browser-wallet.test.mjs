@@ -491,3 +491,49 @@ test('authorized accounts with malformed entries never pass signer checks',async
   await assert.rejects(e.wallet.send(e.review()),/account changed/);
   assert.equal(sent(e).length,0);
 });
+
+
+test('wallet RPC padded hex confirms and acknowledges without relaxing reviewed transaction encoding',async()=>{
+  const numeric=new Set(['value','nonce','chainId','gas','gasPrice','transactionIndex','blockNumber','gasUsed','effectiveGasPrice','number']);
+  const pad=x=>'0x00'+x.slice(2);
+  const e=setup();const original=e.provider.request;
+  e.provider.request=async req=>{
+    const result=await original(req);
+    if(['eth_chainId','eth_getTransactionCount','eth_getBalance','eth_gasPrice','eth_estimateGas','eth_blockNumber'].includes(req.method))return pad(result);
+    if(['eth_getTransactionByHash','eth_getTransactionReceipt','eth_getBlockByNumber'].includes(req.method)&&result){
+      return Object.fromEntries(Object.entries(result).map(([k,v])=>[k,numeric.has(k)&&typeof v==='string'?pad(v):v]));
+    }
+    return result;
+  };
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+  await e.wallet.acknowledge(HASH);
+  assert.equal(e.wallet.pending,null);assert.equal(sent(e).length,1);
+  const bad={...tx(),nonce:'0x00'};
+  assert.throws(()=>e.review({transaction:bad}),/Invalid transaction quantity/);
+});
+test('invalid wallet preflight quantity identifies method and proves no submission',async()=>{
+  for(const invalid of [null,123,'100','0x','0x-1','0x1.5','0x'+'f'.repeat(65)]){
+    const e=setup({handler:method=>method==='eth_estimateGas'?invalid:undefined});
+    await assert.rejects(e.wallet.send(e.review()),error=>error.notSubmitted===true&&error.code==='INVALID_RPC_QUANTITY'&&error.message.includes('eth_estimateGas'));
+    assert.equal(sent(e).length,0);assert.equal(e.wallet.pending,null);
+  }
+});
+test('missing confirmed transaction quantity preserves same hash and reports exact field',async()=>{
+  const e=setup({send:(t,{state,receipt,mined})=>{
+    state.transaction=mined(t);delete state.transaction.chainId;state.receipt=receipt();return HASH;
+  }});
+  const result=await e.wallet.send(e.review());
+  assert.equal(result.status,'unresolved');assert.match(result.error,/transaction.chainId.*missing/);
+  assert.equal(e.wallet.pending.hash,HASH);
+  e.state.transaction.chainId='0x007a69';
+  assert.equal((await e.wallet.recover({account:A})).status,'confirmed');
+  await e.wallet.acknowledge(HASH);assert.equal(sent(e).length,1);
+});
+test('invalid receipt quantity does not confirm or discard pending journal',async()=>{
+  const e=setup({send:(t,{state,receipt,mined})=>{
+    state.transaction=mined(t);state.receipt={...receipt(),gasUsed:21000};return HASH;
+  }});
+  const result=await e.wallet.send(e.review());
+  assert.equal(result.status,'unresolved');assert.match(result.error,/receipt.gasUsed.*number/);
+  assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
+});

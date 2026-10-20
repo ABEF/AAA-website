@@ -321,7 +321,9 @@ export function createLocalView(client=null) {
       if(outcome.status==='confirmed'&&!['approve','wrap'].includes(draft.action))dialog.close();
       if(outcome.status==='confirmed'&&['activate','increase','claim'].includes(draft.action)&&draft.targetId&&selected)details(selected,['approve','wrap'].includes(draft.action)?'contribute':'breakdown');
     }catch(err){
-      if(!outcome&&err.rejected&&!c.pending) {
+      if(!outcome&&err.notSubmitted&&!c.pending) {
+        stale=true;status(`${err.message} Nothing was submitted to your wallet. Refresh before reviewing again.`,true);
+      } else if(!outcome&&err.rejected&&!c.pending) {
         stale=true;status('State changed in another wallet. Refreshing before a new review…');
         try{await c.refresh();stale=false;status('Nothing was submitted. Review the transaction again using the updated balances.');}
         catch(readError){status(`${readError.message}. Refresh confirmed balances before reviewing again.`,true);}
@@ -333,7 +335,7 @@ export function createLocalView(client=null) {
       const context=draft.contributionContext;
       if(context)await prepare(draft.requested_action,{id:context.id,amount:context.amount,asset:context.asset});
     }
-    if(!confirmDraft&&dialog.open){dialog.innerHTML=`<h2>${c.pending?'Recover transaction status':'Review required'}</h2><p>${c.pending?'Your transaction is saved. Check its status using the same transaction hash; do not submit it again.':stale?'Refresh confirmed balances before preparing another transaction.':'Review the transaction again using the updated balances.'}</p>${c.browser&&c.pending&&!c.pending.hash?'<label class="input-label">Transaction hash from your wallet (if sent)<input data-browser-hash placeholder="0x…" maxlength="66"></label>':''}${stale?'<button class="button" data-local-refresh>Recover status</button>':''}<button class="button button-secondary" data-local-cancel>Close</button>`;}
+    if(!confirmDraft&&dialog.open){dialog.innerHTML=`<h2>${c.pending?'Recover transaction status':'Review required'}</h2><p>${c.pending?'Your transaction is saved. Check its status using the same transaction hash; do not submit it again.':stale?'Refresh confirmed balances before preparing another transaction.':'Review the transaction again using the updated balances.'}</p>${c.browser&&c.pending&&!c.pending.hash?'<label class="input-label">Transaction hash from your wallet (if sent)<input data-browser-hash placeholder="0x…" maxlength="66"></label>':''}${stale?`<button class="button" data-local-refresh>${c.pending?'Recover status':'Refresh balances'}</button>`:''}<button class="button button-secondary" data-local-cancel>Close</button>`;}
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;

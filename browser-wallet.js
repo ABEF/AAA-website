@@ -12,6 +12,15 @@ const lower=x=>typeof x==='string'?x.toLowerCase():x;
 const clone=x=>JSON.parse(JSON.stringify(x));
 function address(x){if(typeof x!=='string'||!ADDRESS.test(x))throw Error('Invalid wallet or contract address');return lower(x);}
 function quantity(x){if(typeof x!=='string'||!QUANTITY.test(x))throw Error('Invalid transaction quantity');return BigInt(x);}
+// Wallet RPC middleware may left-pad hexadecimal numbers. Accept only bounded,
+// exact unsigned hex here; prepared transactions and durable journals stay canonical.
+function rpcQuantity(x,field){
+  if(typeof x!=='string'||!/^0x[0-9a-fA-F]{1,64}$/.test(x)){
+    const error=Error(`Invalid wallet response: ${field} must be a hexadecimal quantity (${x==null?'missing':typeof x}).`);
+    error.code='INVALID_RPC_QUANTITY';throw error;
+  }
+  return BigInt(x);
+}
 function hash(x){if(typeof x!=='string'||!HASH.test(x))throw Error('Invalid transaction or block hash');return lower(x);}
 function hex(x){return '0x'+x.toString(16);}
 function same(a,b){return lower(a)===lower(b);}
@@ -133,7 +142,7 @@ export class BrowserWallet {
       this.read('eth_accounts'),this.read('eth_chainId'),this.read('eth_getBlockByNumber',['0x0',false])
     ]);
     if(version!==this.changeVersion||!Array.isArray(accounts)||accounts.length>64||accounts.some(a=>!ADDRESS.test(a))||!accounts.some(a=>same(a,expected)))throw Error('Wallet account changed. Review again');
-    if(quantity(chain)!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Wallet network differs from this reviewed local deployment');
+    if(rpcQuantity(chain,'eth_chainId')!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Wallet network differs from this reviewed local deployment');
     return {account:expected,version};
   }
   checkLimits(tx){
@@ -170,10 +179,10 @@ export class BrowserWallet {
     ]);
     this.validReview(item);
     if(code(runtime)!==this.policy.allowedTargets[tx.to])throw Error('Contract code differs from the reviewed deployment');
-    if(quantity(pendingNonce)!==quantity(tx.nonce))throw Error('This wallet sent another transaction. Review again');
-    if(quantity(balance)<quantity(tx.value)+quantity(tx.gas)*quantity(tx.gasPrice))throw Error('Insufficient balance for value plus separate network gas');
-    if(quantity(price)>quantity(tx.gasPrice)||!quantity(price))throw Error('Network gas changed. Review again');
-    if(quantity(estimate)>quantity(tx.gas)||quantity(estimate)<21000n)throw Error('Gas requirement changed. Review again');
+    if(rpcQuantity(pendingNonce,'eth_getTransactionCount')!==quantity(tx.nonce))throw Error('This wallet sent another transaction. Review again');
+    if(rpcQuantity(balance,'eth_getBalance')<quantity(tx.value)+quantity(tx.gas)*quantity(tx.gasPrice))throw Error('Insufficient balance for value plus separate network gas');
+    if(rpcQuantity(price,'eth_gasPrice')>quantity(tx.gasPrice)||!rpcQuantity(price,'eth_gasPrice'))throw Error('Network gas changed. Review again');
+    if(rpcQuantity(estimate,'eth_estimateGas')>quantity(tx.gas)||rpcQuantity(estimate,'eth_estimateGas')<21000n)throw Error('Gas requirement changed. Review again');
     await this.read('eth_call',[tx,'pending']);this.validReview(item);
     // A request can remain in the extension after this check. A late user
     // confirmation is still on-chain guarded, but cannot be cancelled by JS.
@@ -186,7 +195,7 @@ export class BrowserWallet {
     this.busy=true;
     try{return await this.locked(item.tx.from,async()=>{
       if(this.load(item.tx.from))throw Error('Recover the previous wallet transaction before preparing another');
-      await this.preflight(item);
+      try{await this.preflight(item);}catch(error){error.notSubmitted=true;throw error;}
       const record={schema:1,id:this.random(),genesisHash:this.policy.genesisHash,status:'submitting',
         createdAt:this.clock(),transaction:clone(item.tx),context:clone(item.context),hash:null,receipt:null};
       if(typeof record.id!=='string'||!/^[A-Za-z0-9-]{8,80}$/.test(record.id))throw Error('Invalid recovery identity');
@@ -220,12 +229,12 @@ export class BrowserWallet {
   async checkTransaction(record,tx){
     const expected=record.transaction;
     if(!tx||!same(tx.hash,record.hash)||!same(tx.from,expected.from)||!same(tx.to,expected.to)||
-      !same(tx.input??tx.data,expected.data)||quantity(tx.value)!==quantity(expected.value)||
-      quantity(tx.nonce)!==quantity(expected.nonce)||quantity(tx.chainId)!==31337n||
-      quantity(tx.gasPrice)>quantity(expected.gasPrice))throw Error('Wallet transaction differs from the reviewed transaction. Inspect it before continuing');
+      !same(tx.input??tx.data,expected.data)||rpcQuantity(tx.value,'transaction.value')!==quantity(expected.value)||
+      rpcQuantity(tx.nonce,'transaction.nonce')!==quantity(expected.nonce)||rpcQuantity(tx.chainId,'transaction.chainId')!==31337n||
+      rpcQuantity(tx.gasPrice,'transaction.gasPrice')>quantity(expected.gasPrice))throw Error('Wallet transaction differs from the reviewed transaction. Inspect it before continuing');
     // Wallets may pad the gas limit. Recovery accepts that envelope only within
     // operator bounds; the canonical receipt must still fit the original review.
-    const actualGas=quantity(tx.gas),actualPrice=quantity(tx.gasPrice);
+    const actualGas=rpcQuantity(tx.gas,'transaction.gas'),actualPrice=rpcQuantity(tx.gasPrice,'transaction.gasPrice');
     if(actualGas<21000n||actualGas>quantity(this.policy.maxGas)||!actualPrice||
       actualGas*actualPrice>quantity(this.policy.maxNetworkFee))throw Error('Wallet gas envelope exceeds the reviewed deployment policy');
   }
@@ -238,27 +247,27 @@ export class BrowserWallet {
     const receipt=await read('eth_getTransactionReceipt',[record.hash]);
     if(!receipt)return {status:'pending',hash:record.hash,error:'Waiting for the wallet RPC to return the transaction receipt.'};
     const tx=await read('eth_getTransactionByHash',[record.hash]);await this.checkTransaction(record,tx);
-    const number=hex(quantity(receipt.blockNumber)),blockHash=hash(receipt.blockHash);
-    const used=quantity(receipt.gasUsed),paidPrice=quantity(receipt.effectiveGasPrice);
+    const number=hex(rpcQuantity(receipt.blockNumber,'receipt.blockNumber')),blockHash=hash(receipt.blockHash);
+    const used=rpcQuantity(receipt.gasUsed,'receipt.gasUsed'),paidPrice=rpcQuantity(receipt.effectiveGasPrice,'receipt.effectiveGasPrice');
     const reviewedGas=quantity(record.transaction.gas),reviewedPrice=quantity(record.transaction.gasPrice);
     if(!same(receipt.transactionHash,record.hash)||!same(receipt.from,record.transaction.from)||
-      !same(receipt.to,record.transaction.to)||quantity(receipt.transactionIndex)!==quantity(tx.transactionIndex)||
-      !same(tx.blockHash,blockHash)||quantity(tx.blockNumber)!==quantity(receipt.blockNumber)||
-      !['0x0','0x1'].includes(receipt.status)||used>quantity(tx.gas)||used>reviewedGas||
-      paidPrice>quantity(tx.gasPrice)||paidPrice>reviewedPrice||
+      !same(receipt.to,record.transaction.to)||rpcQuantity(receipt.transactionIndex,'receipt.transactionIndex')!==rpcQuantity(tx.transactionIndex,'transaction.transactionIndex')||
+      !same(tx.blockHash,blockHash)||rpcQuantity(tx.blockNumber,'transaction.blockNumber')!==rpcQuantity(receipt.blockNumber,'receipt.blockNumber')||
+      !['0x0','0x1'].includes(receipt.status)||used>rpcQuantity(tx.gas,'transaction.gas')||used>reviewedGas||
+      paidPrice>rpcQuantity(tx.gasPrice,'transaction.gasPrice')||paidPrice>reviewedPrice||
       used*paidPrice>reviewedGas*reviewedPrice)throw Error('Receipt does not match the reviewed transaction');
     const block=await read('eth_getBlockByNumber',[number,false]);
-    if(!same(block?.hash,blockHash)||quantity(block.number)!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt moved out of the canonical chain; waiting for confirmation'};
+    if(!same(block?.hash,blockHash)||rpcQuantity(block.number,'block.number')!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt moved out of the canonical chain; waiting for confirmation'};
     // Canonical inclusion establishes the first confirmation. A separately
     // cached eth_blockNumber must not veto that same checked inclusion.
     if(this.policy.confirmations>1){
       const head=await read('eth_blockNumber');
-      if(quantity(head)<quantity(number)+BigInt(this.policy.confirmations-1))return {status:'pending',hash:record.hash,error:'Waiting for the required additional block confirmations.'};
+      if(rpcQuantity(head,'eth_blockNumber')<quantity(number)+BigInt(this.policy.confirmations-1))return {status:'pending',hash:record.hash,error:'Waiting for the required additional block confirmations.'};
     }
     // Check again after transaction/confirmation reads so one intermediate
     // receipt cannot be presented as final after an observed reorganization.
     const canonical=await read('eth_getBlockByNumber',[number,false]);
-    if(!same(canonical?.hash,blockHash)||quantity(canonical.number)!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt changed during verification'};
+    if(!same(canonical?.hash,blockHash)||rpcQuantity(canonical.number,'canonical.number')!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt changed during verification'};
     // Logs are fetched and reconciled separately by the confirmed-state backend.
     // Keep the durable journal bounded even for a large combined-claim receipt.
     const summary={};
@@ -268,14 +277,14 @@ export class BrowserWallet {
   }
   async assertNetwork(deadline=Infinity){
     const [chain,genesis]=await Promise.all([this.readUntil(deadline,'eth_chainId'),this.readUntil(deadline,'eth_getBlockByNumber',['0x0',false])]);
-    if(quantity(chain)!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Switch back to the reviewed local network to recover this transaction');
+    if(rpcQuantity(chain,'eth_chainId')!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Switch back to the reviewed local network to recover this transaction');
   }
   async poll(record){
     const deadline=this.monotonic()+this.confirmationTimeoutMs;
     let result={status:'pending',hash:record.hash,error:'Waiting for confirmation. The saved transaction has not been resubmitted.'};
     for(let attempt=0;attempt<this.receiptAttempts;attempt++){
       if(this.monotonic()>=deadline||this.closed)return result;
-      try{result=await this.inspect(record,deadline);}catch{result={status:'unresolved',hash:record.hash,error:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
+      try{result=await this.inspect(record,deadline);}catch(error){result={status:'unresolved',hash:record.hash,error:error?.code==='INVALID_RPC_QUANTITY'?error.message:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
       if(TERMINAL.has(result.status)){this.verifiedReceipts.set(record.hash,clone(result));return result;}
       if(attempt===this.receiptAttempts-1)return result;
       const left=deadline-this.monotonic();
