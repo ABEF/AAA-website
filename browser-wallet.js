@@ -12,14 +12,14 @@ const lower=x=>typeof x==='string'?x.toLowerCase():x;
 const clone=x=>JSON.parse(JSON.stringify(x));
 function address(x){if(typeof x!=='string'||!ADDRESS.test(x))throw Error('Invalid wallet or contract address');return lower(x);}
 function quantity(x){if(typeof x!=='string'||!QUANTITY.test(x))throw Error('Invalid transaction quantity');return BigInt(x);}
-// Wallet RPC middleware may left-pad hexadecimal numbers. Accept only bounded,
-// exact unsigned hex here; prepared transactions and durable journals stay canonical.
+// Normalize provider responses only. Some EIP-1193 middleware returns JS numbers.
+// Accept integers only when exactly representable; never round financial values.
+// Prepared transactions and durable journals still require canonical hex strings.
 function rpcQuantity(x,field){
-  if(typeof x!=='string'||!/^0x[0-9a-fA-F]{1,64}$/.test(x)){
-    const error=Error(`Invalid wallet response: ${field} must be a hexadecimal quantity (${x==null?'missing':typeof x}).`);
-    error.code='INVALID_RPC_QUANTITY';throw error;
-  }
-  return BigInt(x);
+  if(typeof x==='number'&&Number.isSafeInteger(x)&&x>=0&&!Object.is(x,-0))return BigInt(x);
+  if(typeof x==='string'&&/^0x[0-9a-fA-F]{1,64}$/.test(x))return BigInt(x);
+  const error=Error(`Invalid wallet response: ${field} must be an unsigned hexadecimal quantity or a safe nonnegative integer (${x==null?'missing':typeof x}).`);
+  error.code='INVALID_RPC_QUANTITY';throw error;
 }
 function hash(x){if(typeof x!=='string'||!HASH.test(x))throw Error('Invalid transaction or block hash');return lower(x);}
 function hex(x){return '0x'+x.toString(16);}

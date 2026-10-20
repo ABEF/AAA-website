@@ -512,7 +512,7 @@ test('wallet RPC padded hex confirms and acknowledges without relaxing reviewed 
   assert.throws(()=>e.review({transaction:bad}),/Invalid transaction quantity/);
 });
 test('invalid wallet preflight quantity identifies method and proves no submission',async()=>{
-  for(const invalid of [null,123,'100','0x','0x-1','0x1.5','0x'+'f'.repeat(65)]){
+  for(const invalid of [null,1.25,'100','0x','0x-1','0x1.5','0x'+'f'.repeat(65)]){
     const e=setup({handler:method=>method==='eth_estimateGas'?invalid:undefined});
     await assert.rejects(e.wallet.send(e.review()),error=>error.notSubmitted===true&&error.code==='INVALID_RPC_QUANTITY'&&error.message.includes('eth_estimateGas'));
     assert.equal(sent(e).length,0);assert.equal(e.wallet.pending,null);
@@ -531,7 +531,7 @@ test('missing confirmed transaction quantity preserves same hash and reports exa
 });
 test('invalid receipt quantity does not confirm or discard pending journal',async()=>{
   const e=setup({send:(t,{state,receipt,mined})=>{
-    state.transaction=mined(t);state.receipt={...receipt(),gasUsed:21000};return HASH;
+    state.transaction=mined(t);state.receipt={...receipt(),gasUsed:Number.MAX_SAFE_INTEGER+1};return HASH;
   }});
   const result=await e.wallet.send(e.review());
   assert.equal(result.status,'unresolved');assert.match(result.error,/receipt.gasUsed.*number/);
@@ -547,4 +547,57 @@ test('transaction progress stages follow one send and cannot be changed by UI ex
 test('failed preflight never announces wallet confirmation or submission stages',async()=>{
  const stages=[];const e=setup({options:{onProgress:event=>stages.push(event.stage)}});e.state.balance='0x0';
  await assert.rejects(e.wallet.send(e.review()),/Insufficient/);assert.deepEqual(stages,['checking']);assert.equal(sent(e).length,0);
+});
+
+
+test('safe numeric wallet nonce is normalized while submitted nonce stays canonical hex',async()=>{
+ const e=setup();e.state.nonce=35;
+ const transaction={...tx(),nonce:'0x23'};
+ const result=await e.wallet.send(e.review({transaction}));
+ assert.equal(result.status,'confirmed');assert.equal(sent(e).length,1);
+ assert.equal(sent(e)[0].params[0].nonce,'0x23');
+ await e.wallet.acknowledge(HASH);assert.equal(e.wallet.pending,null);
+});
+
+
+test('safe numeric RPC and mined transaction quantities retain exact receipt and gas checks',async()=>{
+ const numeric=new Set(['value','nonce','chainId','gas','gasPrice','transactionIndex','blockNumber','gasUsed','effectiveGasPrice','number']);
+ const e=setup();const original=e.provider.request;
+ e.provider.request=async req=>{
+  const result=await original(req);
+  if(['eth_chainId','eth_getTransactionCount','eth_getBalance','eth_gasPrice','eth_estimateGas','eth_blockNumber'].includes(req.method))return Number(BigInt(result));
+  if(['eth_getTransactionByHash','eth_getTransactionReceipt','eth_getBlockByNumber'].includes(req.method)&&result)
+   return Object.fromEntries(Object.entries(result).map(([k,v])=>[k,numeric.has(k)&&typeof v==='string'?Number(BigInt(v)):v]));
+  return result;
+ };
+ assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+ await e.wallet.acknowledge(HASH);assert.equal(sent(e).length,1);assert.equal(e.wallet.pending,null);
+ for(const key of ['nonce','value','chainId','gas','gasPrice'])assert.match(sent(e)[0].params[0][key],/^0x(?:0|[1-9a-f][0-9a-f]*)$/);
+});
+
+test('unsafe or ambiguous numeric nonce never reaches wallet submission',async()=>{
+ for(const nonce of [-1,-0,0.5,NaN,Infinity,-Infinity,Number.MAX_SAFE_INTEGER+1,'35',true,{},null]){
+  const e=setup();e.state.nonce=nonce;
+  await assert.rejects(e.wallet.send(e.review()),error=>error.notSubmitted&&error.code==='INVALID_RPC_QUANTITY'&&error.message.includes('eth_getTransactionCount'));
+  assert.equal(sent(e).length,0);assert.equal(e.wallet.pending,null);assert.equal(e.store.map.size,0);
+ }
+});
+
+test('safe numeric nonce is still compared exactly and numeric prepared transactions remain invalid',async()=>{
+ const e=setup();e.state.nonce=1;
+ await assert.rejects(e.wallet.send(e.review()),/sent another transaction/);assert.equal(sent(e).length,0);
+ for(const key of ['nonce','value','chainId','gas','gasPrice'])assert.throws(()=>e.review({transaction:{...tx(),[key]:0}}),/Invalid transaction quantity/);
+ const maximum={...tx(),nonce:'0x1fffffffffffff'};
+ e.state.nonce=Number.MAX_SAFE_INTEGER;
+ assert.equal((await e.wallet.send(e.review({transaction:maximum}))).status,'confirmed');
+ assert.equal(sent(e)[0].params[0].nonce,maximum.nonce);
+});
+
+test('unsafe numeric financial responses fail before send and over-limit safe numbers still fail guards',async()=>{
+ for(const field of ['balance','estimate','gasPrice']){
+  const e=setup();e.state[field]=Number.MAX_SAFE_INTEGER+1;
+  await assert.rejects(e.wallet.send(e.review()),error=>error.notSubmitted&&error.code==='INVALID_RPC_QUANTITY');assert.equal(sent(e).length,0);
+ }
+ const e=setup();e.state.estimate=30001;
+ await assert.rejects(e.wallet.send(e.review()),/Gas requirement changed/);assert.equal(sent(e).length,0);
 });
