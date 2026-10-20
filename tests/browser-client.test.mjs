@@ -222,6 +222,87 @@ test('pending recovery prevents disconnect and direct fixture-account selection'
   assert.throws(()=>e.c.select(null),/Recover/);assert.throws(()=>e.c.select(B),/browser wallet/);
   assert.equal(e.c.account,A);
 });
+function connectionFixture({account=A,chain='0x7a69',genesis=GENESIS}={}) {
+  const e=setup(),values={account,chain,genesis,permissionCount:0},listeners=new Map(),rpcCalls=[];
+  const provider={
+    on:(name,fn)=>listeners.set(name,[...(listeners.get(name)||[]),fn]),
+    removeListener:(name,fn)=>listeners.set(name,(listeners.get(name)||[]).filter(item=>item!==fn)),
+    request:async({method})=>{
+      rpcCalls.push(method);
+      if(method==='eth_requestAccounts'){
+        values.permissionCount++;
+        if(values.permissionCount>1)(listeners.get('accountsChanged')||[]).forEach(fn=>fn([values.account||A]));
+        if(!values.account)values.account=A;
+        return [values.account];
+      }
+      if(method==='eth_accounts')return values.account?[values.account]:[];
+      if(method==='eth_chainId')return values.chain;
+      if(method==='eth_getBlockByNumber')return {hash:values.genesis};
+      throw Error('Unexpected read '+method);
+    }
+  };
+  e.ready();e.c.wallet.disconnect();e.c.signer=null;
+  e.c.signerOptions={storage:storage()};
+  e.c.providers=[{provider,id:'metamask-test',name:'MetaMask'}];
+  return {...e,values,rpcCalls,provider};
+}
+test('connection diagnostics distinguish a usual account and preserve its authorized address',async()=>{
+  const unrelated='0x'+'99'.repeat(20),e=connectionFixture({account:unrelated});
+  await assert.rejects(e.c.connect(0),/not Test wallet/);
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  assert.equal(e.c.wallet.state.address,unrelated);
+  assert.match(e.c.connectionError,new RegExp(unrelated));
+  assert.match(e.c.connectionError,/connected-account permissions/);
+  assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('connection diagnostics distinguish wrong chain from wrong account',async()=>{
+  const e=connectionFixture({chain:'0x1'});
+  await assert.rejects(e.c.connect(0),/different network/);
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  assert.match(e.c.connectionError,/Switch to the local network/);
+  assert.doesNotMatch(e.c.connectionError,/not Test wallet/);
+});
+test('connection diagnostics show exact RPC correction for matching chain ID with wrong genesis',async()=>{
+  const e=connectionFixture({genesis:'0x'+'88'.repeat(32)});
+  await assert.rejects(e.c.connect(0),/reviewed local deployment/);
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  assert.match(e.c.connectionError,/different local chain/);
+  assert.ok(e.c.connectionError.includes(manifest().rpc_url));
+});
+test('repeated same-provider connection uses public reads rather than a competing permission request',async()=>{
+  const e=connectionFixture();await e.c.connect(0);await e.c.connect(0);
+  assert.equal(e.values.permissionCount,1);assert.equal(e.c.account,A);
+  assert.equal(e.c.connectionError,null);assert.equal(e.c.connectionVerified,true);
+  assert.ok(e.rpcCalls.filter(method=>method==='eth_accounts').length>=3);
+  assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('selecting the authorized fixture account recovers a previous rejected usual-account connection',async()=>{
+  const e=connectionFixture({account:'0x'+'99'.repeat(20)});
+  await assert.rejects(e.c.connect(0));
+  e.values.account=A;await e.c.connect(0);
+  assert.equal(e.c.account,A);assert.equal(e.c.connectionError,null);assert.equal(e.c.connectionVerified,true);
+  assert.equal(e.values.permissionCount,1);
+});
+test('same-provider retry rechecks genesis and remains blocked until the exact local RPC is selected',async()=>{
+  const e=connectionFixture({genesis:'0x'+'88'.repeat(32)});
+  await assert.rejects(e.c.connect(0));await assert.rejects(e.c.connect(0));
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  e.values.genesis=GENESIS;await e.c.connect(0);
+  assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+  assert.equal(e.values.permissionCount,1);
+});
+test('refresh does not restore readiness after failed genesis validation',async()=>{
+  const e=connectionFixture({genesis:'0x'+'88'.repeat(32)});
+  await assert.rejects(e.c.connect(0));await e.c.refresh();
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  assert.match(e.c.connectionError,/different local chain/);
+  assert.equal(e.c.state.revision,1);assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('lost authorization requests permission once again without reusing stale wallet state',async()=>{
+  const e=connectionFixture();await e.c.connect(0);e.values.account=null;
+  await e.c.connect(0);
+  assert.equal(e.values.permissionCount,2);assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+});
 test('review display recomputes exact gas maximum from transaction integers, ignoring backend labels',async()=>{
   const gas=29999999n,price=9999999999n;
   const draft={...mintDraft(),transaction:{...mintDraft().transaction,gas:'0x'+gas.toString(16),gasPrice:'0x'+price.toString(16)},

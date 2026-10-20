@@ -213,7 +213,12 @@ export class BrowserWallet {
     if(!tx||!same(tx.hash,record.hash)||!same(tx.from,expected.from)||!same(tx.to,expected.to)||
       !same(tx.input??tx.data,expected.data)||quantity(tx.value)!==quantity(expected.value)||
       quantity(tx.nonce)!==quantity(expected.nonce)||quantity(tx.chainId)!==31337n||
-      quantity(tx.gas)!==quantity(expected.gas)||quantity(tx.gasPrice)>quantity(expected.gasPrice))throw Error('Wallet transaction differs from the reviewed transaction. Inspect it before continuing');
+      quantity(tx.gasPrice)>quantity(expected.gasPrice))throw Error('Wallet transaction differs from the reviewed transaction. Inspect it before continuing');
+    // Wallets may pad the gas limit. Recovery accepts that envelope only within
+    // operator bounds; the canonical receipt must still fit the original review.
+    const actualGas=quantity(tx.gas),actualPrice=quantity(tx.gasPrice);
+    if(actualGas<21000n||actualGas>quantity(this.policy.maxGas)||!actualPrice||
+      actualGas*actualPrice>quantity(this.policy.maxNetworkFee))throw Error('Wallet gas envelope exceeds the reviewed deployment policy');
   }
   async inspect(record){
     if(TERMINAL.has(record.status)){
@@ -224,11 +229,14 @@ export class BrowserWallet {
     if(!receipt)return {status:'pending',hash:record.hash};
     const tx=await this.read('eth_getTransactionByHash',[record.hash]);await this.checkTransaction(record,tx);
     const number=hex(quantity(receipt.blockNumber)),blockHash=hash(receipt.blockHash);
+    const used=quantity(receipt.gasUsed),paidPrice=quantity(receipt.effectiveGasPrice);
+    const reviewedGas=quantity(record.transaction.gas),reviewedPrice=quantity(record.transaction.gasPrice);
     if(!same(receipt.transactionHash,record.hash)||!same(receipt.from,record.transaction.from)||
       !same(receipt.to,record.transaction.to)||quantity(receipt.transactionIndex)!==quantity(tx.transactionIndex)||
       !same(tx.blockHash,blockHash)||quantity(tx.blockNumber)!==quantity(receipt.blockNumber)||
-      !['0x0','0x1'].includes(receipt.status)||quantity(receipt.gasUsed)>quantity(record.transaction.gas)||
-      quantity(receipt.effectiveGasPrice)>quantity(record.transaction.gasPrice))throw Error('Receipt does not match the reviewed transaction');
+      !['0x0','0x1'].includes(receipt.status)||used>quantity(tx.gas)||used>reviewedGas||
+      paidPrice>quantity(tx.gasPrice)||paidPrice>reviewedPrice||
+      used*paidPrice>reviewedGas*reviewedPrice)throw Error('Receipt does not match the reviewed transaction');
     const [block,head]=await Promise.all([this.read('eth_getBlockByNumber',[number,false]),this.read('eth_blockNumber')]);
     if(!same(block?.hash,blockHash))return {status:'pending',hash:record.hash,error:'Receipt moved out of the canonical chain; waiting for confirmation'};
     if(quantity(head)<quantity(number)+BigInt(this.policy.confirmations-1))return {status:'pending',hash:record.hash};

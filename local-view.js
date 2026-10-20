@@ -147,10 +147,11 @@ export function createLocalView(client=null) {
   }
   function renderWalletOptions() {
     if(c.browser) {
+      const localChain=typeof c.wallet?.state?.chainId==='string'&&c.wallet.state.chainId.toLowerCase()==='0x7a69';
       $('#wallet-providers').innerHTML=(c.providers.length?c.providers.map((p,i)=>`<button type="button" class="wallet-option" data-browser-provider="${i}" ${busy?'disabled':''}><span class="wallet-option-icon">↗</span><span><strong>${e(p.name)}</strong><small>Sign with your wallet · disposable Anvil only</small></span></button>`).join(''):'<p class="small-note">Open this page in Chrome with MetaMask or another compatible wallet installed.</p>')+
         (c.manifest?`<p class="small-note">RPC: <code>${e(c.manifest.rpc_url)}</code><br>Chain ID: 31337. Use a disposable fixture account: ${c.accounts.map(e).join(' or ')}.</p>`:'')+
-        (c.wallet?.provider?'<button class="button button-secondary" data-browser-network>Switch to the local network</button>':'')+
-        `<p class="small-note" role="status">${e(c.connectionError||'')}</p><a class="text-link" href="./#my-nfts">Use service test wallets instead ↗</a>`;
+        (c.wallet?.provider?(localChain?`<p class="small-note">${c.connectionVerified?'PoPL local network selected.':'Chain 31337 selected; connection not verified.'}</p>`:`<button class="button button-secondary" data-browser-network ${busy?'disabled':''}>Switch to the local network</button>`):'')+
+        `<p class="form-message${c.connectionError?' is-error':''}" role="status" aria-live="polite">${e(c.connectionError||(busy?'Confirm the connection in your wallet…':''))}</p><a class="text-link" href="./#my-nfts">Use service test wallets instead ↗</a>`;
       return;
     }
     if(!c.accounts.length){$('#wallet-providers').innerHTML=`<p class="small-note" role="status">${busy?'Loading test wallets and confirmed positions…':'Local state is unavailable. Refresh to load the test wallets.'}</p><button class="text-link" data-local-refresh ${busy?'disabled':''}>${busy?'Loading…':'Refresh ↻'}</button>`;return;}
@@ -265,13 +266,14 @@ export function createLocalView(client=null) {
   }
   async function browserConnect(index,network=false) {
     if(busy)return;
-    busy=true;closeConfirmation();status(network?'Confirm the local network in your wallet…':'Choose the disposable account in your wallet…');render();
+    let connected=false;
+    busy=true;c.connectionError=null;closeConfirmation();status(network?'Confirm the local network in your wallet…':'Choose the disposable account in your wallet…');render();
     try {
       if(network)await c.setupNetwork();else await c.connect(index);
-      if(!c.connectionError){$('#wallet-dialog').close();status('Browser wallet connected. Refreshing confirmed positions…');}
-    }catch(error){status(error.message,true);}
+      if(c.account&&!c.connectionError){connected=true;$('#wallet-dialog').close();status('Browser wallet connected. Refreshing confirmed positions…');}
+    }catch(error){c.connectionError=c.connectionError||error.message;status(c.connectionError,true);}
     finally{busy=false;render();}
-    if(c.account)await refresh();
+    if(connected)await refresh();
   }
   function updateContributionQuote(form) {
     const symbol=form.elements.asset.value,amount=form.elements.amount.value;

@@ -1,5 +1,5 @@
 import {LocalClient,validateState} from './local-client.js';
-import {WalletConnection} from './wallet.js';
+import {WalletConnection,validAddress} from './wallet.js';
 import {BrowserWallet} from './browser-wallet.js';
 import {validateBrowserManifest,expectedBrowserTransaction} from './browser-intent.js';
 
@@ -15,16 +15,26 @@ export class BrowserClient extends LocalClient {
   constructor(options={}) {
     super(options);
     this.browser=true;this.providers=[];this.signer=null;this.manifest=null;
-    this.recoveryHash=null;this.onWalletChange=()=>{};this.signerOptions=options.signerOptions||{};
-    this.wallet=new WalletConnection(()=>this.walletChanged(),options.walletStorage);
+    this.recoveryHash=null;this.onWalletChange=()=>{};this.signerOptions=options.signerOptions||{};this.connectionVerified=false;
+    this.wallet=new WalletConnection(()=>{this.connectionVerified=false;this.walletChanged();},options.walletStorage);
   }
   walletChanged() {
     const state=this.wallet.state;
     this.version++;
     this.account=state?.address?.toLowerCase()||null;
-    this.connectionError=this.account&&(!this.accounts.includes(this.account)||state.chainId?.toLowerCase()!=='0x7a69')
-      ?'Select a funded disposable fixture account on the displayed Anvil network.':null;
-    if(this.connectionError)this.account=null;
+    const chain=typeof state?.chainId==='string'?state.chainId.toLowerCase():null;
+    this.connectionError=this.account&&!this.accounts.includes(this.account)
+      ?`Your wallet exposed ${this.account}. This is not Test wallet A or B. In the wallet’s connected-account permissions for this site, select a displayed disposable account, then reconnect.`
+      :this.account&&chain!=='0x7a69'
+        ?'Your wallet is connected to a different network. Use “Switch to the local network” below (chain ID 31337).':null;
+    if(this.connectionError){this.account=null;this.connectionVerified=false;}
+    this.onWalletChange();
+  }
+  connectionFailed(error) {
+    this.account=null;this.connectionVerified=false;
+    this.connectionError=error?.message==='Wallet network differs from this reviewed local deployment'
+      ?`The wallet is using a different local chain. Set its network RPC URL to ${this.manifest.rpc_url}, then reconnect.`
+      :this.connectionError||error?.message||'Wallet connection could not be verified. Try again.';
     this.onWalletChange();
   }
   registerProvider(item) {
@@ -48,13 +58,28 @@ export class BrowserClient extends LocalClient {
     if(this.busy||this.pending)throw new Error('Recover the pending transaction before changing wallets.');
     const p=this.providers[index];
     if(!p||!this.manifest)throw new Error('Refresh the local deployment first.');
-    this.busy=true;
+    this.busy=true;this.connectionError=null;
     try {
-      await this.wallet.connect(p.provider,p.name,p.id);
+      // Reuse an already authorized provider through bounded public reads.
+      // Repeating its permission request can emit accountsChanged and cancel
+      // WalletConnection's in-flight authorization even for the same account.
+      let reused=false;
+      if(this.wallet.provider===p.provider&&this.signer?.provider===p.provider) {
+        const accounts=await this.signer.read('eth_accounts',[]);
+        const chainId=await this.signer.read('eth_chainId',[]);
+        if(this.wallet.provider!==p.provider)throw new Error('Wallet disconnected during connection. Reconnect it first.');
+        if(!Array.isArray(accounts)||accounts.some(account=>!validAddress(account)))throw new Error('Wallet returned invalid connected accounts.');
+        if(accounts.length){this.wallet.attach(p.provider,accounts,chainId,p.name,p.id);reused=true;}
+        else this.wallet.disconnect();
+      }
+      if(!reused)await this.wallet.connect(p.provider,p.name,p.id);
       this.attachSigner();
       if(this.connectionError)throw new Error(this.connectionError);
       await this.signer.assertConnection(this.account);
+      this.connectionVerified=true;
       this.pending=this.account?this.signer.getPending(this.account):null;
+    } catch(error) {
+      this.connectionFailed(error);throw error;
     } finally {this.busy=false;}
   }
   select(account) {
@@ -64,18 +89,24 @@ export class BrowserClient extends LocalClient {
   }
   async setupNetwork() {
     if(!this.wallet.provider||!this.manifest)throw new Error('Connect a browser wallet first.');
-    try {await this.wallet.provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x7a69'}]});}
-    catch(error) {
-      if(error.code!==4902)throw error;
-      await this.wallet.provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x7a69',chainName:'PoPL disposable Anvil',rpcUrls:[this.manifest.rpc_url],nativeCurrency:{name:'Test Ether',symbol:'ETH',decimals:18}}]});
+    this.connectionError=null;
+    try {
+      try {await this.wallet.provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x7a69'}]});}
+      catch(error) {
+        if(error.code!==4902)throw error;
+        await this.wallet.provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x7a69',chainName:'PoPL disposable Anvil',rpcUrls:[this.manifest.rpc_url],nativeCurrency:{name:'Test Ether',symbol:'ETH',decimals:18}}]});
+      }
+      // Read the extension again; add-network acceptance alone is not a switch.
+      const accounts=await this.wallet.provider.request({method:'eth_accounts'});
+      const chainId=await this.wallet.provider.request({method:'eth_chainId'});
+      if(!accounts.length)throw new Error('Select a disposable fixture account in the extension.');
+      this.wallet.attach(this.wallet.provider,accounts,chainId,this.wallet.state?.name||'Browser wallet',this.wallet.state?.providerId||'browser');
+      if(this.connectionError)throw new Error(this.connectionError);
+      await this.signer.assertConnection(this.account);
+      this.connectionVerified=true;
+    } catch(error) {
+      this.connectionFailed(error);throw error;
     }
-    // Read the extension again; add-network acceptance alone is not a switch.
-    const accounts=await this.wallet.provider.request({method:'eth_accounts'});
-    const chainId=await this.wallet.provider.request({method:'eth_chainId'});
-    if(!accounts.length)throw new Error('Select a disposable fixture account in the extension.');
-    this.wallet.attach(this.wallet.provider,accounts,chainId,this.wallet.state?.name||'Browser wallet',this.wallet.state?.providerId||'browser');
-    if(this.connectionError)throw new Error(this.connectionError);
-    await this.signer.assertConnection(this.account);
   }
   async refreshState() {
     this.state=null;this.version++;
@@ -86,6 +117,10 @@ export class BrowserClient extends LocalClient {
     if(this.manifest&&(this.manifest.genesis_hash!==manifest.genesis_hash||JSON.stringify(this.manifest.policy)!==JSON.stringify(manifest.policy)))throw new Error('The Anvil deployment changed. Resolve saved transactions on their original chain before reconnecting.');
     this.session=session;this.accounts=session.accounts;this.manifest=manifest;
     await this.restore();this.attachSigner();this.walletChanged();
+    if(this.account&&this.signer) {
+      try {await this.signer.assertConnection(this.account);this.connectionVerified=true;}
+      catch(error) {this.connectionFailed(error);}
+    }
     let recovered=null;
     this.pending=this.signer&&(this.signer.pending||(this.account&&this.signer.getPending(this.account)))||null;
     if(this.pending) {

@@ -242,7 +242,7 @@ test('canonical revert is a failed transaction, not permission to resubmit',asyn
   await e.wallet.acknowledge(HASH);assert.equal(e.wallet.pending,null);assert.equal(sent(e).length,1);
 });
 test('mismatched signed transaction fails closed after submission',async()=>{
-  for(const change of [{from:B},{to:B},{input:'0xdeadbeef'},{value:'0x2'},{nonce:'0x1'},{chainId:'0x1'},{gas:'0x9999'},{gasPrice:'0x3'}]){
+  for(const change of [{from:B},{to:B},{input:'0xdeadbeef'},{value:'0x2'},{nonce:'0x1'},{chainId:'0x1'},{gas:'0x100001'},{gasPrice:'0x3'}]){
     const e=setup({send:(transaction,{state,receipt,mined})=>{
       state.receipt=receipt();state.transaction={...mined(transaction),...change};return HASH;
     }});
@@ -250,6 +250,83 @@ test('mismatched signed transaction fails closed after submission',async()=>{
     assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
     await assert.rejects(e.wallet.acknowledge(HASH),/reconciled/);
   }
+});
+test('wallet gas padding accepts a canonical approval with 25 percent headroom and original reviewed costs',async()=>{
+  const approve={...tx(),value:'0x0',data:'0x095ea7b3'+A.slice(2).padStart(64,'0')+(10000n).toString(16).padStart(64,'0')};
+  const e=setup({send:(transaction,{state,receipt,mined})=>{
+    state.receipt=receipt();
+    state.transaction=mined({...transaction,gas:'0x927c'}); // 37,500 versus reviewed 30,000.
+    return HASH;
+  }});
+  const result=await e.wallet.send(e.review({transaction:approve,expectedTransaction:expected(approve)}));
+  assert.equal(result.status,'confirmed');assert.equal(e.wallet.pending.transaction.gas,'0x7530');
+  assert.equal(e.wallet.pending.transaction.data,approve.data);assert.equal(e.wallet.pending.transaction.value,'0x0');
+  await e.wallet.acknowledge(HASH);assert.equal(e.wallet.pending,null);assert.equal(sent(e).length,1);
+});
+test('wallet gas padding outside operator gas limit or total envelope remains unresolved',async()=>{
+  for(const [change,selectedPolicy] of [
+    [{gas:'0x5207'},policy()],
+    [{gas:'0x100001'},policy()],
+    [{gas:'0xea60'},{...policy(),maxNetworkFee:'0x186a0'}] // 60,000*2 > 100,000 policy ceiling.
+  ]){
+    const e=setup({policy:selectedPolicy,send:(transaction,{state,receipt,mined})=>{
+      state.receipt=receipt();state.transaction=mined({...transaction,...change});return HASH;
+    }});
+    assert.equal((await e.wallet.send(e.review())).status,'unresolved');
+    assert.equal(e.wallet.pending.status,'pending');assert.equal(e.wallet.pending.transaction.gas,'0x7530');
+    assert.equal(sent(e).length,1);
+  }
+});
+test('wallet gas padding never permits a higher reviewed gas price or actual paid amount',async()=>{
+  for(const [changedTransaction,changedReceipt] of [
+    [{gas:'0x927c',gasPrice:'0x3'},{}],
+    [{gas:'0x927c'},{gasUsed:'0x7531'}],
+    [{gas:'0x927c'},{effectiveGasPrice:'0x3'}]
+  ]){
+    const e=setup({send:(transaction,{state,receipt,mined})=>{
+      state.transaction=mined({...transaction,...changedTransaction});
+      state.receipt={...receipt(),...changedReceipt};return HASH;
+    }});
+    assert.equal((await e.wallet.send(e.review())).status,'unresolved');
+    assert.equal(e.wallet.pending.transaction.gasPrice,'0x2');assert.equal(sent(e).length,1);
+  }
+});
+test('wallet gas padding requires receipt usage and price within the actual transaction too',async()=>{
+  for(const [changedTransaction,changedReceipt] of [
+    [{gas:'0x61a8'},{gasUsed:'0x61a9'}], // 25,001 used, actual limit 25,000, reviewed 30,000.
+    [{gas:'0x927c',gasPrice:'0x1'},{effectiveGasPrice:'0x2'}]
+  ]){
+    const e=setup({send:(transaction,{state,receipt,mined})=>{
+      state.transaction=mined({...transaction,...changedTransaction});
+      state.receipt={...receipt(),...changedReceipt};return HASH;
+    }});
+    assert.equal((await e.wallet.send(e.review())).status,'unresolved');
+    assert.equal(e.wallet.pending.status,'pending');
+  }
+});
+test('wallet gas padding cannot authorize altered calldata, target, value or sender nonce',async()=>{
+  for(const changed of [{input:'0xdeadbeef'},{to:B},{from:B},{value:'0x2'},{nonce:'0x1'},{chainId:'0x1'}]){
+    const e=setup({send:(transaction,{state,receipt,mined})=>{
+      state.transaction={...mined({...transaction,gas:'0x927c'}),...changed};state.receipt=receipt();return HASH;
+    }});
+    assert.equal((await e.wallet.send(e.review())).status,'unresolved');
+    assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
+  }
+});
+test('wallet gas padding without a canonical receipt stays pending and is never resubmitted',async()=>{
+  const e=setup({send:(transaction,{state,mined})=>{
+    state.transaction=mined({...transaction,gas:'0x927c'});return HASH;
+  }});
+  assert.equal((await e.wallet.send(e.review())).status,'pending');
+  assert.equal((await e.wallet.recover()).status,'pending');
+  assert.equal(e.wallet.pending.transaction.gas,'0x7530');assert.equal(sent(e).length,1);
+});
+test('wallet gas padding allows a smaller bounded gas envelope only after a matching receipt',async()=>{
+  const e=setup({send:(transaction,{state,receipt,mined})=>{
+    state.transaction=mined({...transaction,gas:'0x61a8'});state.receipt=receipt();return HASH;
+  }});
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+  assert.equal(e.wallet.pending.transaction.gas,'0x7530');assert.equal(sent(e).length,1);
 });
 test('mismatched receipt identity and execution costs never confirm',async()=>{
   for(const change of [{transactionHash:OTHER},{from:B},{to:B},{status:'0x2'},{gasUsed:'0x7531'},{effectiveGasPrice:'0x3'},{transactionIndex:'0x1'}]){
