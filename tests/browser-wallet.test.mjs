@@ -52,7 +52,7 @@ function setup(overrides={}){
     }
   };
   const wallet=new BrowserWallet({provider,policy:overrides.policy??policy(),storage:store,locks:mutex,
-    clock:()=>state.now,monotonic:()=>state.mono,pause:async()=>{},requestTimeoutMs:overrides.timeout??20,
+    clock:()=>state.now,monotonic:()=>state.mono,pause:async()=>{},requestTimeoutMs:overrides.timeout??20,submissionTimeoutMs:overrides.timeout??20,
     receiptAttempts:1,random:()=> 'fixed-record-0001',...overrides.options});
   const review=(change={})=>{
     const transaction=tx();
@@ -63,6 +63,36 @@ function setup(overrides={}){
   return {wallet,state,calls,store,provider,review,emit,mutex,receipt,mined};
 }
 const sent=env=>env.calls.filter(c=>c.method==='eth_sendTransaction');
+
+test('wallet confirmation can outlast read timeout without sending twice',async()=>{
+  const e=setup({timeout:5,options:{submissionTimeoutMs:100},send:async(t,{state,receipt,mined})=>{
+    await new Promise(resolve=>setTimeout(resolve,25));
+    state.receipt=receipt();state.transaction=mined(t);return HASH;
+  }});
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+  assert.equal(sent(e).length,1);
+  await e.wallet.acknowledge(HASH);assert.equal(e.wallet.pending,null);
+});
+test('transient receipt read failure is retried without a second submission',async()=>{
+  let reads=0;
+  const e=setup({options:{receiptAttempts:3},handler:method=>{
+    if(method==='eth_getTransactionReceipt'&&++reads===1)throw Error('temporary RPC failure');
+  }});
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+  assert.equal(reads,2);assert.equal(sent(e).length,1);
+});
+test('persistent receipt verification failure stays bounded and retains journal',async()=>{
+  let reads=0;
+  const e=setup({options:{receiptAttempts:3},handler:method=>{
+    if(method==='eth_getTransactionReceipt'){reads++;throw Error('RPC unavailable');}
+  }});
+  assert.equal((await e.wallet.send(e.review())).status,'unresolved');
+  assert.equal(reads,3);assert.equal(sent(e).length,1);assert.equal(e.wallet.pending.hash,HASH);
+});
+test('wallet confirmation wait has an independent finite bound',()=>{
+  for(const value of [0,120001,Infinity,NaN,1.5])assert.throws(()=>setup({options:{submissionTimeoutMs:value}}),/bounds/);
+  assert.equal(setup({options:{submissionTimeoutMs:90000}}).wallet.submissionTimeoutMs,90000);
+});
 
 test('local-only profile rejects public chain and malformed spending policy',()=>{
   for(const change of [{chainId:'0x1'},{chainId:'0x0'},{confirmations:0},{confirmations:33},{maxGas:'0x1'},{maxGasPrice:'0x0'},{maxNetworkFee:'0x0'},{maxValue:'0x0'},{allowedTargets:{}},{genesisHash:'bad'}])

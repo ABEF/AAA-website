@@ -259,10 +259,12 @@ export function createLocalView(client=null) {
     $$('[data-local-refresh]').forEach(n=>n.disabled=busy);
   }
   async function refresh() {
-    if(busy)return;busy=true;stale=true;refreshScope=null;closeConfirmation();$('#nft-dialog').close();status('Reading confirmed local contracts…');render();
+    if(busy)return;busy=true;stale=true;
+    refreshScope=c.account&&lastSnapshotSession===c.session?.token?{session:c.session.token,account:c.account,action:'refresh',ids:[]}:null;
+    closeConfirmation();$('#nft-dialog').close();status('Refreshing confirmed balances…');render();
     try{const recovered=await c.refresh();stale=false;updatingNFT=null;status(`${recovered?'Recovered '+recovered.status+' operation. ':''}Local block ${c.state.protocol.provenance.block_number} · ETH USD price unavailable · no public funds`);}
     catch(err){status(`${err.message}. Refresh to recover confirmed state.`,true);}
-    finally{busy=false;render();}
+    finally{busy=false;if(!stale)refreshScope=null;render();}
   }
   async function browserConnect(index,network=false) {
     if(busy)return;
@@ -324,7 +326,7 @@ export function createLocalView(client=null) {
       const context=draft.contributionContext;
       if(context)await prepare(draft.requested_action,{id:context.id,amount:context.amount,asset:context.asset});
     }
-    if(!confirmDraft&&dialog.open){dialog.innerHTML=`<h2>${c.pending?'Recover transaction status':'Review required'}</h2><p>${c.pending?'Your operation is saved. Recover its status before trying anything else; recovery uses the same operation ID.':stale?'Refresh confirmed balances before preparing another transaction.':'Review the transaction again using the updated balances.'} Do not repeat a confirmed approval.</p>${c.browser&&c.pending&&!c.pending.hash?'<label class="input-label">Transaction hash from your wallet (if sent)<input data-browser-hash placeholder="0x…" maxlength="66"></label>':''}${stale?'<button class="button" data-local-refresh>Recover status</button>':''}<button class="button button-secondary" data-local-cancel>Close</button>`;}
+    if(!confirmDraft&&dialog.open){dialog.innerHTML=`<h2>${c.pending?'Recover transaction status':'Review required'}</h2><p>${c.pending?'Your transaction is saved. Check its status using the same transaction hash; do not submit it again.':stale?'Refresh confirmed balances before preparing another transaction.':'Review the transaction again using the updated balances.'}</p>${c.browser&&c.pending&&!c.pending.hash?'<label class="input-label">Transaction hash from your wallet (if sent)<input data-browser-hash placeholder="0x…" maxlength="66"></label>':''}${stale?'<button class="button" data-local-refresh>Recover status</button>':''}<button class="button button-secondary" data-local-cancel>Close</button>`;}
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;

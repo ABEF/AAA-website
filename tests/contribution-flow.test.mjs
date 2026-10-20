@@ -4,6 +4,12 @@ import {operationScope,refreshLabels,sameContribution} from '../local-view.js';
 import {findArtwork,evolutionArtworks} from '../artworks.js';
 import {FUNDING_ASSETS} from '../domain.js';
 const context={stale:true,busy:true,session:'session',account:'owner'};
+test('ordinary same-account refresh retains confirmed card values without updating every NFT',()=>{
+  const scope={session:'session',account:'owner',action:'refresh',ids:[]};
+  for(const id of ['1','2','3'])assert.deepEqual(refreshLabels(id,scope,context),{lp:null,rewards:null,history:null,artwork:false});
+  assert.equal(refreshLabels('1',scope,{...context,busy:false}).lp,'Unavailable');
+  assert.equal(refreshLabels('1',scope,{...context,account:'other'}).lp,'Refreshing…');
+});
 test('one confirmed contribution refresh marks only its NFT LP and artwork',()=>{
   const scope=operationScope({action:'increase',targetId:'2'},'session','owner');
   assert.deepEqual(refreshLabels('2',scope,context),{lp:'Updating…',rewards:null,history:null,artwork:true});

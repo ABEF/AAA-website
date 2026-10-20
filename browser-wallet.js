@@ -40,7 +40,7 @@ function context(value){
 export class BrowserWallet {
   constructor({provider,policy,storage=nativeStorage(),locks=globalThis.navigator?.locks,onChange=()=>{},
     clock=()=>Date.now(),monotonic=()=>performance.now(),pause=wait,requestTimeoutMs=15000,
-    receiptAttempts=3,receiptIntervalMs=750,random=()=>crypto.randomUUID()}={}){
+    receiptAttempts=3,receiptIntervalMs=750,submissionTimeoutMs=90000,random=()=>crypto.randomUUID()}={}){
     if(!provider||typeof provider.request!=='function')throw Error('A browser wallet is required');
     if(!policy||quantity(policy.chainId)!==31337n)throw Error('Only the reviewed local Anvil profile is enabled');
     if(!Number.isInteger(policy.confirmations)||policy.confirmations<1||policy.confirmations>32)throw Error('Invalid confirmation policy');
@@ -52,10 +52,11 @@ export class BrowserWallet {
     if(quantity(this.policy.maxGas)<21000n||quantity(this.policy.maxGas)>30000000n||!quantity(this.policy.maxGasPrice)||
       !quantity(this.policy.maxNetworkFee)||!quantity(this.policy.maxValue))throw Error('Invalid bounded transaction policy');
     if(!Number.isInteger(requestTimeoutMs)||requestTimeoutMs<1||requestTimeoutMs>30000||
+      !Number.isInteger(submissionTimeoutMs)||submissionTimeoutMs<1||submissionTimeoutMs>120000||
       !Number.isInteger(receiptAttempts)||receiptAttempts<1||receiptAttempts>10||
       !Number.isInteger(receiptIntervalMs)||receiptIntervalMs<0||receiptIntervalMs>3000)throw Error('Invalid request bounds');
     this.provider=provider;this.storage=storage;this.locks=locks;this.onChange=onChange;this.clock=clock;
-    this.monotonic=monotonic;this.pause=pause;this.requestTimeoutMs=requestTimeoutMs;
+    this.monotonic=monotonic;this.pause=pause;this.requestTimeoutMs=requestTimeoutMs;this.submissionTimeoutMs=submissionTimeoutMs;
     this.receiptAttempts=receiptAttempts;this.receiptIntervalMs=receiptIntervalMs;this.random=random;
     this.changeVersion=0;this.activeAccount=null;this.busy=false;this.closed=false;this.reviews=new WeakMap();this.verifiedReceipts=new Map();
     this.listeners=[];
@@ -197,7 +198,7 @@ export class BrowserWallet {
         throw error;
       });
       try{
-        await Promise.race([tracked,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),this.requestTimeoutMs);})]);
+        await Promise.race([tracked,new Promise(resolve=>{timer=setTimeout(()=>resolve(null),this.submissionTimeoutMs);})]);
       }catch(error){
         if(error?.code===4001){const rejected=Error('Transaction cancelled in the wallet');rejected.rejected=true;throw rejected;}
         return {status:'unresolved',hash:this.load(item.tx.from)?.hash??null,error:'Wallet submission is unresolved. Inspect the wallet and recover; do not submit again.'};
@@ -258,7 +259,7 @@ export class BrowserWallet {
   async poll(record){
     for(let attempt=0;attempt<this.receiptAttempts;attempt++){
       let result;
-      try{result=await this.inspect(record);}catch{return {status:'unresolved',hash:record.hash,error:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
+      try{result=await this.inspect(record);}catch{result={status:'unresolved',hash:record.hash,error:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
       if(TERMINAL.has(result.status)){this.verifiedReceipts.set(record.hash,clone(result));return result;}
       if(attempt===this.receiptAttempts-1)return result;
       await this.pause(this.receiptIntervalMs);
