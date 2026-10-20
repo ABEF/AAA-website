@@ -213,4 +213,3 @@ exact-value cap. Keep this distinction in release documentation.
 
 See contract reports/local-contribution-flow/VERIFICATION.md and docs/WORK_HANDOFF.md.
 Main only; check Git for publication. Public website/server and monitor unchanged.
-
