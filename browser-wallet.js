@@ -132,7 +132,7 @@ export class BrowserWallet {
     const [accounts,chain,genesis]=await Promise.all([
       this.read('eth_accounts'),this.read('eth_chainId'),this.read('eth_getBlockByNumber',['0x0',false])
     ]);
-    if(version!==this.changeVersion||!Array.isArray(accounts)||!same(accounts[0],expected))throw Error('Wallet account changed. Review again');
+    if(version!==this.changeVersion||!Array.isArray(accounts)||accounts.length>64||accounts.some(a=>!ADDRESS.test(a))||!accounts.some(a=>same(a,expected)))throw Error('Wallet account changed. Review again');
     if(quantity(chain)!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Wallet network differs from this reviewed local deployment');
     return {account:expected,version};
   }

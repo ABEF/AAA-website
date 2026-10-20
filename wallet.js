@@ -13,17 +13,20 @@ async function request(provider,method) {
 }
 export class WalletConnection {
   constructor(onChange,storage=session()) {
-    this.onChange=onChange;this.storage=storage;this.provider=null;this.state=null;this.revision=0;this.restoreAttempted=false;
+    this.onChange=onChange;this.storage=storage;this.provider=null;this.state=null;this.accounts=[];this.revision=0;this.restoreAttempted=false;
     this.accountsHandler=null;this.chainHandler=null;this.disconnectHandler=null;
   }
   remember() {try {if(this.state)this.storage?.setItem(SESSION_KEY,JSON.stringify(this.state));else this.storage?.removeItem(SESSION_KEY);}catch {/* Connection still works if tab storage is disabled. */}}
   changed() {this.revision++;this.remember();this.onChange(this.state);}
-  attach(provider,accounts,chainId,name,providerId) {
-    this.clearListeners();this.provider=provider;
-    this.state={address:accounts[0],name,providerId,chainId,type:'browser'};
+  attach(provider,accounts,chainId,name,providerId,selected=accounts[0]) {
+    if(!Array.isArray(accounts)||!accounts.length||accounts.length>64||accounts.some(a=>!validAddress(a))||
+       !validAddress(selected)||!accounts.some(a=>a.toLowerCase()===selected.toLowerCase()))throw new Error('Selected account is not authorized by this wallet.');
+    this.clearListeners();this.provider=provider;this.accounts=[...accounts];
+    this.state={address:accounts.find(a=>a.toLowerCase()===selected.toLowerCase()),name,providerId,chainId,type:'browser'};
     this.accountsHandler=list=>{
       if(this.provider!==provider)return;
-      if(!Array.isArray(list)||!validAddress(list[0]))return this.disconnect();
+      if(!Array.isArray(list)||!list.length||list.length>64||list.some(a=>!validAddress(a)))return this.disconnect();
+      this.accounts=[...list];
       this.state={...this.state,address:list[0]};this.changed();
     };
     this.chainHandler=chain=>{if(this.provider===provider&&this.state){this.state={...this.state,chainId:chain};this.changed();}};
@@ -56,16 +59,17 @@ export class WalletConnection {
       if(!Array.isArray(accounts)||!validAddress(accounts[0]))return false;
       const chainId=await request(provider,'eth_chainId');
       if(attempt!==this.revision)return false;
-      this.attach(provider,accounts,chainId,name,id);return true;
+      const selected=accounts.find(a=>validAddress(a)&&a.toLowerCase()===saved.address.toLowerCase())||accounts[0];
+      this.attach(provider,accounts,chainId,name,id,selected);return true;
     }catch {return false;}
   }
   connectDemo(address) {
     if(!validAddress(address))throw new Error('Invalid demo address.');
-    this.restoreAttempted=true;this.clearListeners();this.provider=null;
+    this.restoreAttempted=true;this.clearListeners();this.provider=null;this.accounts=[];
     this.state={address,name:'Demo wallet',chainId:null,type:'demo'};this.changed();
   }
   clearListeners() {
     if(typeof this.provider?.removeListener==='function')for(const [event,handler] of [['accountsChanged',this.accountsHandler],['chainChanged',this.chainHandler],['disconnect',this.disconnectHandler]])if(handler)this.provider.removeListener(event,handler);
   }
-  disconnect() {this.restoreAttempted=true;this.clearListeners();this.provider=null;this.state=null;this.changed();}
+  disconnect() {this.restoreAttempted=true;this.clearListeners();this.provider=null;this.state=null;this.accounts=[];this.changed();}
 }

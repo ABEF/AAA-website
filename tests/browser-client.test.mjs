@@ -511,3 +511,41 @@ test('normal retry does not prompt when the wallet already corrected its exposed
   };
   await e.c.connect(0);assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
 });
+
+test('authorized account selection uses Wallet A even when old address is first',async()=>{
+  const old='0x'+'99'.repeat(20),e=connectionFixture({account:old});
+  const original=e.provider.request;
+  e.provider.request=async request=>['eth_accounts','eth_requestAccounts'].includes(request.method)?[old,A]:original(request);
+  await e.c.connect(0);
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionError,null);
+  assert.deepEqual(e.c.wallet.accounts,[old,A]);
+  await e.c.chooseAuthorizedAccount(A);
+  assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+  await e.c.connect(0);
+  assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+  assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('authorized account selection rejects removed permission or wrong network',async()=>{
+  for(const mode of ['revoked','wrong_chain']){
+    const e=connectionFixture();await e.c.connect(0);
+    const original=e.provider.request;
+    e.provider.request=async request=>{
+      if(mode==='revoked'&&request.method==='eth_accounts')return [B];
+      if(mode==='wrong_chain'&&request.method==='eth_chainId')return '0x1';
+      return original(request);
+    };
+    await assert.rejects(e.c.chooseAuthorizedAccount(A));
+    assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  }
+});
+test('authorized account selection preserves and blocks pending operations',async()=>{
+  const e=connectionFixture();await e.c.connect(0);e.c.pending=pending();
+  const before=e.rpcCalls.length;
+  await assert.rejects(e.c.chooseAuthorizedAccount(B),/Recover/);
+  assert.equal(e.rpcCalls.length,before);assert.equal(e.c.pending.hash,HASH);
+});
+test('authorized account selection verifies the exact original local genesis',async()=>{
+  const e=connectionFixture();await e.c.connect(0);e.values.genesis='0x'+'88'.repeat(32);
+  await assert.rejects(e.c.chooseAuthorizedAccount(A),/deployment/);
+  assert.equal(e.c.connectionVerified,false);
+});

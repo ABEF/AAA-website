@@ -78,7 +78,7 @@ export class BrowserClient extends LocalClient {
          !this.accounts.includes(this.wallet.state.address.toLowerCase())) {
         const exposed=await accountRead(p.provider,'eth_accounts');
         if(!Array.isArray(exposed)||exposed.some(account=>!validAddress(account)))throw new Error('Wallet returned invalid connected accounts.');
-        chooseAccount=exposed.length>0&&!this.accounts.includes(exposed[0].toLowerCase());
+        chooseAccount=exposed.length>0&&!exposed.some(a=>this.accounts.includes(a.toLowerCase()));
       }
       if(chooseAccount) {
         // Explicit user gesture only: ask the selected extension to reopen its
@@ -109,11 +109,17 @@ export class BrowserClient extends LocalClient {
         const chainId=await this.signer.read('eth_chainId',[]);
         if(this.wallet.provider!==p.provider)throw new Error('Wallet disconnected during connection. Reconnect it first.');
         if(!Array.isArray(accounts)||accounts.some(account=>!validAddress(account)))throw new Error('Wallet returned invalid connected accounts.');
-        if(accounts.length){this.wallet.attach(p.provider,accounts,chainId,p.name,p.id);reused=true;}
+        if(accounts.length){const selected=accounts.find(a=>a.toLowerCase()===this.wallet.state?.address?.toLowerCase())||accounts[0];this.wallet.attach(p.provider,accounts,chainId,p.name,p.id,selected);reused=true;}
         else this.wallet.disconnect();
       }
       if(!reused)await this.wallet.connect(p.provider,p.name,p.id);
       this.attachSigner();
+      if(this.connectionError&&!this.accounts.includes(this.wallet.state?.address?.toLowerCase())&&
+         this.wallet.accounts.some(a=>this.accounts.includes(a.toLowerCase()))) {
+        // A permitted fixture account is available but must be chosen by the
+        // user, rather than inferred from the first account in the response.
+        this.connectionError=null;this.connectionVerified=false;return;
+      }
       if(this.connectionError)throw new Error(this.connectionError);
       await this.signer.assertConnection(this.account);
       this.connectionVerified=true;
@@ -121,6 +127,23 @@ export class BrowserClient extends LocalClient {
     } catch(error) {
       this.connectionFailed(error);throw error;
     } finally {this.busy=false;}
+  }
+  async chooseAuthorizedAccount(account) {
+    if(this.busy||this.pending||this.signer?.pending)throw new Error('Recover the pending transaction before changing wallets.');
+    if(!validAddress(account)||!this.accounts.includes(account.toLowerCase())||!this.wallet.provider)throw new Error('Choose an authorized fixture account.');
+    const provider=this.wallet.provider,name=this.wallet.state.name,id=this.wallet.state.providerId;
+    this.busy=true;this.connectionVerified=false;this.connectionError=null;
+    try {
+      const accounts=await accountRead(provider,'eth_accounts');
+      const chainId=await accountRead(provider,'eth_chainId');
+      if(this.wallet.provider!==provider)throw new Error('The wallet changed during account selection.');
+      this.wallet.attach(provider,accounts,chainId,name,id,account);
+      this.attachSigner();
+      if(this.connectionError)throw new Error(this.connectionError);
+      await this.signer.assertConnection(account);
+      this.connectionVerified=true;this.pending=this.signer.getPending(account);
+    } catch(error) {this.connectionFailed(error);throw error;}
+    finally {this.busy=false;}
   }
   select(account) {
     if(account!==null)throw new Error('Select an account in your browser wallet.');

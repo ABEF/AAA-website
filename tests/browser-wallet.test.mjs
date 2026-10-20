@@ -473,3 +473,21 @@ test('arbitrary handles and mutation of visible review cannot change signed valu
   assert.equal((await e.wallet.send(r)).status,'confirmed');
   assert.equal(sent(e)[0].params[0].value,'0x1');
 });
+
+test('authorized second account signs only the explicitly reviewed sender',async()=>{
+  const e=setup({handler:method=>method==='eth_accounts'?[B,A]:undefined});
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+  assert.equal(sent(e).length,1);assert.equal(sent(e)[0].params[0].from,A);
+});
+test('authorized second account revoked before submission cannot sign',async()=>{
+  let accounts=[B,A];
+  const e=setup({handler:method=>method==='eth_accounts'?accounts:undefined});
+  const review=e.review();accounts=[B];
+  await assert.rejects(e.wallet.send(review),/account changed/);
+  assert.equal(sent(e).length,0);
+});
+test('authorized accounts with malformed entries never pass signer checks',async()=>{
+  const e=setup({handler:method=>method==='eth_accounts'?[A,'bad-address']:undefined});
+  await assert.rejects(e.wallet.send(e.review()),/account changed/);
+  assert.equal(sent(e).length,0);
+});

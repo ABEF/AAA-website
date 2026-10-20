@@ -230,3 +230,19 @@ test('account and chain events invalidate pending operations even when changed b
   handlers.get('chainChanged')('0x2');handlers.get('chainChanged')('0x1');assert.throws(()=>tracker.assertCurrent(op),/Wallet or network/);
   tracker.finish(op);const next=tracker.begin(['nft:444'],'increase');handlers.get('accountsChanged')(['0x'+'1'.repeat(40)]);handlers.get('accountsChanged')([DEMO_ADDRESS]);assert.throws(()=>tracker.assertCurrent(next),/Wallet or network/);
 });
+
+test('authorized second account selection survives reload without a permission prompt',async()=>{
+  const first='0x'+'9'.repeat(40),selected=DEMO_ADDRESS,store=new Storage(),calls=[];
+  const provider={request:async({method})=>{calls.push(method);return method==='eth_chainId'?'0x7a69':[first,selected];}};
+  const before=new WalletConnection(()=>{},store);
+  before.attach(provider,[first,selected],'0x7a69','MetaMask','io.metamask',selected);
+  const after=new WalletConnection(()=>{},store);
+  assert.equal(await after.restore([{provider,name:'MetaMask',id:'io.metamask'}]),true);
+  assert.equal(after.state.address,selected);assert.deepEqual(after.accounts,[first,selected]);
+  assert.deepEqual(calls,['eth_accounts','eth_chainId']);
+});
+test('authorized account attachment rejects a selection absent from the returned accounts',()=>{
+  const wallet=new WalletConnection(()=>{},new Storage()),other='0x'+'9'.repeat(40);
+  assert.throws(()=>wallet.attach({},[DEMO_ADDRESS],'0x7a69','Wallet','wallet',other),/not authorized/);
+  assert.equal(wallet.state,null);
+});
