@@ -242,7 +242,7 @@ function connectionFixture({account=A,chain='0x7a69',genesis=GENESIS}={}) {
     }
   };
   e.ready();e.c.wallet.disconnect();e.c.signer=null;
-  e.c.signerOptions={storage:storage()};
+  e.c.signerOptions={storage:storage(),readProvider:provider};
   e.c.providers=[{provider,id:'metamask-test',name:'MetaMask'}];
   return {...e,values,rpcCalls,provider};
 }
@@ -635,7 +635,7 @@ test('account event automatically revalidates a newly authorized sender',async()
  assert.equal(e.c.account,B);assert.equal(e.c.connectionVerified,true);assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
 });
 test('late event verification cannot reenable a changed account review',async()=>{
- const e=setup();e.ready();e.c.wallet.provider={};e.c.signer.provider=e.c.wallet.provider;
+ const e=setup();e.ready();e.c.wallet.provider={};e.c.signer.provider=e.c.wallet.provider;e.c.signerRpc=manifest().rpc_url;
  let finish;e.c.signer.assertConnection=()=>new Promise(resolve=>{finish=resolve;});
  e.c.connectionVerified=false;const checking=e.c.verifyWalletEvent();
  e.c.wallet.state={...e.c.wallet.state,address:B};e.c.walletChanged();finish();await checking;
@@ -651,9 +651,32 @@ test('cancelled MetaMask choice cannot poison a subsequent Rabby connection',asy
 
 test('late provider restoration verifies the account before enabling actions without a prompt',async()=>{
  const e=setup();e.ready();e.c.connectionVerified=false;const provider={request:async()=>{throw Error('No permission prompt expected');}};
- e.c.wallet.provider=provider;e.signer.provider=provider;let checked=0;
+ e.c.wallet.provider=provider;e.signer.provider=provider;e.c.signerRpc=manifest().rpc_url;let checked=0;
  e.signer.assertConnection=async account=>{assert.equal(account,A);checked++;};
  e.c.wallet.restore=async()=>true;
  await e.c.restore();assert.equal(checked,1);assert.equal(e.c.connectionVerified,true);
  assert.equal(e.signCalls.filter(c=>c[0]==='send').length,0);
  });
+
+
+test('real client wires node reads to pinned HTTP and never asks extension for nonce or receipts',async()=>{
+ const e=connectionFixture(),nodeCalls=[];delete e.c.signerOptions.readProvider;
+ const base=e.c.fetcher;e.c.fetcher=async(url,options)=>{
+  if(url===manifest().rpc_url+'/'){
+   const request=JSON.parse(options.body);nodeCalls.push(request.method);
+   const result=request.method==='eth_chainId'?'0x7a69':request.method==='eth_getBlockByNumber'?{hash:GENESIS}:request.method==='eth_getTransactionCount'?'0x3':null;
+   return new Response(JSON.stringify({jsonrpc:'2.0',id:request.id,result}));
+  }
+  return base(url,options);
+ };
+ await e.c.connect(0);assert.equal(e.c.connectionVerified,true);
+ assert.notEqual(e.c.signer.readProvider,e.provider);
+ assert.equal(await e.c.signer.read('eth_getTransactionCount',[A,'pending']),'0x3');
+ assert.equal(await e.c.signer.read('eth_getTransactionReceipt',[HASH]),null);
+ assert.ok(nodeCalls.includes('eth_getTransactionReceipt'));assert.equal(e.rpcCalls.includes('eth_getTransactionReceipt'),false);
+});
+
+test('refresh cannot silently change the pinned read RPC for an existing session',async()=>{
+ const e=setup({handler:path=>path==='/browser/manifest'?{...manifest(),rpc_url:'http://127.0.0.1:60001'}:undefined});
+ e.ready();await assert.rejects(e.c.refreshState(),/deployment changed/);assert.equal(e.c.manifest.rpc_url,manifest().rpc_url);
+});

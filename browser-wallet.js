@@ -18,7 +18,7 @@ function quantity(x){if(typeof x!=='string'||!QUANTITY.test(x))throw Error('Inva
 function rpcQuantity(x,field){
   if(typeof x==='number'&&Number.isSafeInteger(x)&&x>=0&&!Object.is(x,-0))return BigInt(x);
   if(typeof x==='string'&&/^0x[0-9a-fA-F]{1,64}$/.test(x))return BigInt(x);
-  const error=Error(`Invalid wallet response: ${field} must be an unsigned hexadecimal quantity or a safe nonnegative integer (${x==null?'missing':typeof x}).`);
+  const error=Error(`Invalid RPC response: ${field} must be an unsigned hexadecimal quantity or a safe nonnegative integer (${x==null?'missing':typeof x}).`);
   error.code='INVALID_RPC_QUANTITY';throw error;
 }
 function verificationError(message){const error=Error(message);error.code='RECEIPT_VERIFICATION';return error;}
@@ -57,11 +57,64 @@ function context(value){
   return JSON.parse(text);
 }
 
+// Read-only transport pinned by the reviewed deployment, independent of the
+// signing extension. Never accepts wallet/signing/debug RPCs or follows redirects.
+export function createChainReader(url,{fetcher=globalThis.fetch,timeoutMs=15000,maxBytes=2097152}={}){
+  const endpoint=new URL(url);
+  if((endpoint.protocol!=='https:'&&!(endpoint.protocol==='http:'&&['127.0.0.1','[::1]','localhost'].includes(endpoint.hostname)))||
+     endpoint.username||endpoint.password||endpoint.hash||typeof fetcher!=='function'||
+     !Number.isInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000||!Number.isInteger(maxBytes)||maxBytes<256||maxBytes>4194304)
+    throw Error('Invalid reviewed chain-read transport');
+  let sequence=0;
+  return Object.freeze({async request({method,params=[],signal}={}){
+    if(!READS.has(method)||method==='eth_accounts'||!Array.isArray(params))throw Error('Chain reader permits only node reads');
+    const controller=new AbortController(),abort=()=>controller.abort();
+    if(signal?.aborted)controller.abort();else signal?.addEventListener('abort',abort,{once:true});
+    const timer=setTimeout(abort,timeoutMs),id=++sequence;
+    let reader;
+    try{
+      const response=await fetcher(endpoint.href,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({jsonrpc:'2.0',id,method,params}),signal:controller.signal,
+        credentials:'omit',redirect:'error',cache:'no-store',referrerPolicy:'no-referrer'});
+      if(!response.ok||response.redirected)throw Error('Chain RPC is unavailable');
+      const length=response.headers.get('content-length');
+      if(length!==null&&(!/^[0-9]+$/.test(length)||Number(length)>maxBytes))throw Error('Chain RPC response exceeds its size limit');
+      reader=response.body?.getReader();
+      if(!reader)throw Error('Chain RPC response cannot be read safely');
+      const chunks=[];let size=0;
+      while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maxBytes)throw Error('Chain RPC response exceeds its size limit');chunks.push(value);}
+      const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
+      let payload;try{payload=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{throw Error('Chain RPC returned invalid JSON');}
+      if(!payload||typeof payload!=='object'||Array.isArray(payload)||payload.jsonrpc!=='2.0'||payload.id!==id||
+         Object.hasOwn(payload,'error')===Object.hasOwn(payload,'result'))throw Error('Chain RPC returned an invalid response envelope');
+      if(Object.hasOwn(payload,'error'))throw Error('Chain RPC could not complete '+method);
+      return payload.result;
+    }finally{clearTimeout(timer);signal?.removeEventListener('abort',abort);controller.abort();if(reader)void reader.cancel().catch(()=>{});}
+  }});
+}
+
+function transactionChain(tx){
+  const type=tx.type==null?0n:rpcQuantity(tx.type,'transaction.type');
+  let chain=tx.chainId==null?null:rpcQuantity(tx.chainId,'transaction.chainId');
+  // Legacy chainId is optional in Execution API responses. EIP-155 v carries
+  // its signed chain identity. Never infer a missing typed chainId from parity.
+  if(type===0n&&tx.v!=null){
+    const v=rpcQuantity(tx.v,'transaction.v');
+    if(v<35n)throw verificationError('Legacy transaction has no chain replay protection');
+    const signedChain=(v-35n)/2n;
+    if(chain!==null&&chain!==signedChain)throw verificationError('Transaction chain ID conflicts with its signature');
+    chain=signedChain;
+  }
+  if(chain===null)throw verificationError('Chain RPC transaction has no verifiable signed chain ID; retain the saved hash');
+  return chain;
+}
+
 export class BrowserWallet {
-  constructor({provider,policy,storage=nativeStorage(),locks=globalThis.navigator?.locks,onChange=()=>{},onProgress=()=>{},
+  constructor({provider,readProvider=provider,policy,storage=nativeStorage(),locks=globalThis.navigator?.locks,onChange=()=>{},onProgress=()=>{},
     clock=()=>Date.now(),monotonic=()=>performance.now(),pause=wait,requestTimeoutMs=15000,
     receiptAttempts=21,receiptIntervalMs=1500,confirmationTimeoutMs=45000,submissionTimeoutMs=90000,random=()=>crypto.randomUUID()}={}){
     if(!provider||typeof provider.request!=='function')throw Error('A browser wallet is required');
+    if(!readProvider||typeof readProvider.request!=='function')throw Error('A reviewed chain reader is required');
     if(!policy||quantity(policy.chainId)!==31337n)throw Error('Only the reviewed local Anvil profile is enabled');
     if(!Number.isInteger(policy.confirmations)||policy.confirmations<1||policy.confirmations>32)throw Error('Invalid confirmation policy');
     if(!policy.allowedTargets||typeof policy.allowedTargets!=='object'||Array.isArray(policy.allowedTargets)||
@@ -76,7 +129,7 @@ export class BrowserWallet {
       !Number.isInteger(confirmationTimeoutMs)||confirmationTimeoutMs<1||confirmationTimeoutMs>60000||
       !Number.isInteger(receiptAttempts)||receiptAttempts<1||receiptAttempts>40||
       !Number.isInteger(receiptIntervalMs)||receiptIntervalMs<0||receiptIntervalMs>3000)throw Error('Invalid request bounds');
-    this.provider=provider;this.storage=storage;this.locks=locks;this.onChange=onChange;this.onProgress=onProgress;this.clock=clock;
+    this.provider=provider;this.readProvider=readProvider;this.storage=storage;this.locks=locks;this.onChange=onChange;this.onProgress=onProgress;this.clock=clock;
     this.monotonic=monotonic;this.pause=pause;this.requestTimeoutMs=requestTimeoutMs;this.submissionTimeoutMs=submissionTimeoutMs;
     this.receiptAttempts=receiptAttempts;this.receiptIntervalMs=receiptIntervalMs;this.random=random;
     this.confirmationTimeoutMs=confirmationTimeoutMs;
@@ -131,30 +184,32 @@ export class BrowserWallet {
       return fn();
     });
   }
-  async request(method,params=[],limit=this.requestTimeoutMs){
-    let timer;
-    try{return await Promise.race([Promise.resolve().then(()=>this.provider.request({method,params})),
-      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Wallet read timed out')),limit);})]);}
-    finally{clearTimeout(timer);}
+  async request(method,params=[],limit=this.requestTimeoutMs,provider=this.provider){
+    let timer;const controller=new AbortController();
+    try{return await Promise.race([Promise.resolve().then(()=>provider.request({method,params,...(provider===this.readProvider&&provider!==this.provider?{signal:controller.signal}:{})})),
+      new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(Error('Chain or wallet read timed out'));},limit);})]);}
+    finally{clearTimeout(timer);controller.abort();}
   }
   read(method,params=[]){
     if(!READS.has(method))throw Error('Only bounded wallet reads are available');
-    return this.request(method,params);
+    return this.request(method,params,this.requestTimeoutMs,['eth_accounts','eth_chainId'].includes(method)?this.provider:this.readProvider);
   }
   readUntil(deadline,method,params=[]){
     if(!READS.has(method))throw Error('Only bounded wallet reads are available');
     const left=deadline-this.monotonic();
     if(left<=0)throw Error('Confirmation read window elapsed');
-    return this.request(method,params,Math.min(this.requestTimeoutMs,left));
+    return this.request(method,params,Math.min(this.requestTimeoutMs,left),this.readProvider);
   }
   async assertConnection(account){
     if(this.closed)throw Error('Wallet connection is closed');
     const expected=address(account),version=this.changeVersion;
     const [accounts,chain,genesis]=await Promise.all([
-      this.read('eth_accounts'),this.read('eth_chainId'),this.read('eth_getBlockByNumber',['0x0',false])
+      this.request('eth_accounts'),this.request('eth_chainId'),this.request('eth_getBlockByNumber',['0x0',false])
     ]);
     if(version!==this.changeVersion||!Array.isArray(accounts)||accounts.length>64||accounts.some(a=>!ADDRESS.test(a))||!accounts.some(a=>same(a,expected)))throw Error('Wallet account changed. Review again');
     if(rpcQuantity(chain,'eth_chainId')!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Wallet network differs from this reviewed local deployment');
+    if(this.readProvider!==this.provider)await this.assertNetwork();
+    if(version!==this.changeVersion)throw Error('Wallet account or network changed. Review again');
     return {account:expected,version};
   }
   checkLimits(tx){
@@ -244,7 +299,7 @@ export class BrowserWallet {
     const expected=record.transaction,fees=transactionFees(tx||{});
     if(!tx||!same(tx.hash,record.hash)||!same(tx.from,expected.from)||!same(tx.to,expected.to)||
       !same(tx.input??tx.data,expected.data)||rpcQuantity(tx.value,'transaction.value')!==quantity(expected.value)||
-      rpcQuantity(tx.nonce,'transaction.nonce')!==quantity(expected.nonce)||rpcQuantity(tx.chainId,'transaction.chainId')!==31337n||
+      rpcQuantity(tx.nonce,'transaction.nonce')!==quantity(expected.nonce)||transactionChain(tx)!==quantity(expected.chainId)||
       fees.cap>quantity(expected.gasPrice))throw verificationError('Wallet transaction differs from the reviewed transaction or signed fee cap. Inspect it before continuing');
     // Wallets may pad the gas limit. Recovery accepts that envelope only within
     // operator bounds; the canonical receipt must still fit the original review.
@@ -259,8 +314,10 @@ export class BrowserWallet {
     }
     await this.assertNetwork(deadline);
     const receipt=await read('eth_getTransactionReceipt',[record.hash]);
-    if(!receipt)return {status:'pending',hash:record.hash,error:'Waiting for the wallet RPC to return the transaction receipt.'};
-    const tx=await read('eth_getTransactionByHash',[record.hash]);await this.checkTransaction(record,tx);
+    if(!receipt)return {status:'pending',hash:record.hash,error:'Waiting for the chain to confirm this transaction.'};
+    const tx=await read('eth_getTransactionByHash',[record.hash]);
+    if(!tx)return {status:'pending',hash:record.hash,error:'Receipt found; waiting for its transaction details.'};
+    await this.checkTransaction(record,tx);
     const number=hex(rpcQuantity(receipt.blockNumber,'receipt.blockNumber')),blockHash=hash(receipt.blockHash);
     const used=rpcQuantity(receipt.gasUsed,'receipt.gasUsed'),fees=transactionFees(tx);
     const block=await read('eth_getBlockByNumber',[number,false]);
@@ -287,6 +344,7 @@ export class BrowserWallet {
     // receipt cannot be presented as final after an observed reorganization.
     const canonical=await read('eth_getBlockByNumber',[number,false]);
     if(!same(canonical?.hash,blockHash)||rpcQuantity(canonical.number,'canonical.number')!==quantity(number)||(fees.dynamic&&rpcQuantity(canonical.baseFeePerGas,'canonical.baseFeePerGas')!==base))return {status:'pending',hash:record.hash,error:'Receipt changed during verification'};
+    await this.assertNetwork(deadline); // A changed read endpoint cannot finalize mixed-chain evidence.
     // Logs are fetched and reconciled separately by the confirmed-state backend.
     // Keep the durable journal bounded even for a large combined-claim receipt.
     const summary={};
@@ -297,7 +355,7 @@ export class BrowserWallet {
   }
   async assertNetwork(deadline=Infinity){
     const [chain,genesis]=await Promise.all([this.readUntil(deadline,'eth_chainId'),this.readUntil(deadline,'eth_getBlockByNumber',['0x0',false])]);
-    if(rpcQuantity(chain,'eth_chainId')!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Switch back to the reviewed local network to recover this transaction');
+    if(rpcQuantity(chain,'eth_chainId')!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw verificationError('Configured RPC does not match the reviewed chain and genesis. Keep the saved transaction for recovery.');
   }
   async poll(record){
     this.progress('confirming',record.hash);
@@ -324,7 +382,7 @@ export class BrowserWallet {
         const candidate=hash(providedHash);
         if(record.hash&&record.hash!==candidate)throw Error('A different transaction hash is already recorded');
         await this.assertNetwork();
-        const tx=await this.read('eth_getTransactionByHash',[candidate]);
+        const tx=await this.readUntil(Infinity,'eth_getTransactionByHash',[candidate]);
         await this.checkTransaction({...record,hash:candidate},tx);
         record={...record,hash:candidate,status:'pending'};this.save(record);
       }

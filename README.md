@@ -2,6 +2,17 @@
 
 A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.
 
+## Wallet confirmation reads
+
+The shared transaction flow uses the selected extension for authorization/signing
+and a deployment-pinned read-only RPC for simulation, balances and confirmation.
+Mint, exact approval, activation, LP growth and claims share this boundary.
+Approval never changes LP or artwork; confirmed Entry execution and current
+on-chain position data are required. Recover saved hashes without resubmitting.
+See [scoped evidence](https://github.com/ABEF/AAA/blob/main/reports/browser-wallet/CHAIN_READER.md).
+The enabled signing profile remains local; production deployment/RPC/route/fee
+qualification and actual extension acceptance are still required.
+
 ## Browser-wallet integration - 2026-10-20
 
 The disposable contract profile supports **browser-wallet signing** at

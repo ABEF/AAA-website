@@ -523,7 +523,7 @@ test('missing confirmed transaction quantity preserves same hash and reports exa
     state.transaction=mined(t);delete state.transaction.chainId;state.receipt=receipt();return HASH;
   }});
   const result=await e.wallet.send(e.review());
-  assert.equal(result.status,'unresolved');assert.match(result.error,/transaction.chainId.*missing/);
+  assert.equal(result.status,'unresolved');assert.match(result.error,/no verifiable signed chain ID/);
   assert.equal(e.wallet.pending.hash,HASH);
   e.state.transaction.chainId='0x007a69';
   assert.equal((await e.wallet.recover({account:A})).status,'confirmed');
@@ -625,4 +625,88 @@ test('dynamic effective fee below cap is exact and unknown canonical base fails 
    send:(t,{state,receipt,mined})=>{state.transaction={...mined(t),type:'0x2',maxFeePerGas:'0x2',maxPriorityFeePerGas:'0x1'};state.receipt=receipt();return HASH;}});
   const result=await e.wallet.send(e.review());assert.equal(result.status,base===null?'unresolved':'confirmed');if(base!==null)assert.equal(result.receipt.effectiveGasPrice,'0x1');
  }
+});
+
+test('legacy omission resolves the signed EIP155 chain, typed omission never uses parity',async()=>{
+ for(const change of [{type:'0x0',chainId:null,v:'0xf4f5'},{type:'0x0',chainId:null,v:'0xf4f6'}]){
+  const e=setup({send:(t,{state,receipt,mined})=>{state.transaction={...mined(t),...change};state.receipt=receipt();return HASH;}});
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');await e.wallet.acknowledge(HASH);
+ }
+ for(const change of [{chainId:null,v:'0x25'},{v:'0x25'},{chainId:null,v:'0x1b'},
+  {type:'0x2',chainId:null,v:'0xf4f5',maxFeePerGas:'0x2',maxPriorityFeePerGas:'0x1'}]){
+  const e=setup({send:(t,{state,receipt,mined})=>{state.transaction={...mined(t),...change};state.receipt=receipt();return HASH;}});
+  assert.equal((await e.wallet.send(e.review())).status,'unresolved');assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
+ }
+});
+
+for(const action of ['mint','approve','activate','increase','claim'])test(`${action}: signed once, node confirms despite missing wallet chainId and failing wallet receipt methods`,async()=>{
+ const e=setup(),nodeCalls=[],original=e.provider.request;
+ e.wallet.readProvider={request:async request=>{nodeCalls.push(request.method);return original(request);}};
+ e.provider.request=async request=>{
+  if(request.method==='eth_getTransactionByHash')return {...e.state.transaction,chainId:undefined};
+  if(request.method==='eth_getTransactionReceipt')throw Error('Extension formatted response is unusable');
+  return original(request);
+ };
+ const result=await e.wallet.send(e.review({context:{action}}));
+ assert.equal(result.status,'confirmed');assert.equal(e.wallet.pending.context.action,action);
+ await e.wallet.acknowledge(HASH);assert.equal(e.wallet.pending,null);
+ assert.ok(nodeCalls.includes('eth_getTransactionReceipt'));assert.equal(sent(e).length,1);
+ assert.equal(nodeCalls.includes('eth_sendTransaction'),false);assert.equal(nodeCalls.includes('eth_accounts'),false);
+});
+
+test('independent reader validates chain and genesis before any signature',async()=>{
+ for(const mismatch of ['chain','genesis']){
+  const e=setup();
+  e.wallet.readProvider={request:request=>request.method==='eth_chainId'&&mismatch==='chain'?'0x1':
+   request.method==='eth_getBlockByNumber'&&request.params[0]==='0x0'&&mismatch==='genesis'?{hash:OTHER}:e.provider.request(request)};
+  await assert.rejects(e.wallet.send(e.review()),error=>error.notSubmitted===true);
+  assert.equal(sent(e).length,0);assert.equal(e.wallet.pending,null);
+ }
+});
+
+test('pending transaction recovers through original chain reader after extension changes networks',async()=>{
+ const e=setup({send:()=>HASH}),original=e.provider.request;
+ e.wallet.readProvider={request:original};
+ assert.equal((await e.wallet.send(e.review())).status,'pending');
+ e.provider.request=request=>request.method==='eth_chainId'?'0x1':original(request);e.emit('chainChanged');
+ e.state.transaction=e.mined(tx());e.state.receipt=e.receipt();
+ assert.equal((await e.wallet.recover({account:A})).status,'confirmed');await e.wallet.acknowledge(HASH);
+ assert.equal(sent(e).length,1);
+});
+
+test('failed node read retains original hash and never falls back to inconsistent extension data',async()=>{
+ const e=setup(),original=e.provider.request;let unavailable=true;
+ e.wallet.readProvider={request:request=>{
+  if(request.method==='eth_getTransactionReceipt'&&unavailable)throw Error('reader offline');return original(request);
+ }};
+ assert.equal((await e.wallet.send(e.review())).status,'unresolved');assert.equal(e.wallet.pending.hash,HASH);
+ unavailable=false;assert.equal((await e.wallet.recover({account:A})).status,'confirmed');assert.equal(sent(e).length,1);
+});
+
+test('receipt visible before transaction details is temporary pending, not another submission',async()=>{
+ let reads=0;const e=setup({options:{receiptAttempts:3},handler:method=>method==='eth_getTransactionByHash'&&++reads===1?null:undefined});
+ assert.equal((await e.wallet.send(e.review())).status,'confirmed');assert.equal(reads,2);assert.equal(sent(e).length,1);
+});
+
+test('approval success cannot automatically sign Entry, and reverted Entry is never confirmed',async()=>{
+ const e=setup(),t={...tx(),value:'0x0',data:'0x095ea7b3'+'0'.repeat(64)+'0'.repeat(60)+'2710'};
+ assert.equal((await e.wallet.send(e.review({transaction:t,expectedTransaction:expected(t),context:{action:'approve'}}))).status,'confirmed');
+ assert.equal(sent(e).length,1);await e.wallet.acknowledge(HASH);assert.equal(sent(e).length,1);
+ e.state.nonce='0x1';const entry={...tx(),nonce:'0x1',data:'0x35b13b87'};
+ const original=e.provider.request;e.provider.request=async request=>{const result=await original(request);if(request.method==='eth_getTransactionReceipt')return {...result,status:'0x0'};return result;};
+ // The default reader is this same provider; the second signature is explicit.
+ assert.equal((await e.wallet.send(e.review({transaction:entry,expectedTransaction:expected(entry),context:{action:'activate'}}))).status,'failed');
+ assert.equal(sent(e).length,2);assert.equal(e.wallet.pending.status,'failed');
+});
+
+
+test('chain reader changing networks during receipt reads cannot finalize or discard the transaction',async()=>{
+ const e=setup(),original=e.provider.request;let changed=false;
+ e.wallet.readProvider={request:request=>{
+  if(request.method==='eth_chainId'&&changed)return '0x1';
+  if(request.method==='eth_getTransactionReceipt')changed=true;
+  return original(request);
+ }};
+ const result=await e.wallet.send(e.review());assert.equal(result.status,'unresolved');
+ assert.match(result.error,/Configured RPC/);assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
 });

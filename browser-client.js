@@ -1,6 +1,6 @@
 import {LocalClient,validateState} from './local-client.js';
 import {WalletConnection,validAddress} from './wallet.js';
-import {BrowserWallet} from './browser-wallet.js';
+import {BrowserWallet,createChainReader} from './browser-wallet.js';
 import {validateBrowserManifest,expectedBrowserTransaction} from './browser-intent.js';
 
 // Opt-in on the existing local mount only. Never turns the public demo live.
@@ -72,9 +72,10 @@ export class BrowserClient extends LocalClient {
   }
   attachSigner() {
     if(!this.wallet.provider||!this.manifest)return;
-    if(this.signer?.provider===this.wallet.provider)return;
+    if(this.signer?.provider===this.wallet.provider&&this.signerRpc===this.manifest.rpc_url)return;
     this.signer?.close?.();
-    this.signer=new BrowserWallet({provider:this.wallet.provider,policy:this.manifest.policy,...this.signerOptions,onProgress:event=>{this.onProgress(event);}});
+    this.signer=new BrowserWallet({provider:this.wallet.provider,policy:this.manifest.policy,readProvider:createChainReader(this.manifest.rpc_url,{fetcher:this.fetcher}),...this.signerOptions,onProgress:event=>{this.onProgress(event);}});
+    this.signerRpc=this.manifest.rpc_url;
     this.pending=this.account?this.signer.getPending(this.account):null;
   }
   async connect(index,{chooseAccount=false,fromPicker=false}={}) {
@@ -210,7 +211,7 @@ export class BrowserClient extends LocalClient {
     if(session.mode!=='LOCAL ANVIL TEST ONLY'||session.chain_id!==31337||!/^[a-f0-9]{64}$/.test(session.token))throw new Error('Unrecognized local session');
     const manifest=validateBrowserManifest(await this.request('/browser/manifest'));
     if(JSON.stringify(session.accounts)!==JSON.stringify(manifest.accounts))throw new Error('Deployment wallet inventory differs.');
-    if(this.manifest&&(this.manifest.genesis_hash!==manifest.genesis_hash||JSON.stringify(this.manifest.policy)!==JSON.stringify(manifest.policy)))throw new Error('The Anvil deployment changed. Resolve saved transactions on their original chain before reconnecting.');
+    if(this.manifest&&(this.manifest.genesis_hash!==manifest.genesis_hash||this.manifest.rpc_url!==manifest.rpc_url||JSON.stringify(this.manifest.policy)!==JSON.stringify(manifest.policy)))throw new Error('The Anvil deployment changed. Resolve saved transactions on their original chain before reconnecting.');
     this.session=session;this.accounts=session.accounts;this.manifest=manifest;
     await this.restore();this.attachSigner();this.walletChanged();
     if(this.account&&this.signer) {
