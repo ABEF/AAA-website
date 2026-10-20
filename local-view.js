@@ -109,8 +109,23 @@ export function walletStage(stage) {
   })[stage]||null;
 }
 
+export function mintButtonLabel({activity=null,pending=false,account=false,browser=false,verified=true,stale=false,soldOut=false}={}) {
+  if(activity?.kind==='read')return pending?'Checking transaction status…':activity.initial?'Loading mint details…':'Refreshing mint details…';
+  if(activity?.kind==='connect')return activity.network?'Checking network…':'Connecting wallet…';
+  if(activity?.action==='mint') {
+    if(activity.kind==='prepare')return 'Preparing mint review…';
+    return ({checking:'Checking mint…',wallet:'Confirm mint in wallet…',submitted:'Waiting for mint confirmation…',confirming:'Waiting for mint confirmation…',confirmed:'Updating minted NFT…',syncing:'Updating minted NFT…',failed:'Mint reverted'})[activity.stage]||'Submitting mint…';
+  }
+  if(pending)return 'Check saved transaction status';
+  if(soldOut)return 'Mint limit reached';
+  if(stale)return 'Refresh mint details';
+  if(!account)return browser?'Connect browser wallet ↗':'Choose test wallet ↗';
+  if(browser&&!verified)return 'Checking wallet…';
+  return 'Review mint ↗';
+}
+
 export function createLocalView(client=null) {
-  const c=client||new LocalClient();let walletAttempted=false,busy=false,stale=true,page=1,selected=null,confirmDraft=null,sequence=0;
+  const c=client||new LocalClient();let activity={kind:'read',initial:true},walletAttempted=false,busy=false,stale=true,page=1,selected=null,confirmDraft=null,sequence=0;
   const contributionAmounts=new Map(),contributionAssets=new Map();let selectedMode="breakdown";let lastSnapshot=null,lastSnapshotSession=null,approvedContribution=null,updatingNFT=null,refreshScope=null;
   const bar=document.createElement('div');bar.className='container local-status';bar.innerHTML='<span role="status">Connecting to local contracts…</span><button class="text-link" data-local-refresh>Refresh ↻</button>';document.querySelector('main').before(bar);
   const dialog=document.createElement('dialog');dialog.className='dialog local-confirm';dialog.setAttribute('aria-label','Confirm local transaction');document.body.append(dialog);
@@ -163,7 +178,7 @@ export function createLocalView(client=null) {
     text('#mint-supply',count==null?'Unavailable':`${count} / 1,000`);
     text('#mint-remaining',count==null?'Waiting for confirmed state':`${20-count} more mints in this disposable session · production supply 1,000`);
     $('#mint-submit').type=c.account?'submit':'button';$('#mint-submit').disabled=blocked()||count>=20;
-    text('#mint-submit',busy?'Processing…':c.account?'Review local mint ↗':c.browser?'Connect browser wallet ↗':'Choose test wallet ↗');
+    text('#mint-submit',mintButtonLabel({activity,pending:Boolean(c.pending),account:Boolean(c.account),browser:c.browser,verified:c.connectionVerified,stale,soldOut:count>=20}));
     if($('#wallet-dialog').open)renderWalletOptions();
   }
   function renderWalletOptions() {
@@ -286,23 +301,23 @@ export function createLocalView(client=null) {
     $$('[data-local-refresh]').forEach(n=>n.disabled=busy);
   }
   async function refresh() {
-    if(busy)return;busy=true;stale=true;
+    if(busy)return;activity={kind:'read',initial:!lastSnapshot};busy=true;stale=true;
     refreshScope=c.account&&lastSnapshotSession===c.session?.token?{session:c.session.token,account:c.account,action:'refresh',ids:[]}:null;
     closeConfirmation();$('#nft-dialog').close();status('Refreshing confirmed balances…');render();
     try{const recovered=await c.refresh();stale=false;updatingNFT=null;status(`${recovered?'Recovered '+recovered.status+' operation. ':''}Local block ${c.state.protocol.provenance.block_number} · ETH USD price unavailable · no public funds`);}
     catch(err){status(`${err.message}. Refresh to recover confirmed state.`,true);}
-    finally{busy=false;if(!stale)refreshScope=null;render();}
+    finally{busy=false;activity=null;if(!stale)refreshScope=null;render();}
   }
   async function browserConnect(index,network=false,chooseAccount=false,account=null) {
     if(busy)return;
     let connected=false;
     walletAttempted=true;
-    busy=true;c.connectionError=null;closeConfirmation();status(network?'Confirm the local network in your wallet…':'Choose the disposable account in your wallet…');render();
+    activity={kind:'connect',network};busy=true;c.connectionError=null;closeConfirmation();status(network?'Confirm the local network in your wallet…':'Choose the disposable account in your wallet…');render();
     try {
       if(account)await c.chooseAuthorizedAccount(account);else if(network)await c.setupNetwork();else await c.connect(index,{chooseAccount,fromPicker:true});
       if(c.account&&!c.connectionError){connected=true;$('#wallet-dialog').close();status('Browser wallet connected. Refreshing confirmed positions…');}
     }catch(error){c.connectionError=c.connectionError||error.message;status(c.connectionError,true);}
-    finally{busy=false;render();}
+    finally{busy=false;activity=null;render();}
     if(connected)await refresh();
   }
   function updateContributionQuote(form) {
@@ -312,7 +327,7 @@ export function createLocalView(client=null) {
   }
   async function prepare(action,extras={}) {
     if(blocked()){status(busy?'A local operation is already running. Please wait.':'Refresh confirmed balances before reviewing a transaction.',true);return;}if(!c.account)return openWallet();
-    if(extras.id)selected=extras.id;busy=true;const current=++sequence;render();contributionBusy(true);status('Preparing your transaction and estimating gas. Nothing has been sent…');
+    if(extras.id)selected=extras.id;activity={kind:'prepare',action};busy=true;const current=++sequence;render();contributionBusy(true);status('Preparing your transaction and estimating gas. Nothing has been sent…');
     try {
       const draft=await c.prepare(action,extras);if(sequence!==current)return;
       confirmDraft={...draft,targetId:extras.id||null,contributionContext:['activate','increase'].includes(action)?{session:c.session.token,account:c.account,id:extras.id,amount:extras.amount,asset:extras.asset||'TEST-1'}:null};$('#nft-dialog').close();
@@ -321,11 +336,12 @@ export function createLocalView(client=null) {
       dialog.innerHTML=`<div class="dialog-heading"><p class="eyebrow">LOCAL WALLET · ANVIL 31337</p><button class="icon-button" data-local-cancel aria-label="Cancel transaction">×</button></div><h2>${({wrap:'Wrap test ETH',approve:(draft.approval_raw==='0'?'Reset allowance · ':'Approve ')+(draft.approval_asset||(draft.contribution_asset==='ETH'?'WETH':draft.contribution_asset)||'TEST-1'),activate:'Activate your NFT',increase:'Add attached LP',mint:'Mint a dormant NFT',claim:'Claim funded fees',transfer:'Transfer your NFT'})[draft.action]}</h2><p class="small-note">${draft.action==='wrap'?'Unsupported legacy wrapping step. Use the native-ETH setup.':draft.action==='approve'?'Exact token allowance only; no LP is added yet. Next: review and confirm the single LP transaction.':draft.action==='transfer'?'Attached LP and all unclaimed rights follow the NFT to the other local wallet.':'Exact calldata simulated against the local deployment. Confirmation expires in 60 seconds.'}</p><div class="nft-detail-rewards">${row(c.browser?(c.wallet?.state?.name||'Wallet'):'Wallet',draft.account)}${row('To',draft.transaction.to)}${recipient}${row('Value',units(BigInt(draft.transaction.value).toString())+' test ETH')}${draft.contribution?row('Contribution',draft.contribution+' '+(draft.contribution_asset||'TEST-1')):''}${!['approve','wrap'].includes(draft.action)&&draft.minimum_lp_usd_18?row('Minimum LP added · 99%',usd(draft.minimum_lp_usd_18)):''}${draft.action==='approve'&&draft.approval_raw==='0'?row('Allowance','Reset to zero before exact approval'):''}${claims?row('Simulated claim',claims):''}${row('Network gas · separate maximum',units(draft.network_gas.max_cost_wei,18,12)+' test ETH')}</div><details><summary>Transaction details</summary><code class="local-id">${e(draft.transaction.data)}</code></details><div class="local-actions"><button class="button button-secondary" data-local-cancel>Cancel</button><button class="button" data-local-confirm>${c.browser?'Confirm in your wallet':'Confirm local transaction'}</button></div>`;
       dialog.showModal();status('Review the confirmation. No transaction has been sent.');
     }catch(err){status(err.message,true);}
-    finally{busy=false;render();contributionBusy(false);}
+    finally{busy=false;activity=null;render();contributionBusy(false);}
   }
   async function execute() {
     if(!confirmDraft||busy)return;const draft=confirmDraft;let outcome=null,failureMessage=null,failureKind=null;
     const previous=c.state?.nfts.find(n=>n.token_id===draft.targetId),session=c.session.token,account=c.account;
+    activity={kind:'submit',action:draft.action,stage:c.browser?'checking':'submitting'};
     if(['activate','increase'].includes(draft.action))armUpgradeSound();confirmDraft=null;dialog.innerHTML='<h2>Confirming transaction…</h2><p role="status">Waiting for the local receipt and confirmed balances. Keep this window open; do not repeat the transaction.</p>';refreshScope=operationScope(draft,c.session.token,c.account);busy=true;render();status(c.browser?'Confirm the exact transaction in your browser wallet…':'Submitting to the disposable local chain…');
     try {
       outcome=await c.execute(draft);
@@ -350,7 +366,7 @@ export function createLocalView(client=null) {
         try{await c.refresh();stale=false;status('Nothing was submitted. Review the transaction again using the updated balances.');}
         catch(readError){status(`${readError.message}. Refresh confirmed balances before reviewing again.`,true);}
       } else {stale=true;status(outcome?.status==='confirmed'?`Confirmed ${draft.action}. Balance refresh failed: ${err.message}. Refresh balances only; do not repeat this transaction. · ${outcome.transactions.join(', ')}`:`${err.message}. Refresh to recover; do not submit a new action.`,true);}}
-    finally{busy=false;if(!stale){updatingNFT=null;refreshScope=null;}render();if(!stale&&$('#nft-dialog').open&&selected)details(selected,selectedMode);
+    finally{busy=false;activity=null;if(!stale){updatingNFT=null;refreshScope=null;}render();if(!stale&&$('#nft-dialog').open&&selected)details(selected,selectedMode);
       if(!stale&&outcome?.status==='confirmed'&&['activate','increase'].includes(draft.action)&&$('#nft-dialog').open&&selected===draft.targetId)$('#nft-dialog').scrollTo({top:0,behavior:'instant'});
     }
     if(!stale&&outcome?.status==='confirmed'&&['approve','wrap'].includes(draft.action)&&session===c.session.token&&account===c.account&&dialog.open){
@@ -398,6 +414,7 @@ export function createLocalView(client=null) {
   if(c.browser){
     c.onProgress=event=>{
       const copy=walletStage(event.stage);if(!copy)return;
+      if(activity?.kind==='submit')activity={...activity,stage:event.stage};updateWallet();
       status(`${copy[0]}. ${copy[1]}`);
       if(busy&&dialog.open)dialog.innerHTML=`<h2>${e(copy[0])}</h2><p role="status">${e(copy[1])}</p>${event.hash?`<p class="small-note">Transaction: <code>${e(event.hash)}</code></p>`:''}`;
     };

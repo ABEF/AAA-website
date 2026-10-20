@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {WalletDiscovery,WalletConnection} from '../wallet.js';
-import {walletStage,walletFailureState} from '../local-view.js';
+import {walletStage,walletFailureState,mintButtonLabel} from '../local-view.js';
 const A='0x'+'11'.repeat(20);
 const provider=()=>({request:async({method})=>method==='eth_chainId'?'0x7a69':[A]});
 const detail=(p,n=1)=>({provider:p,info:{uuid:`00000000-0000-4000-8000-${String(n).padStart(12,'0')}`,rdns:n===1?'io.metamask':'io.rabby',name:n===1?'MetaMask':'Rabby'}});
@@ -40,4 +40,23 @@ test('failure copy never calls a saved submission unsent or a confirmed receipt 
  assert.equal(walletFailureState({notSubmitted:true})[0],'Transaction not sent');
  assert.equal(walletFailureState({rejected:true})[0],'Cancelled in wallet');
  assert.equal(walletFailureState({failed:true})[0],'Transaction reverted');
+});
+
+
+test('mint button distinguishes first load and refresh from an actual mint',()=>{
+ assert.equal(mintButtonLabel({activity:{kind:'read',initial:true},stale:true}),'Loading mint details…');
+ assert.equal(mintButtonLabel({activity:{kind:'read',initial:false},account:true}),'Refreshing mint details…');
+ assert.equal(mintButtonLabel({activity:{kind:'prepare',action:'mint'}}),'Preparing mint review…');
+ assert.equal(mintButtonLabel({activity:{kind:'submit',action:'mint',stage:'wallet'}}),'Confirm mint in wallet…');
+ assert.equal(mintButtonLabel({activity:{kind:'submit',action:'mint',stage:'confirming'}}),'Waiting for mint confirmation…');
+ assert.equal(mintButtonLabel({activity:{kind:'submit',action:'mint',stage:'syncing'}}),'Updating minted NFT…');
+});
+
+test('other NFT operations never label the mint button as a mint in progress',()=>{
+ for(const action of ['claim','claim_all','approve','activate','increase'])
+  assert.equal(mintButtonLabel({activity:{kind:'submit',action},account:true}),'Review mint ↗');
+ assert.equal(mintButtonLabel({pending:true,account:true}),'Check saved transaction status');
+ assert.equal(mintButtonLabel({activity:{kind:'read'},pending:true}),'Checking transaction status…');
+ assert.equal(mintButtonLabel({stale:true,account:true}),'Refresh mint details');
+ assert.equal(mintButtonLabel({account:true}),'Review mint ↗');
 });
