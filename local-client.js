@@ -76,7 +76,7 @@ export class LocalClient {
           // Only exact pre-handler lock responses may wait. An /action retry
           // retains its durable operation ID and identical payload; never retry
           // a lost response, a validation failure, or an ambiguous outcome here.
-          const readBusy=((!body&&path==='/state')||(body&&path==='/prepare'))&&result.error==='Local operation in progress; refresh shortly';
+          const readBusy=((!body&&['/state','/browser/manifest'].includes(path))||(body&&['/prepare','/browser/prepare','/browser/confirm'].includes(path)))&&result.error==='Local operation in progress; refresh shortly';
           const actionBusy=body&&path==='/action'&&result.error==='Local operation in progress; retry the SAME operation ID';
           if(response.status===409&&(readBusy||actionBusy)&&attempt<29) {
             await this.pause(Math.min(500*2**attempt,3000),controller.signal);continue;

@@ -1,5 +1,6 @@
 import {localMode} from './local-client.js';
 import {createLocalView} from './local-view.js';
+import {browserMode,BrowserClient} from './browser-client.js';
 import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,queueUpgrade,preloadUpgradeSounds} from './artworks.js';
 import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, walletError} from './wallet.js';
@@ -25,7 +26,7 @@ const visualTraits = nft => `<span>${styleLabel(colorwayFor(nft).colorStyle)}</s
 let collection = buildDemoCollection();
 let page = 1, connecting = false, toastTimer, selectedNFT = null, selectedDetailMode = 'breakdown';
 const providers = [];
-const local = localMode(location) ? createLocalView() : null;
+const local = localMode(location) ? createLocalView(browserMode(location)?new BrowserClient():null) : null;
 const store = local ? null : new PreviewStore({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},navigator.locks);
 let storageProblem = null;
 if (!local) try { collection = store.read().collection; } catch(error) { storageProblem = error.message; }
@@ -344,7 +345,7 @@ function registerProvider(provider,name,id=name) {
   if (!provider || typeof provider.request !== 'function' || providers.some(item => item.provider === provider)) return;
   providers.push({provider,name:String(name || 'Browser wallet').slice(0,80),id:String(id || name || 'Browser wallet')});
   if(!local){clearTimeout(restoreTimer);restoreTimer=setTimeout(()=>void wallet.restore(providers),150);}
-  if ($('#wallet-dialog').open) renderProviders();
+  if(local)local.registerProvider(providers.at(-1));else if ($('#wallet-dialog').open) renderProviders();
 }
 window.addEventListener('eip6963:announceProvider',event => registerProvider(event.detail?.provider,event.detail?.info?.name,event.detail?.info?.rdns));
 window.dispatchEvent(new Event('eip6963:requestProvider'));

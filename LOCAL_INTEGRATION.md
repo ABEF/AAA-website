@@ -1,3 +1,22 @@
+## Browser-wallet local integration - 2026-10-20
+
+The explicit /app/?wallet=browser profile now uses injected EIP-1193 signing on
+local Anvil only. BrowserWallet validates typed intent, chain/genesis/runtime,
+nonce and gas; exact ERC20 approval is followed by a separately reviewed Entry
+call. Saved per-account localStorage journals and Web Locks prevent duplicate
+submission; unknown responses retain hash-only recovery. Never erase pending
+intent or automatically resend. Artwork/sound waits for confirmed increased LP.
+
+The public/static site remains a simulation. The new local fixture is port8900,
+with independently checked source artifacts and mock venue/prices/randomness.
+43 affected Python and 167 distinct JS checks pass across scoped runs, plus five
+actual local transactions through an EIP-1193-shaped RPC test provider. Real
+MetaMask/extension acceptance remains open. No production signing/services,
+public deployment or paused-monitor restart. The large load campaign stays
+deferred; release remains NOT APPROVED. See contract docs/BROWSER_WALLET.md and
+reports/browser-wallet/VERIFICATION.md. Use main, preserve unrelated drafts and
+keep central Todo, feature evidence, operator procedures and both memories aligned.
+
 ## Manual acceptance and next priority - 2026-10-20
 
 The user reports all six proposed 8898 two-wallet scenarios passed: simultaneous

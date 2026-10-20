@@ -2,18 +2,21 @@
 
 A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.
 
-## Current integration priority - 2026-10-20
+## Browser-wallet integration - 2026-10-20
 
-The user reports the six proposed local two-wallet scenarios passed. This is
-manual user acceptance, separate from the existing automated checks and local
-transaction receipts. Next: connect real browser-wallet signing to the existing
-unsigned preparation services; retain bounded API work and safe recovery.
+The disposable contract profile supports **browser-wallet signing** at
+`/app/?wallet=browser`. It prepares unsigned mint, exact approval, activation,
+LP addition and claim transactions; the extension signs them. Confirmed receipts
+and on-chain LP readings control balance/artwork updates. Refresh recovers a saved
+transaction hash without sending the payment again.
 
-The proposed 10/25/100-user load campaign is deferred at the user's request;
-production capacity remains unverified. The default/public site stays a simulation,
-and the disposable local shared signer remains test-only. See the
-[local integration notes](LOCAL_INTEGRATION.md) and the contract repository's
-[central Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) for remaining work.
+Run the contract repository's local launcher, then open that URL in Chrome with
+a compatible extension and a disposable fixture account. The connection dialog
+shows the current RPC and chain ID. See [local integration](LOCAL_INTEGRATION.md)
+and the [operator runbook](https://github.com/ABEF/AAA/blob/main/docs/BROWSER_WALLET.md).
+The default/public site remains a simulation. Actual extension acceptance, public
+deployment pins and qualified production services remain open. The dedicated
+10/25/100-user campaign is deferred; production capacity remains unverified.
 
 ## Run locally
 
