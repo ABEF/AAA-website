@@ -1,3 +1,19 @@
+## Manual acceptance and next priority - 2026-10-20
+
+The user reports all six proposed 8898 two-wallet scenarios passed: simultaneous
+activation/top-ups, cancel after approval and reopen, pending refresh/recovery,
+claim while another wallet contributes, and invalid inputs/insufficient balance.
+This is user-reported manual evidence, not a new automated run or receipt audit.
+See the contract repository's reports/local-wallet-concurrency/MANUAL_ACCEPTANCE.md.
+
+The user deferred the dedicated 10/25/100-user load campaign. Do not run or schedule
+it without a later request; production capacity remains UNVERIFIED. Next focus is
+real browser-wallet integration with unsigned preparation and independent signing.
+Bounded API work and safe recovery remain necessary before real funds. The shared
+local signer/global lock is test-only. No code/test/service/public deployment or
+monitor change is included in this documentation update. Main only; maintain the
+contract central Todo, feature reference, operator notes and both repo memories.
+
 ## Independent local wallet execution - 2026-10-20
 
 The current 8898 service pins the sender nonce for each exact server-held review.

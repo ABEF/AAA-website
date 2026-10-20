@@ -2,6 +2,19 @@
 
 A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.
 
+## Current integration priority - 2026-10-20
+
+The user reports the six proposed local two-wallet scenarios passed. This is
+manual user acceptance, separate from the existing automated checks and local
+transaction receipts. Next: connect real browser-wallet signing to the existing
+unsigned preparation services; retain bounded API work and safe recovery.
+
+The proposed 10/25/100-user load campaign is deferred at the user's request;
+production capacity remains unverified. The default/public site stays a simulation,
+and the disposable local shared signer remains test-only. See the
+[local integration notes](LOCAL_INTEGRATION.md) and the contract repository's
+[central Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) for remaining work.
+
 ## Run locally
 
 Requires Git and Node.js 20 or newer. The same commands work on Windows, macOS, and Linux. No third-party dependencies or package installation are needed.
