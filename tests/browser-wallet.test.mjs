@@ -33,7 +33,7 @@ function setup(overrides={}){
       if(overrides.handler){const answer=await overrides.handler(method,params,{state,provider});if(answer!==undefined)return answer;}
       if(method==='eth_accounts')return [state.account];
       if(method==='eth_chainId')return state.chain;
-      if(method==='eth_getBlockByNumber')return {hash:params[0]==='0x0'?state.genesis:state.block};
+      if(method==='eth_getBlockByNumber')return {hash:params[0]==='0x0'?state.genesis:state.block,number:params[0]};
       if(method==='eth_getCode')return state.code;
       if(method==='eth_getTransactionCount')return state.nonce;
       if(method==='eth_getBalance')return state.balance;
@@ -63,6 +63,48 @@ function setup(overrides={}){
   return {wallet,state,calls,store,provider,review,emit,mutex,receipt,mined};
 }
 const sent=env=>env.calls.filter(c=>c.method==='eth_sendTransaction');
+
+test('one-confirmation canonical receipt is not vetoed by a lagging head cache',async()=>{
+  const e=setup();e.state.head='0x1';
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+  await e.wallet.acknowledge(HASH);
+  assert.equal(e.wallet.pending,null);assert.equal(sent(e).length,1);
+  assert.equal(e.calls.filter(c=>c.method==='eth_blockNumber').length,0);
+});
+test('receipt appearing after three quick attempts confirms without manual recovery',async()=>{
+  let reads=0,waits=0;
+  const e=setup({options:{receiptAttempts:21,receiptIntervalMs:1500,pause:async ms=>{waits++;e.state.mono+=ms;}},
+    handler:method=>method==='eth_getTransactionReceipt'&&++reads<6?null:undefined});
+  assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+  assert.equal(waits,5);assert.equal(sent(e).length,1);
+});
+test('confirmation deadline bounds polling and preserves the same saved hash',async()=>{
+  let waits=0;
+  const e=setup({options:{confirmationTimeoutMs:3500,receiptAttempts:21,receiptIntervalMs:1500,
+    pause:async ms=>{waits++;e.state.mono+=ms;}},
+    handler:method=>method==='eth_getTransactionReceipt'?null:undefined});
+  assert.equal((await e.wallet.send(e.review())).status,'pending');
+  assert.equal(e.state.mono,4500);assert.equal(waits,3);
+  assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
+});
+test('a hung receipt read is cut off by the remaining confirmation deadline',async()=>{
+  const e=setup({options:{confirmationTimeoutMs:20,requestTimeoutMs:500,
+    monotonic:()=>performance.now(),receiptAttempts:21},
+    handler:method=>method==='eth_getTransactionReceipt'?new Promise(()=>{}):undefined});
+  const start=performance.now();
+  assert.equal((await e.wallet.send(e.review())).status,'unresolved');
+  assert.ok(performance.now()-start<400);assert.equal(sent(e).length,1);
+  assert.equal(e.wallet.pending.hash,HASH);
+});
+test('canonical block number must match receipt number even with matching hash',async()=>{
+  const e=setup({handler:(method,params)=>method==='eth_getBlockByNumber'&&params[0]==='0x2'?{hash:BLOCK,number:'0x1'}:undefined});
+  assert.equal((await e.wallet.send(e.review())).status,'pending');
+  assert.equal(e.wallet.pending.hash,HASH);
+});
+test('confirmation window and attempt count have finite validated bounds',()=>{
+  for(const confirmationTimeoutMs of [0,-1,60001,Infinity,1.5])assert.throws(()=>setup({options:{confirmationTimeoutMs}}),/bounds/);
+  for(const receiptAttempts of [0,41,Infinity])assert.throws(()=>setup({options:{receiptAttempts}}),/bounds/);
+});
 
 test('wallet confirmation can outlast read timeout without sending twice',async()=>{
   const e=setup({timeout:5,options:{submissionTimeoutMs:100},send:async(t,{state,receipt,mined})=>{

@@ -365,3 +365,13 @@ for (const path of ['/browser/manifest','/browser/prepare','/browser/confirm']) 
   c.session={token:SESSION}; const body=path.endsWith('manifest')?undefined:{draft_id:'d'.repeat(32),transaction_hash:HASH};
   assert.deepEqual(await c.request(path,body),{ok:true}); assert.equal(attempts,2);assert.equal(bodies[0],bodies[1]);
 });
+
+test('receipt wait reason reaches the UI while the original transaction stays saved',async()=>{
+  let e;
+  e=setup({send:async()=>{e.saved=pending();return {status:'pending',hash:HASH,error:'Waiting for the wallet RPC to return the transaction receipt.'};}});
+  e.ready();const draft=await e.c.prepare('mint');
+  await assert.rejects(e.c.execute(draft),/wallet RPC.*receipt/);
+  assert.equal(e.c.pending.hash,HASH);
+  assert.equal(e.signCalls.filter(c=>c[0]==='send').length,1);
+  assert.equal(e.calls.some(c=>c.path==='/browser/confirm'),false);
+});

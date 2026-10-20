@@ -40,7 +40,7 @@ function context(value){
 export class BrowserWallet {
   constructor({provider,policy,storage=nativeStorage(),locks=globalThis.navigator?.locks,onChange=()=>{},
     clock=()=>Date.now(),monotonic=()=>performance.now(),pause=wait,requestTimeoutMs=15000,
-    receiptAttempts=3,receiptIntervalMs=750,submissionTimeoutMs=90000,random=()=>crypto.randomUUID()}={}){
+    receiptAttempts=21,receiptIntervalMs=1500,confirmationTimeoutMs=45000,submissionTimeoutMs=90000,random=()=>crypto.randomUUID()}={}){
     if(!provider||typeof provider.request!=='function')throw Error('A browser wallet is required');
     if(!policy||quantity(policy.chainId)!==31337n)throw Error('Only the reviewed local Anvil profile is enabled');
     if(!Number.isInteger(policy.confirmations)||policy.confirmations<1||policy.confirmations>32)throw Error('Invalid confirmation policy');
@@ -53,11 +53,13 @@ export class BrowserWallet {
       !quantity(this.policy.maxNetworkFee)||!quantity(this.policy.maxValue))throw Error('Invalid bounded transaction policy');
     if(!Number.isInteger(requestTimeoutMs)||requestTimeoutMs<1||requestTimeoutMs>30000||
       !Number.isInteger(submissionTimeoutMs)||submissionTimeoutMs<1||submissionTimeoutMs>120000||
-      !Number.isInteger(receiptAttempts)||receiptAttempts<1||receiptAttempts>10||
+      !Number.isInteger(confirmationTimeoutMs)||confirmationTimeoutMs<1||confirmationTimeoutMs>60000||
+      !Number.isInteger(receiptAttempts)||receiptAttempts<1||receiptAttempts>40||
       !Number.isInteger(receiptIntervalMs)||receiptIntervalMs<0||receiptIntervalMs>3000)throw Error('Invalid request bounds');
     this.provider=provider;this.storage=storage;this.locks=locks;this.onChange=onChange;this.clock=clock;
     this.monotonic=monotonic;this.pause=pause;this.requestTimeoutMs=requestTimeoutMs;this.submissionTimeoutMs=submissionTimeoutMs;
     this.receiptAttempts=receiptAttempts;this.receiptIntervalMs=receiptIntervalMs;this.random=random;
+    this.confirmationTimeoutMs=confirmationTimeoutMs;
     this.changeVersion=0;this.activeAccount=null;this.busy=false;this.closed=false;this.reviews=new WeakMap();this.verifiedReceipts=new Map();
     this.listeners=[];
     for(const event of ['accountsChanged','chainChanged','disconnect']){
@@ -108,15 +110,21 @@ export class BrowserWallet {
       return fn();
     });
   }
-  async request(method,params=[]){
+  async request(method,params=[],limit=this.requestTimeoutMs){
     let timer;
     try{return await Promise.race([Promise.resolve().then(()=>this.provider.request({method,params})),
-      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Wallet read timed out')),this.requestTimeoutMs);})]);}
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Wallet read timed out')),limit);})]);}
     finally{clearTimeout(timer);}
   }
   read(method,params=[]){
     if(!READS.has(method))throw Error('Only bounded wallet reads are available');
     return this.request(method,params);
+  }
+  readUntil(deadline,method,params=[]){
+    if(!READS.has(method))throw Error('Only bounded wallet reads are available');
+    const left=deadline-this.monotonic();
+    if(left<=0)throw Error('Confirmation read window elapsed');
+    return this.request(method,params,Math.min(this.requestTimeoutMs,left));
   }
   async assertConnection(account){
     if(this.closed)throw Error('Wallet connection is closed');
@@ -221,14 +229,15 @@ export class BrowserWallet {
     if(actualGas<21000n||actualGas>quantity(this.policy.maxGas)||!actualPrice||
       actualGas*actualPrice>quantity(this.policy.maxNetworkFee))throw Error('Wallet gas envelope exceeds the reviewed deployment policy');
   }
-  async inspect(record){
+  async inspect(record,deadline=Infinity){
+    const read=(method,params=[])=>this.readUntil(deadline,method,params);
     if(TERMINAL.has(record.status)){
       record={...record,status:'pending',receipt:null};this.save(record);
     }
-    await this.assertNetwork();
-    const receipt=await this.read('eth_getTransactionReceipt',[record.hash]);
-    if(!receipt)return {status:'pending',hash:record.hash};
-    const tx=await this.read('eth_getTransactionByHash',[record.hash]);await this.checkTransaction(record,tx);
+    await this.assertNetwork(deadline);
+    const receipt=await read('eth_getTransactionReceipt',[record.hash]);
+    if(!receipt)return {status:'pending',hash:record.hash,error:'Waiting for the wallet RPC to return the transaction receipt.'};
+    const tx=await read('eth_getTransactionByHash',[record.hash]);await this.checkTransaction(record,tx);
     const number=hex(quantity(receipt.blockNumber)),blockHash=hash(receipt.blockHash);
     const used=quantity(receipt.gasUsed),paidPrice=quantity(receipt.effectiveGasPrice);
     const reviewedGas=quantity(record.transaction.gas),reviewedPrice=quantity(record.transaction.gasPrice);
@@ -238,13 +247,18 @@ export class BrowserWallet {
       !['0x0','0x1'].includes(receipt.status)||used>quantity(tx.gas)||used>reviewedGas||
       paidPrice>quantity(tx.gasPrice)||paidPrice>reviewedPrice||
       used*paidPrice>reviewedGas*reviewedPrice)throw Error('Receipt does not match the reviewed transaction');
-    const [block,head]=await Promise.all([this.read('eth_getBlockByNumber',[number,false]),this.read('eth_blockNumber')]);
-    if(!same(block?.hash,blockHash))return {status:'pending',hash:record.hash,error:'Receipt moved out of the canonical chain; waiting for confirmation'};
-    if(quantity(head)<quantity(number)+BigInt(this.policy.confirmations-1))return {status:'pending',hash:record.hash};
+    const block=await read('eth_getBlockByNumber',[number,false]);
+    if(!same(block?.hash,blockHash)||quantity(block.number)!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt moved out of the canonical chain; waiting for confirmation'};
+    // Canonical inclusion establishes the first confirmation. A separately
+    // cached eth_blockNumber must not veto that same checked inclusion.
+    if(this.policy.confirmations>1){
+      const head=await read('eth_blockNumber');
+      if(quantity(head)<quantity(number)+BigInt(this.policy.confirmations-1))return {status:'pending',hash:record.hash,error:'Waiting for the required additional block confirmations.'};
+    }
     // Check again after transaction/confirmation reads so one intermediate
     // receipt cannot be presented as final after an observed reorganization.
-    const canonical=await this.read('eth_getBlockByNumber',[number,false]);
-    if(!same(canonical?.hash,blockHash))return {status:'pending',hash:record.hash,error:'Receipt changed during verification'};
+    const canonical=await read('eth_getBlockByNumber',[number,false]);
+    if(!same(canonical?.hash,blockHash)||quantity(canonical.number)!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt changed during verification'};
     // Logs are fetched and reconciled separately by the confirmed-state backend.
     // Keep the durable journal bounded even for a large combined-claim receipt.
     const summary={};
@@ -252,18 +266,23 @@ export class BrowserWallet {
     const result={status:receipt.status==='0x1'?'confirmed':'failed',hash:record.hash,receipt:summary};
     this.save({...record,...result});return result;
   }
-  async assertNetwork(){
-    const [chain,genesis]=await Promise.all([this.read('eth_chainId'),this.read('eth_getBlockByNumber',['0x0',false])]);
+  async assertNetwork(deadline=Infinity){
+    const [chain,genesis]=await Promise.all([this.readUntil(deadline,'eth_chainId'),this.readUntil(deadline,'eth_getBlockByNumber',['0x0',false])]);
     if(quantity(chain)!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Switch back to the reviewed local network to recover this transaction');
   }
   async poll(record){
+    const deadline=this.monotonic()+this.confirmationTimeoutMs;
+    let result={status:'pending',hash:record.hash,error:'Waiting for confirmation. The saved transaction has not been resubmitted.'};
     for(let attempt=0;attempt<this.receiptAttempts;attempt++){
-      let result;
-      try{result=await this.inspect(record);}catch{result={status:'unresolved',hash:record.hash,error:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
+      if(this.monotonic()>=deadline||this.closed)return result;
+      try{result=await this.inspect(record,deadline);}catch{result={status:'unresolved',hash:record.hash,error:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
       if(TERMINAL.has(result.status)){this.verifiedReceipts.set(record.hash,clone(result));return result;}
       if(attempt===this.receiptAttempts-1)return result;
-      await this.pause(this.receiptIntervalMs);
+      const left=deadline-this.monotonic();
+      if(left<=0)return result;
+      await this.pause(Math.min(this.receiptIntervalMs,left));
     }
+    return result;
   }
   async recover({account=this.activeAccount,hash:providedHash}={}){
     if(this.busy)throw Error('A wallet operation is already in progress');

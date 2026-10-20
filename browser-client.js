@@ -178,7 +178,7 @@ export class BrowserClient extends LocalClient {
     try {
       const result=await signer.send(draft.browserHandle);
       this.pending=signer.pending;
-      if(!['confirmed','failed'].includes(result.status))throw new Error('Transaction submitted or unresolved. Refresh its status; do not send it again.');
+      if(!['confirmed','failed'].includes(result.status))throw new Error(result.error||'Transaction submitted or unresolved. Refresh its status; do not send it again.');
       const outcome=await this.observe(result,signer);
       this.state=null;this.version++;
       return outcome;
