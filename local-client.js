@@ -19,7 +19,11 @@ export function usd(value) {
   return '$'+(cents/100n).toLocaleString('en-US')+'.'+(cents%100n).toString().padStart(2,'0');
 }
 export function sum(values) { return values.some(v=>v==null) ? null : values.reduce((a,v)=>a+uint(v),0n).toString(); }
-export const hasClaim = nft => ['lp','royalties'].some(scope=>nft.claimable[scope].some(a=>uint(a.raw)>0n));
+const nativeAsset='0x'+'0'.repeat(40);
+export const readyRewards = (nft,scope) => nft.claimable[scope].filter(a=>nft.claimable.default_settlement!=='native_eth'||a.asset===nativeAsset);
+export const pendingConversion = nft => nft.claimable.default_settlement==='native_eth'
+  ? ['lp','royalties'].flatMap(scope=>nft.claimable[scope].filter(a=>a.asset!==nativeAsset&&uint(a.raw)>0n)) : [];
+export const hasClaim = nft => ['lp','royalties'].some(scope=>readyRewards(nft,scope).some(a=>uint(a.raw)>0n));
 export function balances(rows, field='raw') {
   const amounts=new Map();
   for (const a of rows) {
@@ -40,6 +44,7 @@ export function validateState(s) {
     if(n.traits_ready && (!['Commun','Rare','Legendary'].includes(n.traits?.rarity)||!Number.isInteger(n.traits.palette)||n.traits.palette<0||n.traits.palette>=58||!Number.isInteger(n.traits.pattern)||n.traits.pattern<0||n.traits.pattern>=4))throw new Error('Unknown revealed traits');
     if (n.position.current_lp_value.available) uint(n.position.current_lp_value.raw);
     for(const scope of ['lp','royalties']) balances(n.claimable[scope]);
+    if(n.claimable.default_settlement!==undefined&&!['native_eth','source_assets'].includes(n.claimable.default_settlement))throw new Error('Unknown reward settlement policy');
   }
   if(!s.protocol?.provenance?.block_hash || !s.protocol?.lifecycle) throw new Error('Missing confirmed snapshot');
   return s;

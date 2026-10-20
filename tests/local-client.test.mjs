@@ -1,9 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {LocalClient,localMode,uint,units,usd,sum,balances,validateState} from '../local-client.js';
+import {LocalClient,localMode,uint,units,usd,sum,balances,validateState,readyRewards,pendingConversion,hasClaim} from '../local-client.js';
 const address='0x'+'11'.repeat(20),other='0x'+'22'.repeat(20),token='a'.repeat(64);
 const state=()=>({mode:'LOCAL ANVIL TEST ONLY',chain_id:31337,revision:0,accounts:[address,other],nfts:[],protocol:{lifecycle:{},provenance:{block_hash:'0x'+'ab'.repeat(32)}}});
 const session={mode:'LOCAL ANVIL TEST ONLY',chain_id:31337,token};
+test('ETH settlement keeps source balances visible without treating them as ready ETH',()=>{
+  const native='0x'+'0'.repeat(40);
+  const source={asset:address,symbol:'ZZZ',decimals:18,raw:'1000000000000000000'};
+  const eth={asset:native,symbol:'ETH',decimals:18,raw:'2000000000000000000'};
+  const n={claimable:{default_settlement:'native_eth',lp:[source,eth],royalties:[{...eth,raw:'3000000000000000000'}]}};
+  assert.equal(balances([...readyRewards(n,'lp'),...readyRewards(n,'royalties')]),'5 ETH');
+  assert.deepEqual(pendingConversion(n),[source]);assert.equal(hasClaim(n),true);
+  n.claimable.lp=[source];n.claimable.royalties=[];
+  assert.equal(hasClaim(n),false);assert.deepEqual(readyRewards(n,'lp'),[]);
+  delete n.claimable.default_settlement;
+  assert.equal(hasClaim(n),true);assert.deepEqual(pendingConversion(n),[]);
+});
 function setup(handler){const entries=new Map(),calls=[];const storage={getItem:k=>entries.get(k)||null,setItem:(k,v)=>entries.set(k,v),removeItem:k=>entries.delete(k)};
   const c=new LocalClient({storage,random:()=> 'b'.repeat(32),fetcher:async(path,options)=>{calls.push([path,options]);const result=await handler(path,options);return {ok:true,json:async()=>result};}});return {c,storage,entries,calls};}
 const ready=async handler=>{const env=setup(handler);await env.c.refresh();env.c.select(address);return env;};
@@ -174,7 +186,7 @@ test('claim total combines ETH exactly and keeps different currencies distinct',
   n.claimable.royalties.push({asset:address,symbol:'USDG',decimals:6,raw:'2000000'});
   assert.match(positionRows(n),/0.03 ETH \+ 2 USDG/);
   n.previously_claimed={available:true,assets:[{...eth,total_raw:'900000000000000000'}]};
-  assert.match(positionFinancialDetails(n),/0.9 ETH/);
+  assert.doesNotMatch(positionFinancialDetails(n),/0.9 ETH/); // Prior payouts are no longer a card frame.
   assert.ok(!positionRows(n).includes('0.9 ETH'));
 });
 test('royalty trait keeps revealed rarity weight while dormant, unknown draws stay unknown',()=>{

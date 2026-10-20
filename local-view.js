@@ -1,4 +1,4 @@
-import {LocalClient,escape as e,units,usd,sum,uint,balances,hasClaim} from './local-client.js';
+import {LocalClient,escape as e,units,usd,sum,uint,balances,hasClaim,readyRewards,pendingConversion} from './local-client.js';
 import {COLORWAYS,PATTERNS,RARITIES,findArtwork,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,queueUpgrade,transitionArtwork} from './artworks.js';
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const short=a=>`${a.slice(0,6)}…${a.slice(-4)}`;
@@ -8,7 +8,7 @@ const earned=(n,period)=>rewardHistoryUSD(n,period);
 const artFor=n=>n.traits_ready&&n.position.evolution_value_available?findArtwork(`${COLORWAYS[n.traits.palette]?.id}-${PATTERNS[n.traits.pattern]?.id}-${n.traits.rarity.toLowerCase()}-${n.position.evolution}`):null;
 const buttonArt=n=>{const art=artFor(n);return art?`<button class="art-image-button" data-local-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}"><img class="nft-artwork" src="${art.src}" alt="${e(art.colorLabel+' '+art.rarityLabel+' '+art.evolutionLabel)}" width="1024" height="1024" loading="lazy"><span class="art-enlarge">↗</span></button>`:'<div class="local-art-unavailable">Artwork state unavailable</div>';};
 const row=(label,value)=>`<div><span>${label}</span><b>${e(value)}</b></div>`;
-const claimRows=n=>[...n.claimable.lp,...n.claimable.royalties];
+const claimRows=n=>[...readyRewards(n,'lp'),...readyRewards(n,'royalties')];
 export const royaltyTrait=n=>{
   const multiplier=n.traits_ready?RARITIES.find(r=>r.label===n.traits.rarity)?.royaltyMultiplier:null;
   const active=n.position.activated;
@@ -45,12 +45,14 @@ export function earningsSummary(n,pendingLabel=null) {
   return `<div class="position-earnings" aria-label="NFT earnings, LP rewards plus royalties"><div><span>Fees generated · 24h</span><span class="earnings-value">${e(value('last_24h'))}</span></div><div><span>Fees generated · all time</span><span class="earnings-value">${e(value('all_time'))}</span></div></div>`;
 }
 function claimTotal(n,pendingLabel=null) {
-  return `<div class="position-reward-total"><span>Rewards to claim</span><strong>${e(pendingLabel||balances(claimRows(n)))}</strong></div>`;
+  const waiting=!pendingLabel&&pendingConversion(n).length>0;
+  return `<div class="position-reward-total"><span>Rewards to claim</span><strong>${e(pendingLabel||balances(claimRows(n)))}</strong></div>${waiting?'<p class="small-note">Some rewards are awaiting ETH conversion.</p>':''}`;
 }
 export function positionFinancialDetails(n) {
   const position=`<section class="position-breakdown"><div class="position-attached-lp"><span>LP attached</span><strong>${e(usd(lpValue(n)))}</strong></div>${n.position.activated?earningsSummary(n):''}</section>`;
   if(!n.position.activated)return position+'<p class="small-note">Activate this NFT to start earning LP fees and royalties.</p>';
-  return `${position}<section class="position-breakdown claim-breakdown">${claimTotal(n)}<div class="breakdown-rows">${row('LP rewards',balances(n.claimable.lp))}${row('Royalties',balances(n.claimable.royalties))}</div></section>`;
+  const pending=pendingConversion(n);
+  return `${position}<section class="position-breakdown claim-breakdown">${claimTotal(n)}<div class="breakdown-rows">${row('LP rewards',balances(readyRewards(n,'lp')))}${row('Royalties',balances(readyRewards(n,'royalties')))}${pending.length?row('Awaiting ETH conversion',balances(pending)):''}</div>${pending.length?'<p class="small-note">These token balances remain attached to this NFT. A failed conversion leaves them intact.</p>':''}</section>`;
 }
 
 // A display snapshot never authorizes another transaction. Unknown/session-changed

@@ -1,3 +1,17 @@
+## LP reward ETH settlement - 2026-10-20
+
+For the new local contract profile, `claimable.default_settlement=native_eth`
+means Rewards to claim and standard claims include only settled ETH from LP
+and royalties. Source balances stay visible in the breakdown as awaiting ETH
+conversion; never relabel ZZZ/TEST tokens as ETH or count conversion as new
+earnings. Older source-only fixtures remain supported by their explicit profile.
+The new isolated fixture is on port 8896; prior user sessions were not reset.
+Public/static mode remains a simulation. The contract/backend candidate enforces
+the approved 1% LP conversion loss cap with separate gas; real routes, services
+and independent release approval remain open. No public contracts were deployed.
+See the contract repository's LP_ETH_SETTLEMENT guide and scoped evidence.
+Use main and verify Git/server receipts for publication.
+
 ## Local contract integration - 2026-10-19
 
 The accepted scope is local integration before public deployment. Read
