@@ -2,6 +2,13 @@
 
 A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.
 
+## Published demo
+
+The public site serves the verified wallet-code release `f060d66` (2026-10-20).
+It remains a simulation; local browser signing at port 8900 is a separate profile.
+[Publication checks](https://github.com/ABEF/AAA/blob/main/reports/browser-wallet/PUBLICATION.md)
+record exact server/public bytes and the remaining production boundaries.
+
 ## Wallet confirmation reads
 
 The shared transaction flow uses the selected extension for authorization/signing
