@@ -456,7 +456,7 @@ test('the connection dialog wires an explicit account chooser separately from no
   assert.match(source,/data-browser-accounts=/);
   assert.match(source,/Choose a different account in/);
   assert.match(source,/browserConnect\(Number\(b\.dataset\.browserAccounts\),false,true\)/);
-  assert.match(source,/c\.connect\(index,\{chooseAccount\}\)/);
+  assert.match(source,/c\.connect\(index,\{chooseAccount,fromPicker:true\}\)/);
 });
 
 test('normal provider click after rejected account opens chooser instead of repeating old permission',async()=>{
@@ -522,6 +522,8 @@ test('authorized account selection uses Wallet A even when old address is first'
   await e.c.chooseAuthorizedAccount(A);
   assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
   await e.c.connect(0);
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  await e.c.chooseAuthorizedAccount(A);
   assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
   assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
 });
@@ -548,4 +550,52 @@ test('authorized account selection verifies the exact original local genesis',as
   const e=connectionFixture();await e.c.connect(0);e.values.genesis='0x'+'88'.repeat(32);
   await assert.rejects(e.c.chooseAuthorizedAccount(A),/deployment/);
   assert.equal(e.c.connectionVerified,false);
+});
+
+
+test('fresh MetaMask picker requests selection even when previous account is allowed',async()=>{
+  const e=connectionFixture();await e.c.connect(0);
+  let prompts=0;const original=e.provider.request;
+  e.provider.request=async req=>{
+    if(req.method==='wallet_requestPermissions'){prompts++;e.values.account=B;return [];}
+    return original(req);
+  };
+  await e.c.connect(0,{fromPicker:true});
+  assert.equal(prompts,1);assert.equal(e.c.account,B);assert.equal(e.c.connectionVerified,true);
+  assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('fresh MetaMask picker requires explicit account when permissions still include old account',async()=>{
+  const e=connectionFixture();await e.c.connect(0);const original=e.provider.request;
+  e.provider.request=async req=>{
+    if(req.method==='wallet_requestPermissions')return [];
+    if(req.method==='eth_accounts')return [A,B];
+    return original(req);
+  };
+  await e.c.connect(0,{fromPicker:true});
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  e.c.walletChanged();
+  assert.equal(e.c.account,null);assert.equal(e.c.wallet.storage.getItem("popl-wallet-session-v1"),null);
+  await e.c.chooseAuthorizedAccount(B);
+  assert.equal(e.c.account,B);assert.equal(e.c.connectionVerified,true);
+});
+test('fresh MetaMask picker cancellation never reconnects the previous admitted account',async()=>{
+  const e=connectionFixture();await e.c.connect(0);const original=e.provider.request;
+  e.provider.request=async req=>{
+    if(req.method==='wallet_requestPermissions')throw Object.assign(Error('cancel'),{code:4001});
+    return original(req);
+  };
+  await assert.rejects(e.c.connect(0,{fromPicker:true}),/cancelled/);
+  assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+});
+test('fresh reconnect uses current provider response rather than saved admitted sender',async()=>{
+  const e=connectionFixture();await e.c.connect(0);const original=e.provider.request;
+  e.provider.request=async req=>req.method==='eth_accounts'?[B,A]:original(req);
+  await e.c.connect(0);
+  assert.equal(e.c.account,B);assert.equal(e.c.connectionVerified,true);
+});
+test('fresh MetaMask picker leaves pending journal intact without prompting',async()=>{
+  const e=connectionFixture();await e.c.connect(0);e.c.pending=pending();
+  const before=e.rpcCalls.length;
+  await assert.rejects(e.c.connect(0,{fromPicker:true}),/Recover/);
+  assert.equal(e.rpcCalls.length,before);assert.equal(e.c.pending.hash,HASH);
 });

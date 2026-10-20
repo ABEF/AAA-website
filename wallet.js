@@ -13,10 +13,10 @@ async function request(provider,method) {
 }
 export class WalletConnection {
   constructor(onChange,storage=session()) {
-    this.onChange=onChange;this.storage=storage;this.provider=null;this.state=null;this.accounts=[];this.revision=0;this.restoreAttempted=false;
+    this.onChange=onChange;this.storage=storage;this.provider=null;this.state=null;this.accounts=[];this.revision=0;this.restoreAttempted=false;this.requireAccountChoice=false;
     this.accountsHandler=null;this.chainHandler=null;this.disconnectHandler=null;
   }
-  remember() {try {if(this.state)this.storage?.setItem(SESSION_KEY,JSON.stringify(this.state));else this.storage?.removeItem(SESSION_KEY);}catch {/* Connection still works if tab storage is disabled. */}}
+  remember() {try {if(this.state&&!this.requireAccountChoice)this.storage?.setItem(SESSION_KEY,JSON.stringify(this.state));else this.storage?.removeItem(SESSION_KEY);}catch {/* Connection still works if tab storage is disabled. */}}
   changed() {this.revision++;this.remember();this.onChange(this.state);}
   attach(provider,accounts,chainId,name,providerId,selected=accounts[0]) {
     if(!Array.isArray(accounts)||!accounts.length||accounts.length>64||accounts.some(a=>!validAddress(a))||

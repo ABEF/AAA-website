@@ -278,7 +278,7 @@ export function createLocalView(client=null) {
     walletAttempted=true;
     busy=true;c.connectionError=null;closeConfirmation();status(network?'Confirm the local network in your wallet…':'Choose the disposable account in your wallet…');render();
     try {
-      if(account)await c.chooseAuthorizedAccount(account);else if(network)await c.setupNetwork();else await c.connect(index,{chooseAccount});
+      if(account)await c.chooseAuthorizedAccount(account);else if(network)await c.setupNetwork();else await c.connect(index,{chooseAccount,fromPicker:true});
       if(c.account&&!c.connectionError){connected=true;$('#wallet-dialog').close();status('Browser wallet connected. Refreshing confirmed positions…');}
     }catch(error){c.connectionError=c.connectionError||error.message;status(c.connectionError,true);}
     finally{busy=false;render();}

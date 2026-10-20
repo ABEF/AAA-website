@@ -35,6 +35,7 @@ export class BrowserClient extends LocalClient {
       :this.account&&chain!=='0x7a69'
         ?'Your wallet is connected to a different network. Use “Switch to the local network” below (chain ID 31337).':null;
     if(this.connectionError){this.account=null;this.connectionVerified=false;}
+    if(this.wallet.requireAccountChoice){this.account=null;this.connectionVerified=false;}
     this.onWalletChange();
   }
   connectionFailed(error) {
@@ -61,10 +62,12 @@ export class BrowserClient extends LocalClient {
     this.signer=new BrowserWallet({provider:this.wallet.provider,policy:this.manifest.policy,...this.signerOptions});
     this.pending=this.account?this.signer.getPending(this.account):null;
   }
-  async connect(index,{chooseAccount=false}={}) {
+  async connect(index,{chooseAccount=false,fromPicker=false}={}) {
     if(this.busy||this.pending||this.signer?.pending)throw new Error('Recover the pending transaction before changing wallets.');
     const p=this.providers[index];
     if(!p||!this.manifest)throw new Error('Refresh the local deployment first.');
+    // A MetaMask button click asks for a fresh account choice, never saved permission reuse.
+    chooseAccount ||= fromPicker&&(p.id==='io.metamask'||p.name==='MetaMask');
     this.busy=true;this.connectionError=null;
     try {
       // Reuse an already authorized provider through bounded public reads.
@@ -81,6 +84,7 @@ export class BrowserClient extends LocalClient {
         chooseAccount=exposed.length>0&&!exposed.some(a=>this.accounts.includes(a.toLowerCase()));
       }
       if(chooseAccount) {
+        this.wallet.requireAccountChoice=true;this.wallet.remember();this.account=null;
         // Explicit user gesture only: ask the selected extension to reopen its
         // account permissions, then use fresh accounts rather than saved state
         // or the permission response's account ordering.
@@ -102,6 +106,7 @@ export class BrowserClient extends LocalClient {
         const accounts=await accountRead(p.provider,'eth_accounts');
         const chainId=await accountRead(p.provider,'eth_chainId');
         if(!Array.isArray(accounts)||!accounts.length||accounts.some(account=>!validAddress(account)))throw new Error('No valid account was authorized by the selected wallet.');
+        this.wallet.requireAccountChoice=accounts.length>1;
         this.wallet.attach(p.provider,accounts,chainId,p.name,p.id);reused=true;
       }
       if(!reused&&this.wallet.provider===p.provider&&this.signer?.provider===p.provider) {
@@ -109,11 +114,16 @@ export class BrowserClient extends LocalClient {
         const chainId=await this.signer.read('eth_chainId',[]);
         if(this.wallet.provider!==p.provider)throw new Error('Wallet disconnected during connection. Reconnect it first.');
         if(!Array.isArray(accounts)||accounts.some(account=>!validAddress(account)))throw new Error('Wallet returned invalid connected accounts.');
-        if(accounts.length){const selected=accounts.find(a=>a.toLowerCase()===this.wallet.state?.address?.toLowerCase())||accounts[0];this.wallet.attach(p.provider,accounts,chainId,p.name,p.id,selected);reused=true;}
+        if(accounts.length){this.wallet.attach(p.provider,accounts,chainId,p.name,p.id);reused=true;}
         else this.wallet.disconnect();
       }
       if(!reused)await this.wallet.connect(p.provider,p.name,p.id);
       this.attachSigner();
+      if(chooseAccount&&this.wallet.accounts.length>1) {
+        // Permissions can include several accounts without identifying the popup selection.
+        // Require an explicit account button instead of guessing or reusing the old sender.
+        this.account=null;this.connectionError=null;this.connectionVerified=false;return;
+      }
       if(this.connectionError&&!this.accounts.includes(this.wallet.state?.address?.toLowerCase())&&
          this.wallet.accounts.some(a=>this.accounts.includes(a.toLowerCase()))) {
         // A permitted fixture account is available but must be chosen by the
@@ -137,6 +147,8 @@ export class BrowserClient extends LocalClient {
       const accounts=await accountRead(provider,'eth_accounts');
       const chainId=await accountRead(provider,'eth_chainId');
       if(this.wallet.provider!==provider)throw new Error('The wallet changed during account selection.');
+      if(!Array.isArray(accounts)||!accounts.some(a=>validAddress(a)&&a.toLowerCase()===account.toLowerCase()))throw new Error("Selected account is no longer authorized.");
+      this.wallet.requireAccountChoice=false;
       this.wallet.attach(provider,accounts,chainId,name,id,account);
       this.attachSigner();
       if(this.connectionError)throw new Error(this.connectionError);
