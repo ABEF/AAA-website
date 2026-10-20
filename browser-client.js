@@ -11,19 +11,19 @@ function manifestState(raw,manifest) {
     ['nft','vault','entry','claim_router'].some(k=>state.contracts?.[k]!==manifest.contracts[k].address))throw new Error('Confirmed state does not match the reviewed local deployment.');
   return state;
 }
-async function accountRead(provider,method) {
+async function accountRead(provider,method,params=[],timeout=15000) {
   let timer;
   try {
-    return await Promise.race([Promise.resolve().then(()=>provider.request({method})),
-      new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Wallet account read timed out. Reconnect to read current permissions.')),15000);})]);
+    return await Promise.race([Promise.resolve().then(()=>provider.request({method,params})),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(`Wallet request ${method} timed out. Check the extension before retrying.`)),timeout);})]);
   } finally {clearTimeout(timer);}
 }
 export class BrowserClient extends LocalClient {
   constructor(options={}) {
     super(options);
     this.browser=true;this.providers=[];this.signer=null;this.manifest=null;
-    this.recoveryHash=null;this.onWalletChange=()=>{};this.signerOptions=options.signerOptions||{};this.connectionVerified=false;
-    this.wallet=new WalletConnection(()=>{this.connectionVerified=false;this.walletChanged();},options.walletStorage);
+    this.recoveryHash=null;this.onWalletChange=()=>{};this.onProgress=()=>{};this.signerOptions=options.signerOptions||{};this.connectionVerified=false;
+    this.wallet=new WalletConnection((_state,reason)=>{this.connectionVerified=false;this.walletChanged();if(['accounts','chain'].includes(reason)&&!this.busy)void this.verifyWalletEvent();},options.walletStorage);
   }
   walletChanged() {
     const state=this.wallet.state;
@@ -38,12 +38,27 @@ export class BrowserClient extends LocalClient {
     if(this.wallet.requireAccountChoice){this.account=null;this.connectionVerified=false;}
     this.onWalletChange();
   }
+  async verifyWalletEvent() {
+    if(!this.account||!this.manifest||!this.wallet.provider||this.wallet.requireAccountChoice)return;
+    const account=this.account,version=this.version,provider=this.wallet.provider;
+    this.attachSigner();const signer=this.signer;
+    try {
+      await signer.assertConnection(account);
+      if(version!==this.version||provider!==this.wallet.provider)return;
+      this.connectionVerified=true;this.pending=signer.pending||signer.getPending(account);this.onSession();
+    } catch(error) {if(version===this.version&&provider===this.wallet.provider)this.connectionFailed(error);}
+  }
   connectionFailed(error) {
     this.account=null;this.connectionVerified=false;
     this.connectionError=error?.message==='Wallet network differs from this reviewed local deployment'
       ?`The wallet is using a different local chain. Set its network RPC URL to ${this.manifest.rpc_url}, then reconnect.`
       :this.connectionError||error?.message||'Wallet connection could not be verified. Try again.';
     this.onWalletChange();
+  }
+  setProviders(items) {
+    this.providers=[...items];
+    if(this.manifest)void this.restore().catch(error=>{this.connectionError=error.message;this.onSession();});
+    this.onSession();
   }
   registerProvider(item) {
     if(this.providers.some(p=>p.provider===item.provider))return;
@@ -53,13 +68,13 @@ export class BrowserClient extends LocalClient {
   }
   async restore() {
     if(!this.manifest)return;
-    if(await this.wallet.restore(this.providers))this.attachSigner();
+    if(await this.wallet.restore(this.providers)){this.attachSigner();await this.verifyWalletEvent();}
   }
   attachSigner() {
     if(!this.wallet.provider||!this.manifest)return;
     if(this.signer?.provider===this.wallet.provider)return;
     this.signer?.close?.();
-    this.signer=new BrowserWallet({provider:this.wallet.provider,policy:this.manifest.policy,...this.signerOptions});
+    this.signer=new BrowserWallet({provider:this.wallet.provider,policy:this.manifest.policy,...this.signerOptions,onProgress:event=>{this.onProgress(event);}});
     this.pending=this.account?this.signer.getPending(this.account):null;
   }
   async connect(index,{chooseAccount=false,fromPicker=false}={}) {
@@ -163,25 +178,31 @@ export class BrowserClient extends LocalClient {
     this.wallet.disconnect();this.signer?.close?.();this.signer=null;this.account=null;this.version++;
   }
   async setupNetwork() {
+    if(this.busy||this.pending||this.signer?.pending)throw new Error('Recover the pending transaction before changing networks.');
     if(!this.wallet.provider||!this.manifest)throw new Error('Connect a browser wallet first.');
-    this.connectionError=null;
+    const provider=this.wallet.provider,name=this.wallet.state.name,id=this.wallet.state.providerId;
+    const selected=this.wallet.state.address;
+    this.busy=true;this.connectionVerified=false;this.connectionError=null;
+    const current=()=>{if(this.wallet.provider!==provider)throw new Error('The selected wallet changed during network setup. Reconnect it.');};
     try {
-      try {await this.wallet.provider.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x7a69'}]});}
+      try {await accountRead(provider,'wallet_switchEthereumChain',[{chainId:'0x7a69'}],60000);}
       catch(error) {
         if(error.code!==4902)throw error;
-        await this.wallet.provider.request({method:'wallet_addEthereumChain',params:[{chainId:'0x7a69',chainName:'PoPL disposable Anvil',rpcUrls:[this.manifest.rpc_url],nativeCurrency:{name:'Test Ether',symbol:'ETH',decimals:18}}]});
+        current();
+        await accountRead(provider,'wallet_addEthereumChain',[{chainId:'0x7a69',chainName:'PoPL disposable Anvil',rpcUrls:[this.manifest.rpc_url],nativeCurrency:{name:'Test Ether',symbol:'ETH',decimals:18}}],60000);
+        current();
+        if(await accountRead(provider,'eth_chainId')!=='0x7a69')
+          await accountRead(provider,'wallet_switchEthereumChain',[{chainId:'0x7a69'}],60000);
       }
-      // Read the extension again; add-network acceptance alone is not a switch.
-      const accounts=await this.wallet.provider.request({method:'eth_accounts'});
-      const chainId=await this.wallet.provider.request({method:'eth_chainId'});
-      if(!accounts.length)throw new Error('Select a disposable fixture account in the extension.');
-      this.wallet.attach(this.wallet.provider,accounts,chainId,this.wallet.state?.name||'Browser wallet',this.wallet.state?.providerId||'browser');
+      current();
+      const accounts=await accountRead(provider,'eth_accounts');
+      const chainId=await accountRead(provider,'eth_chainId');current();
+      this.wallet.attach(provider,accounts,chainId,name,id,selected);
       if(this.connectionError)throw new Error(this.connectionError);
-      await this.signer.assertConnection(this.account);
+      this.attachSigner();await this.signer.assertConnection(selected);current();
       this.connectionVerified=true;
-    } catch(error) {
-      this.connectionFailed(error);throw error;
-    }
+    } catch(error) {this.connectionFailed(error);throw error;}
+    finally {this.busy=false;}
   }
   async refreshState() {
     this.state=null;this.version++;
@@ -208,7 +229,7 @@ export class BrowserClient extends LocalClient {
     return recovered;
   }
   async prepare(action,extras={}) {
-    if(!this.state||!this.account||!this.signer||this.pending||this.state.uncertain||this.connectionError)throw new Error('Connect your fixture account and refresh confirmed state first.');
+    if(!this.state||!this.account||!this.signer||!this.connectionVerified||this.pending||this.state.uncertain||this.connectionError)throw new Error('Connect your fixture account and refresh confirmed state first.');
     if(!['mint','activate','increase','claim','claim_all'].includes(action))throw new Error('Unsupported browser action.');
     const account=this.account,version=this.version;
     const intent={...extras,action,account};
@@ -254,6 +275,7 @@ export class BrowserClient extends LocalClient {
       const result=await signer.send(draft.browserHandle);
       this.pending=signer.pending;
       if(!['confirmed','failed'].includes(result.status))throw new Error(result.error||'Transaction submitted or unresolved. Refresh its status; do not send it again.');
+      signer.progress?.(result.status==='failed'?'failed':'syncing',result.hash);
       const outcome=await this.observe(result,signer);
       this.state=null;this.version++;
       return outcome;

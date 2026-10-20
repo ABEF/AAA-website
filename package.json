@@ -9,7 +9,7 @@
     "start": "node server.mjs",
     "build": "node build.mjs",
     "artworks:generate": "node generate-artworks.mjs",
-    "test": "node --test tests/domain.test.mjs tests/artworks.test.mjs tests/local-client.test.mjs tests/ui-state.test.mjs tests/reward-display-audit.test.mjs tests/contribution-flow.test.mjs tests/browser-intent.test.mjs tests/browser-wallet.test.mjs tests/browser-client.test.mjs",
+    "test": "node --test tests/domain.test.mjs tests/artworks.test.mjs tests/local-client.test.mjs tests/ui-state.test.mjs tests/reward-display-audit.test.mjs tests/contribution-flow.test.mjs tests/browser-intent.test.mjs tests/browser-wallet.test.mjs tests/browser-client.test.mjs tests/wallet-lifecycle.test.mjs",
     "check": "node --check app.js && node --check domain.js && node --check artworks.js && node --check palette-system.js && node --check generate-artworks.mjs && node --check wallet.js && node --check ui-state.js && node --check preview-store.js && node --check local-client.js && node --check browser-wallet.js && node --check browser-client.js && node --check browser-intent.js && node --check local-view.js && node check.mjs"
   }
 }

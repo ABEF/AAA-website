@@ -537,3 +537,14 @@ test('invalid receipt quantity does not confirm or discard pending journal',asyn
   assert.equal(result.status,'unresolved');assert.match(result.error,/receipt.gasUsed.*number/);
   assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
 });
+
+
+test('transaction progress stages follow one send and cannot be changed by UI exceptions',async()=>{
+ const stages=[];const e=setup({options:{onProgress:event=>{stages.push(event.stage);if(event.stage==='wallet')throw Error('UI failed');}}});
+ assert.equal((await e.wallet.send(e.review())).status,'confirmed');
+ assert.deepEqual(stages,['checking','wallet','submitted','confirming','confirmed']);assert.equal(sent(e).length,1);
+});
+test('failed preflight never announces wallet confirmation or submission stages',async()=>{
+ const stages=[];const e=setup({options:{onProgress:event=>stages.push(event.stage)}});e.state.balance='0x0';
+ await assert.rejects(e.wallet.send(e.review()),/Insufficient/);assert.deepEqual(stages,['checking']);assert.equal(sent(e).length,0);
+});

@@ -63,7 +63,7 @@ function setup({handler,send,recover,acknowledge,record=null,head}={}){
     return {ok:true,json:async()=>clone(result)};
   }});
   c.signer=signer;c.wallet.state={address:A,chainId:'0x7a69',type:'browser',name:'Test extension'};
-  const ready=()=>{c.manifest=manifest();c.session={token:SESSION};c.accounts=[A,B];c.account=A;c.state=state();return c;};
+  const ready=()=>{c.manifest=manifest();c.session={token:SESSION};c.accounts=[A,B];c.account=A;c.connectionVerified=true;c.state=state();return c;};
   return {c,calls,signCalls,signer,ready,get saved(){return saved;},set saved(value){saved=value;}};
 }
 const submissions=e=>e.calls.filter(c=>c.path==='/action');
@@ -599,3 +599,61 @@ test('fresh MetaMask picker leaves pending journal intact without prompting',asy
   await assert.rejects(e.c.connect(0,{fromPicker:true}),/Recover/);
   assert.equal(e.rpcCalls.length,before);assert.equal(e.c.pending.hash,HASH);
 });
+
+
+test('network addition is followed by switching when wallet does not switch automatically',async()=>{
+ const e=connectionFixture({chain:'0x1'});await assert.rejects(e.c.connect(0));
+ const original=e.provider.request;let switches=0,adds=0;
+ e.provider.request=async req=>{
+  if(req.method==='wallet_switchEthereumChain'){if(++switches===1)throw Object.assign(Error('unknown chain'),{code:4902});e.values.chain='0x7a69';return null;}
+  if(req.method==='wallet_addEthereumChain'){adds++;return null;}
+  return original(req);
+ };
+ await e.c.setupNetwork();assert.equal(adds,1);assert.equal(switches,2);assert.equal(e.c.connectionVerified,true);
+});
+test('network setup preserves selected authorized sender and rejects wrong genesis',async()=>{
+ const e=connectionFixture();await e.c.connect(0);e.values.genesis='0x'+'ab'.repeat(32);
+ const original=e.provider.request;e.provider.request=async req=>req.method==='wallet_switchEthereumChain'?null:original(req);
+ await assert.rejects(e.c.setupNetwork(),/deployment/);assert.equal(e.c.connectionVerified,false);assert.equal(e.c.busy,false);
+});
+test('pending transaction blocks network prompts before any wallet request',async()=>{
+ const e=connectionFixture();await e.c.connect(0);e.c.pending=pending();const before=e.rpcCalls.length;
+ await assert.rejects(e.c.setupNetwork(),/Recover/);assert.equal(e.rpcCalls.length,before);assert.equal(e.c.pending.hash,HASH);
+});
+test('network prompt cannot complete against a provider disconnected during approval',async()=>{
+ const e=connectionFixture();await e.c.connect(0);const original=e.provider.request;
+ e.provider.request=async req=>{if(req.method==='wallet_switchEthereumChain'){e.c.wallet.disconnect();return null;}return original(req);};
+ await assert.rejects(e.c.setupNetwork(),/wallet changed/);assert.equal(e.c.connectionVerified,false);
+});
+test('unverified account cannot prepare a transaction even if UI is bypassed',async()=>{
+ const e=setup();e.ready();e.c.connectionVerified=false;
+ await assert.rejects(e.c.prepare('mint'),/Connect/);assert.equal(e.calls.length,0);
+});
+test('account event automatically revalidates a newly authorized sender',async()=>{
+ const e=connectionFixture();await e.c.connect(0);e.values.account=B;
+ e.c.wallet.accountsHandler([B]);await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(e.c.account,B);assert.equal(e.c.connectionVerified,true);assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('late event verification cannot reenable a changed account review',async()=>{
+ const e=setup();e.ready();e.c.wallet.provider={};e.c.signer.provider=e.c.wallet.provider;
+ let finish;e.c.signer.assertConnection=()=>new Promise(resolve=>{finish=resolve;});
+ e.c.connectionVerified=false;const checking=e.c.verifyWalletEvent();
+ e.c.wallet.state={...e.c.wallet.state,address:B};e.c.walletChanged();finish();await checking;
+ assert.equal(e.c.account,B);assert.equal(e.c.connectionVerified,false);
+});
+test('cancelled MetaMask choice cannot poison a subsequent Rabby connection',async()=>{
+ const e=connectionFixture();await e.c.connect(0);const original=e.provider.request;
+ e.provider.request=async req=>{if(req.method==='wallet_requestPermissions')throw Object.assign(Error('cancel'),{code:4001});return original(req);};
+ await assert.rejects(e.c.connect(0,{fromPicker:true}));
+ const other=connectionFixture();e.c.providers.push({provider:other.provider,id:'io.rabby',name:'Rabby'});
+ await e.c.connect(1);assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+});
+
+test('late provider restoration verifies the account before enabling actions without a prompt',async()=>{
+ const e=setup();e.ready();e.c.connectionVerified=false;const provider={request:async()=>{throw Error('No permission prompt expected');}};
+ e.c.wallet.provider=provider;e.signer.provider=provider;let checked=0;
+ e.signer.assertConnection=async account=>{assert.equal(account,A);checked++;};
+ e.c.wallet.restore=async()=>true;
+ await e.c.restore();assert.equal(checked,1);assert.equal(e.c.connectionVerified,true);
+ assert.equal(e.signCalls.filter(c=>c[0]==='send').length,0);
+ });

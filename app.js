@@ -3,7 +3,7 @@ import {createLocalView} from './local-view.js';
 import {browserMode,BrowserClient} from './browser-client.js';
 import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,queueUpgrade,preloadUpgradeSounds} from './artworks.js';
 import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
-import {WalletConnection, walletError} from './wallet.js';
+import {WalletConnection, WalletDiscovery, walletError} from './wallet.js';
 const {OperationTracker,preserveArtwork} = localMode(location) ? {} : await import('./ui-state.js');
 const {PreviewStore,RESET_KEY,previewChange} = localMode(location) ? {} : await import('./preview-store.js');
 
@@ -341,18 +341,14 @@ function openWallet() {
   if (!$('#wallet-dialog').open) $('#wallet-dialog').showModal();
 }
 let restoreTimer;
-function registerProvider(provider,name,id=name) {
-  if (!provider || typeof provider.request !== 'function' || providers.some(item => item.provider === provider)) return;
-  providers.push({provider,name:String(name || 'Browser wallet').slice(0,80),id:String(id || name || 'Browser wallet')});
-  if(!local){clearTimeout(restoreTimer);restoreTimer=setTimeout(()=>void wallet.restore(providers),150);}
-  if(local)local.registerProvider(providers.at(-1));else if ($('#wallet-dialog').open) renderProviders();
-}
-window.addEventListener('eip6963:announceProvider',event => registerProvider(event.detail?.provider,event.detail?.info?.name,event.detail?.info?.rdns));
+const discovery=new WalletDiscovery(items=>{
+  providers.splice(0,providers.length,...items);
+  if(local)local.setProviders(items);
+  else {clearTimeout(restoreTimer);restoreTimer=setTimeout(()=>void wallet.restore(providers),150);if($('#wallet-dialog').open)renderProviders();}
+});
+window.addEventListener('eip6963:announceProvider',event=>discovery.announce(event.detail));
 window.dispatchEvent(new Event('eip6963:requestProvider'));
-if (window.ethereum) {
-  const list = Array.isArray(window.ethereum.providers) ? window.ethereum.providers : [window.ethereum];
-  list.forEach(provider => registerProvider(provider,provider.isRabby ? 'Rabby' : provider.isMetaMask ? 'MetaMask' : 'Browser wallet'));
-}
+setTimeout(()=>discovery.legacy(window.ethereum),300);
 
 async function performPreview(event,keys,onProgress=()=>{}) {
   let op;

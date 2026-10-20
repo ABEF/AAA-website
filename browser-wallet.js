@@ -47,7 +47,7 @@ function context(value){
 }
 
 export class BrowserWallet {
-  constructor({provider,policy,storage=nativeStorage(),locks=globalThis.navigator?.locks,onChange=()=>{},
+  constructor({provider,policy,storage=nativeStorage(),locks=globalThis.navigator?.locks,onChange=()=>{},onProgress=()=>{},
     clock=()=>Date.now(),monotonic=()=>performance.now(),pause=wait,requestTimeoutMs=15000,
     receiptAttempts=21,receiptIntervalMs=1500,confirmationTimeoutMs=45000,submissionTimeoutMs=90000,random=()=>crypto.randomUUID()}={}){
     if(!provider||typeof provider.request!=='function')throw Error('A browser wallet is required');
@@ -65,7 +65,7 @@ export class BrowserWallet {
       !Number.isInteger(confirmationTimeoutMs)||confirmationTimeoutMs<1||confirmationTimeoutMs>60000||
       !Number.isInteger(receiptAttempts)||receiptAttempts<1||receiptAttempts>40||
       !Number.isInteger(receiptIntervalMs)||receiptIntervalMs<0||receiptIntervalMs>3000)throw Error('Invalid request bounds');
-    this.provider=provider;this.storage=storage;this.locks=locks;this.onChange=onChange;this.clock=clock;
+    this.provider=provider;this.storage=storage;this.locks=locks;this.onChange=onChange;this.onProgress=onProgress;this.clock=clock;
     this.monotonic=monotonic;this.pause=pause;this.requestTimeoutMs=requestTimeoutMs;this.submissionTimeoutMs=submissionTimeoutMs;
     this.receiptAttempts=receiptAttempts;this.receiptIntervalMs=receiptIntervalMs;this.random=random;
     this.confirmationTimeoutMs=confirmationTimeoutMs;
@@ -77,6 +77,7 @@ export class BrowserWallet {
     }
   }
   close(){this.closed=true;this.changeVersion++;for(const [event,fn] of this.listeners)this.provider.removeListener?.(event,fn);this.listeners=[];}
+  progress(stage,txHash=null){try{this.onProgress({stage,hash:txHash});}catch{/* Presentation cannot affect signing or recovery. */}}
   notify(){try{this.onChange(this.pending);}catch{/* UI failure never changes transaction recovery. */}}
   key(account){return `popl-browser-pending-v1:${this.policy.chainId}:${this.policy.genesisHash}:${address(account)}`;}
   load(account){
@@ -195,6 +196,7 @@ export class BrowserWallet {
     this.busy=true;
     try{return await this.locked(item.tx.from,async()=>{
       if(this.load(item.tx.from))throw Error('Recover the previous wallet transaction before preparing another');
+      this.progress('checking');
       try{await this.preflight(item);}catch(error){error.notSubmitted=true;throw error;}
       const record={schema:1,id:this.random(),genesisHash:this.policy.genesisHash,status:'submitting',
         createdAt:this.clock(),transaction:clone(item.tx),context:clone(item.context),hash:null,receipt:null};
@@ -202,12 +204,13 @@ export class BrowserWallet {
       this.save(record);item.used=true;this.activeAccount=item.tx.from;
       // There is exactly one send call. Neither timeout nor recovery repeats it.
       let timer;
+      this.progress('wallet');
       const submitting=Promise.resolve().then(()=>this.provider.request({method:'eth_sendTransaction',params:[clone(item.tx)]}));
       const tracked=submitting.then(value=>{
         const txHash=hash(value),saved=this.load(item.tx.from);
         if(saved?.id!==record.id)throw Error('Transaction recovery record changed');
         if(saved.hash&&saved.hash!==txHash)throw Error('Wallet returned inconsistent transaction hashes');
-        record.hash=txHash;record.status='pending';this.save(record);return txHash;
+        record.hash=txHash;record.status='pending';this.save(record);this.progress('submitted',txHash);return txHash;
       },error=>{
         // 4001 is a definitive user rejection of this exact request.
         // All other errors may follow submission and retain the journal.
@@ -280,12 +283,13 @@ export class BrowserWallet {
     if(rpcQuantity(chain,'eth_chainId')!==31337n||hash(genesis?.hash)!==this.policy.genesisHash)throw Error('Switch back to the reviewed local network to recover this transaction');
   }
   async poll(record){
+    this.progress('confirming',record.hash);
     const deadline=this.monotonic()+this.confirmationTimeoutMs;
     let result={status:'pending',hash:record.hash,error:'Waiting for confirmation. The saved transaction has not been resubmitted.'};
     for(let attempt=0;attempt<this.receiptAttempts;attempt++){
       if(this.monotonic()>=deadline||this.closed)return result;
       try{result=await this.inspect(record,deadline);}catch(error){result={status:'unresolved',hash:record.hash,error:error?.code==='INVALID_RPC_QUANTITY'?error.message:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
-      if(TERMINAL.has(result.status)){this.verifiedReceipts.set(record.hash,clone(result));return result;}
+      if(TERMINAL.has(result.status)){this.verifiedReceipts.set(record.hash,clone(result));this.progress(result.status,record.hash);return result;}
       if(attempt===this.receiptAttempts-1)return result;
       const left=deadline-this.monotonic();
       if(left<=0)return result;

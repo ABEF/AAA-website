@@ -17,7 +17,7 @@ export class WalletConnection {
     this.accountsHandler=null;this.chainHandler=null;this.disconnectHandler=null;
   }
   remember() {try {if(this.state&&!this.requireAccountChoice)this.storage?.setItem(SESSION_KEY,JSON.stringify(this.state));else this.storage?.removeItem(SESSION_KEY);}catch {/* Connection still works if tab storage is disabled. */}}
-  changed() {this.revision++;this.remember();this.onChange(this.state);}
+  changed(reason='state') {this.revision++;this.remember();this.onChange(this.state,reason);}
   attach(provider,accounts,chainId,name,providerId,selected=accounts[0]) {
     if(!Array.isArray(accounts)||!accounts.length||accounts.length>64||accounts.some(a=>!validAddress(a))||
        !validAddress(selected)||!accounts.some(a=>a.toLowerCase()===selected.toLowerCase()))throw new Error('Selected account is not authorized by this wallet.');
@@ -27,9 +27,9 @@ export class WalletConnection {
       if(this.provider!==provider)return;
       if(!Array.isArray(list)||!list.length||list.length>64||list.some(a=>!validAddress(a)))return this.disconnect();
       this.accounts=[...list];
-      this.state={...this.state,address:list[0]};this.changed();
+      this.state={...this.state,address:list[0]};this.changed('accounts');
     };
-    this.chainHandler=chain=>{if(this.provider===provider&&this.state){this.state={...this.state,chainId:chain};this.changed();}};
+    this.chainHandler=chain=>{if(this.provider===provider&&this.state){this.state={...this.state,chainId:chain};this.changed('chain');}};
     this.disconnectHandler=()=>{if(this.provider===provider)this.disconnect();};
     if(typeof provider.on==='function') {
       provider.on('accountsChanged',this.accountsHandler);provider.on('chainChanged',this.chainHandler);provider.on('disconnect',this.disconnectHandler);
@@ -43,7 +43,7 @@ export class WalletConnection {
     if(!Array.isArray(accounts)||!validAddress(accounts[0]))throw new Error('No valid account returned by this wallet.');
     let chainId=null;try {chainId=await request(provider,'eth_chainId');}catch {/* Optional for this transaction-free preview only. */}
     if(attempt!==this.revision)throw new Error('Connection changed. Retry using the selected wallet.');
-    return this.attach(provider,accounts,chainId,name,providerId);
+    this.requireAccountChoice=false;return this.attach(provider,accounts,chainId,name,providerId);
   }
   async restore(providers=[]) {
     if(this.state||this.restoreAttempted)return false;
@@ -65,11 +65,41 @@ export class WalletConnection {
   }
   connectDemo(address) {
     if(!validAddress(address))throw new Error('Invalid demo address.');
-    this.restoreAttempted=true;this.clearListeners();this.provider=null;this.accounts=[];
+    this.restoreAttempted=true;this.clearListeners();this.provider=null;this.accounts=[];this.requireAccountChoice=false;
     this.state={address,name:'Demo wallet',chainId:null,type:'demo'};this.changed();
   }
   clearListeners() {
     if(typeof this.provider?.removeListener==='function')for(const [event,handler] of [['accountsChanged',this.accountsHandler],['chainChanged',this.chainHandler],['disconnect',this.disconnectHandler]])if(handler)this.provider.removeListener(event,handler);
   }
-  disconnect() {this.restoreAttempted=true;this.clearListeners();this.provider=null;this.state=null;this.accounts=[];this.changed();}
+  disconnect() {this.restoreAttempted=true;this.clearListeners();this.provider=null;this.state=null;this.accounts=[];this.requireAccountChoice=false;this.changed();}
+}
+
+
+// EIP-6963 providers take precedence over the shared legacy injection. Names
+// and rdns are display/discovery hints, never proof of wallet authenticity.
+export class WalletDiscovery {
+  constructor(onChange=()=>{}){this.modern=[];this.fallback=[];this.onChange=onChange;}
+  get items(){return this.modern.length?this.modern:this.fallback;}
+  announce(detail){
+    const {provider,info}=detail||{};
+    if(!provider||typeof provider.request!=='function'||!info||
+       typeof info.uuid!=='string'||!/^[0-9a-f-]{36}$/i.test(info.uuid)||
+       typeof info.rdns!=='string'||!/^[a-z0-9.-]{1,128}$/i.test(info.rdns)||
+       typeof info.name!=='string'||!info.name.trim()||info.name.length>80)return false;
+    if(this.modern.some(p=>p.uuid===info.uuid||p.provider===provider)||this.modern.length>=16)return false;
+    this.modern.push({provider,id:info.rdns,name:info.name,uuid:info.uuid,discovery:'eip6963'});
+    this.onChange([...this.items]);return true;
+  }
+  legacy(injected){
+    if(this.modern.length)return;
+    const list=Array.isArray(injected?.providers)?injected.providers:[injected];
+    this.fallback=[];
+    for(const provider of list.slice(0,16)){
+      if(!provider||typeof provider.request!=='function'||this.fallback.some(p=>p.provider===provider))continue;
+      // The shared legacy slot may be a proxy. Do not label it MetaMask solely
+      // because another wallet also advertises isMetaMask.
+      this.fallback.push({provider,id:'legacy-'+this.fallback.length,name:'Browser wallet (legacy)',discovery:'legacy'});
+    }
+    this.onChange([...this.items]);
+  }
 }
