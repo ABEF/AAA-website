@@ -1,3 +1,17 @@
+## Independent local wallet execution - 2026-10-20
+
+The current 8898 service pins the sender nonce for each exact server-held review.
+Other-wallet transactions no longer invalidate it solely by advancing the shared
+revision. Same-wallet activity, expiry, owner/lifecycle changes and increased gas
+still require new review. Two actual local mints reviewed at revision34 both
+confirmed (#15 for wallet A, #16 for wallet B); the existing 14 NFTs and their LP
+were preserved. See contract reports/local-wallet-concurrency/NONCE_VERIFICATION.md.
+No website code changed in this follow-up; its previous 64-case source bindings
+still match. 70 distinct affected backend Python cases pass. Reload both pages
+following the web-only service upgrade; recover saved operations by the same ID.
+Anvil was not restarted. Public deployment/production wallet qualification remains
+open; port8896 was not upgraded. Keep main and preserve unrelated drafts.
+
 ## Second-wallet service contention - 2026-10-20
 
 The exact pre-handler `/action` busy response now waits with the identical saved
