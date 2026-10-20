@@ -73,11 +73,12 @@ export class LocalClient {
         const response=await this.fetcher(path,{signal:controller.signal,cache:'no-store',...(body?{method:'POST',headers:{'Content-Type':'application/json','X-Local-Token':this.session.token},body:JSON.stringify(body)}:{})});
         const result=await response.json();
         if(!response.ok) {
-          // /prepare only creates an unsigned confirmation. This exact 409 is
-          // returned before preparation starts, so waiting cannot submit funds.
-          // Never retry /action, lost responses, or validation/accounting errors.
-          const safeBusyRetry=(!body&&path==='/state')||(body&&path==='/prepare');
-          if(safeBusyRetry&&response.status===409&&result.error==='Local operation in progress; refresh shortly'&&attempt<29) {
+          // Only exact pre-handler lock responses may wait. An /action retry
+          // retains its durable operation ID and identical payload; never retry
+          // a lost response, a validation failure, or an ambiguous outcome here.
+          const readBusy=((!body&&path==='/state')||(body&&path==='/prepare'))&&result.error==='Local operation in progress; refresh shortly';
+          const actionBusy=body&&path==='/action'&&result.error==='Local operation in progress; retry the SAME operation ID';
+          if(response.status===409&&(readBusy||actionBusy)&&attempt<29) {
             await this.pause(Math.min(500*2**attempt,3000),controller.signal);continue;
           }
           const error=new Error(result.error||'Local request failed');error.rejected=result.rejected===true;throw error;

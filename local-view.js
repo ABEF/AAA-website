@@ -293,7 +293,7 @@ export function createLocalView() {
       const context=draft.contributionContext;
       if(context)await prepare(draft.requested_action,{id:context.id,amount:context.amount,asset:context.asset});
     }
-    if(!confirmDraft&&dialog.open){dialog.innerHTML=`<h2>Review required</h2><p>${stale?'Use Refresh to inspect confirmed balances before preparing another transaction.':'Review the transaction again using the updated balances.'} Do not repeat a confirmed approval.</p><button class="button" data-local-cancel>Close</button>`;}
+    if(!confirmDraft&&dialog.open){dialog.innerHTML=`<h2>${c.pending?'Recover transaction status':'Review required'}</h2><p>${c.pending?'Your operation is saved. Recover its status before trying anything else; recovery uses the same operation ID.':stale?'Refresh confirmed balances before preparing another transaction.':'Review the transaction again using the updated balances.'} Do not repeat a confirmed approval.</p>${stale?'<button class="button" data-local-refresh>Recover status</button>':''}<button class="button button-secondary" data-local-cancel>Close</button>`;}
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;

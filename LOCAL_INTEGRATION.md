@@ -1,3 +1,14 @@
+## Second-wallet service contention - 2026-10-20
+
+The exact pre-handler `/action` busy response now waits with the identical saved
+operation ID, revision and payload: at most 30 attempts within the existing
+90-second request timeout. This supersedes older blanket no-submission-retry
+notes only for that specific response. Lost or ambiguous responses keep durable
+recovery; stale reviewed drafts require fresh review. The dialog provides Recover
+status for unresolved intent. Reload both browsers; do not clear storage or reset
+Anvil. 64 focused checks and a real service-lock/pre-ledger-rejection probe pass.
+No production contract/backend or public server change.
+
 ## Independent browser sessions - 2026-10-20
 
 Local Chrome/Codex clients now reconcile newer unsigned confirmations against

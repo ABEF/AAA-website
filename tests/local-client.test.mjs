@@ -381,3 +381,51 @@ test('refresh clears definitely rejected saved intent but retains ambiguous reco
     else {await assert.rejects(c.refresh(),/State changed/);assert.ok(c.pending);assert.equal(c.state,null);}
   }
 });
+
+
+test('busy submission waits and retains the identical durable operation envelope',async()=>{
+  const {c,storage}=await ready(base);const bodies=[],pauses=[];let calls=0;
+  c.pause=async ms=>pauses.push(ms);
+  c.fetcher=async(path,options)=>{
+    assert.equal(path,'/action');bodies.push(options.body);
+    assert.deepEqual(JSON.parse(storage.getItem(c.key)).envelope,JSON.parse(options.body));
+    const busy=++calls<3;
+    return {ok:!busy,status:busy?409:200,json:async()=>busy?{error:'Local operation in progress; retry the SAME operation ID'}:{status:'confirmed',uncertain:false}};
+  };
+  const result=await c.execute(draft(c));assert.equal(result.status,'confirmed');
+  assert.equal(new Set(bodies).size,1);assert.equal(calls,3);assert.deepEqual(pauses,[500,1000]);assert.equal(c.pending,null);
+});
+
+test('persistent action lock preserves pending intent after bounded wait',async()=>{
+  const {c,storage}=await ready(base);let calls=0;c.pause=async()=>{};
+  c.fetcher=async()=>{calls++;return {ok:false,status:409,json:async()=>({error:'Local operation in progress; retry the SAME operation ID'})};};
+  await assert.rejects(c.execute(draft(c)),/SAME operation ID/);
+  assert.equal(calls,30);assert.ok(c.pending);assert.ok(storage.getItem(c.key));
+});
+
+test('lost response after a busy attempt stops retries and preserves recovery identity',async()=>{
+  const {c}=await ready(base);let calls=0;const bodies=[];c.pause=async()=>{};
+  c.fetcher=async(path,options)=>{
+    bodies.push(options.body);if(++calls===1)return {ok:false,status:409,json:async()=>({error:'Local operation in progress; retry the SAME operation ID'})};
+    throw Error('Connection lost');
+  };
+  await assert.rejects(c.execute(draft(c)),/Connection lost/);
+  assert.equal(calls,2);assert.equal(new Set(bodies).size,1);assert.ok(c.pending);
+});
+
+test('revision changed while submission waited is rejected without a new operation',async()=>{
+  const {c}=await ready(base);let calls=0;const bodies=[];c.pause=async()=>{};
+  c.fetcher=async(path,options)=>{bodies.push(options.body);const busy=++calls===1;return {ok:false,status:409,json:async()=>busy?{error:'Local operation in progress; retry the SAME operation ID'}:{error:'State changed. Refresh before preparing a new action',rejected:true}};};
+  await assert.rejects(c.execute(draft(c)),/State changed/);assert.equal(calls,2);assert.equal(new Set(bodies).size,1);assert.equal(c.pending,null);
+});
+
+test('saved-operation recovery waits for lock without changing or duplicating intent',async()=>{
+  const {c,storage}=await ready(base);const envelope={operation_id:'b'.repeat(32),revision:0,payload:{action:'execute',account:address,draft_id:'c'.repeat(32)}};
+  storage.setItem(c.key,JSON.stringify({session:token,envelope}));let calls=0;c.pause=async()=>{};
+  c.fetcher=async(path,options)=>{
+    if(path!=='/action')return {ok:true,json:async()=>base(path)};
+    assert.deepEqual(JSON.parse(options.body),envelope);const busy=++calls===1;
+    return {ok:!busy,status:busy?409:200,json:async()=>busy?{error:'Local operation in progress; retry the SAME operation ID'}:{status:'confirmed',uncertain:false,replayed:true}};
+  };
+  const result=await c.refresh();assert.equal(result.replayed,true);assert.equal(calls,2);assert.equal(c.pending,null);
+});
