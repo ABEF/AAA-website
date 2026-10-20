@@ -11,6 +11,13 @@ function manifestState(raw,manifest) {
     ['nft','vault','entry','claim_router'].some(k=>state.contracts?.[k]!==manifest.contracts[k].address))throw new Error('Confirmed state does not match the reviewed local deployment.');
   return state;
 }
+async function accountRead(provider,method) {
+  let timer;
+  try {
+    return await Promise.race([Promise.resolve().then(()=>provider.request({method})),
+      new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Wallet account read timed out. Reconnect to read current permissions.')),15000);})]);
+  } finally {clearTimeout(timer);}
+}
 export class BrowserClient extends LocalClient {
   constructor(options={}) {
     super(options);
@@ -24,7 +31,7 @@ export class BrowserClient extends LocalClient {
     this.account=state?.address?.toLowerCase()||null;
     const chain=typeof state?.chainId==='string'?state.chainId.toLowerCase():null;
     this.connectionError=this.account&&!this.accounts.includes(this.account)
-      ?`Your wallet exposed ${this.account}. This is not Test wallet A or B. In the wallet’s connected-account permissions for this site, select a displayed disposable account, then reconnect.`
+      ?`Your wallet exposed ${this.account}. This is not Test wallet A or B. Use “Choose a different account” below to update this site's connected-account permissions and select Test wallet A or B.`
       :this.account&&chain!=='0x7a69'
         ?'Your wallet is connected to a different network. Use “Switch to the local network” below (chain ID 31337).':null;
     if(this.connectionError){this.account=null;this.connectionVerified=false;}
@@ -54,8 +61,8 @@ export class BrowserClient extends LocalClient {
     this.signer=new BrowserWallet({provider:this.wallet.provider,policy:this.manifest.policy,...this.signerOptions});
     this.pending=this.account?this.signer.getPending(this.account):null;
   }
-  async connect(index) {
-    if(this.busy||this.pending)throw new Error('Recover the pending transaction before changing wallets.');
+  async connect(index,{chooseAccount=false}={}) {
+    if(this.busy||this.pending||this.signer?.pending)throw new Error('Recover the pending transaction before changing wallets.');
     const p=this.providers[index];
     if(!p||!this.manifest)throw new Error('Refresh the local deployment first.');
     this.busy=true;this.connectionError=null;
@@ -64,7 +71,31 @@ export class BrowserClient extends LocalClient {
       // Repeating its permission request can emit accountsChanged and cancel
       // WalletConnection's in-flight authorization even for the same account.
       let reused=false;
-      if(this.wallet.provider===p.provider&&this.signer?.provider===p.provider) {
+      if(chooseAccount) {
+        // Explicit user gesture only: ask the selected extension to reopen its
+        // account permissions, then use fresh accounts rather than saved state
+        // or the permission response's account ordering.
+        this.connectionVerified=false;
+        let timer;
+        try {
+          await Promise.race([
+            Promise.resolve().then(()=>p.provider.request({method:'wallet_requestPermissions',params:[{eth_accounts:{}}]})),
+            new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('The account chooser is still open in your wallet. Complete it there, then reconnect.')),60000);})
+          ]);
+        } catch(error) {
+          if(error?.code===4001)throw new Error('Account selection cancelled. Choose an account when you are ready.');
+          if(error?.code===-32601||error?.code===4200)throw new Error('This wallet does not support the account chooser. Update this site’s connected-account permissions in the extension, then reconnect.');
+          if(error?.code===-32002)throw new Error('An account request is already open in this wallet. Complete that request first.');
+          throw error;
+        } finally {clearTimeout(timer);}
+        // Account-change events during the permission prompt are expected.
+        // Final fresh reads and assertConnection below decide readiness.
+        const accounts=await accountRead(p.provider,'eth_accounts');
+        const chainId=await accountRead(p.provider,'eth_chainId');
+        if(!Array.isArray(accounts)||!accounts.length||accounts.some(account=>!validAddress(account)))throw new Error('No valid account was authorized by the selected wallet.');
+        this.wallet.attach(p.provider,accounts,chainId,p.name,p.id);reused=true;
+      }
+      if(!reused&&this.wallet.provider===p.provider&&this.signer?.provider===p.provider) {
         const accounts=await this.signer.read('eth_accounts',[]);
         const chainId=await this.signer.read('eth_chainId',[]);
         if(this.wallet.provider!==p.provider)throw new Error('Wallet disconnected during connection. Reconnect it first.');

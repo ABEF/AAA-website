@@ -375,3 +375,86 @@ test('receipt wait reason reaches the UI while the original transaction stays sa
   assert.equal(e.signCalls.filter(c=>c[0]==='send').length,1);
   assert.equal(e.calls.some(c=>c.path==='/browser/confirm'),false);
 });
+
+test('explicit account chooser replaces an old permission through fresh account reads',async()=>{
+  const e=connectionFixture({account:'0x'+'99'.repeat(20)});
+  await assert.rejects(e.c.connect(0));
+  const original=e.provider.request;let prompts=0;
+  e.provider.request=async request=>{
+    if(request.method==='wallet_requestPermissions'){
+      prompts++;assert.deepEqual(request.params,[{eth_accounts:{}}]);e.values.account=A;
+      return [{parentCapability:'eth_accounts',caveats:[{value:['0x'+'99'.repeat(20)]}]}];
+    }
+    return original(request);
+  };
+  await e.c.connect(0,{chooseAccount:true});
+  assert.equal(prompts,1);assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+  assert.equal(e.rpcCalls.includes('eth_sendTransaction'),false);
+});
+test('expected accountsChanged during explicit chooser does not cancel final verification',async()=>{
+  const e=connectionFixture({account:'0x'+'99'.repeat(20)});await assert.rejects(e.c.connect(0));
+  const original=e.provider.request;
+  e.provider.request=async request=>{
+    if(request.method==='wallet_requestPermissions'){
+      e.values.account=A;e.c.wallet.accountsHandler([A]);return [];
+    }
+    return original(request);
+  };
+  await e.c.connect(0,{chooseAccount:true});
+  assert.equal(e.c.account,A);assert.equal(e.c.connectionVerified,true);
+});
+test('chooser cancellation and unsupported providers do not silently authorize the stale account',async()=>{
+  for(const code of [4001,4200,-32601,-32002]){
+    const e=connectionFixture({account:'0x'+'99'.repeat(20)});await assert.rejects(e.c.connect(0));
+    const original=e.provider.request;
+    e.provider.request=async request=>{
+      if(request.method==='wallet_requestPermissions')throw Object.assign(Error('provider error'),{code});
+      return original(request);
+    };
+    await assert.rejects(e.c.connect(0,{chooseAccount:true}));
+    assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+    assert.equal(e.values.permissionCount,1);
+  }
+});
+test('chooser is sent only to the selected provider and retains deployment verification',async()=>{
+  const a=connectionFixture(),b=connectionFixture({chain:'0x1'});
+  let aPrompts=0,bPrompts=0;
+  for(const [e,count] of [[a,()=>aPrompts++],[b,()=>bPrompts++]]){
+    const original=e.provider.request;
+    e.provider.request=async request=>{
+      if(request.method==='wallet_requestPermissions'){count();return [];}
+      return original(request);
+    };
+  }
+  a.c.providers.push({provider:b.provider,id:'second-provider',name:'Other wallet'});
+  await assert.rejects(a.c.connect(1,{chooseAccount:true}),/different network/);
+  assert.equal(aPrompts,0);assert.equal(bPrompts,1);assert.equal(a.c.connectionVerified,false);
+});
+test('pending transaction blocks an account permission request without losing its journal',async()=>{
+  const e=connectionFixture();await e.c.connect(0);
+  e.c.pending=pending();let prompts=0;
+  const original=e.provider.request;
+  e.provider.request=async request=>{if(request.method==='wallet_requestPermissions')prompts++;return original(request);};
+  await assert.rejects(e.c.connect(0,{chooseAccount:true}),/Recover/);
+  assert.equal(prompts,0);assert.equal(e.c.pending.hash,HASH);
+});
+test('permissions must expose a valid admitted account; response alone never selects one',async()=>{
+  for(const accounts of [[],['invalid'],['0x'+'99'.repeat(20)]]){
+    const e=connectionFixture(),original=e.provider.request;
+    e.provider.request=async request=>{
+      if(request.method==='wallet_requestPermissions')return [{parentCapability:'eth_accounts'}];
+      if(request.method==='eth_accounts')return accounts;
+      return original(request);
+    };
+    await assert.rejects(e.c.connect(0,{chooseAccount:true}));
+    assert.equal(e.c.account,null);assert.equal(e.c.connectionVerified,false);
+  }
+});
+test('the connection dialog wires an explicit account chooser separately from normal reconnect',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const source=await readFile(new URL('../local-view.js',import.meta.url),'utf8');
+  assert.match(source,/data-browser-accounts=/);
+  assert.match(source,/Choose a different account in/);
+  assert.match(source,/browserConnect\(Number\(b\.dataset\.browserAccounts\),false,true\)/);
+  assert.match(source,/c\.connect\(index,\{chooseAccount\}\)/);
+});

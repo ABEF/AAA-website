@@ -147,8 +147,10 @@ export function createLocalView(client=null) {
   }
   function renderWalletOptions() {
     if(c.browser) {
+      const selectedProvider=c.providers.findIndex(p=>p.provider===c.wallet?.provider);
       const localChain=typeof c.wallet?.state?.chainId==='string'&&c.wallet.state.chainId.toLowerCase()==='0x7a69';
       $('#wallet-providers').innerHTML=(c.providers.length?c.providers.map((p,i)=>`<button type="button" class="wallet-option" data-browser-provider="${i}" ${busy?'disabled':''}><span class="wallet-option-icon">↗</span><span><strong>${e(p.name)}</strong><small>Sign with your wallet · disposable Anvil only</small></span></button>`).join(''):'<p class="small-note">Open this page in Chrome with MetaMask or another compatible wallet installed.</p>')+
+        (selectedProvider>=0?`<button type="button" class="button button-secondary" data-browser-accounts="${selectedProvider}" ${busy||c.pending?'disabled':''}>Choose a different account in ${e(c.providers[selectedProvider].name)}</button>`:'')+
         (c.manifest?`<p class="small-note">RPC: <code>${e(c.manifest.rpc_url)}</code><br>Chain ID: 31337. Use a disposable fixture account: ${c.accounts.map(e).join(' or ')}.</p>`:'')+
         (c.wallet?.provider?(localChain?`<p class="small-note">${c.connectionVerified?'PoPL local network selected.':'Chain 31337 selected; connection not verified.'}</p>`:`<button class="button button-secondary" data-browser-network ${busy?'disabled':''}>Switch to the local network</button>`):'')+
         `<p class="form-message${c.connectionError?' is-error':''}" role="status" aria-live="polite">${e(c.connectionError||(busy?'Confirm the connection in your wallet…':''))}</p><a class="text-link" href="./#my-nfts">Use service test wallets instead ↗</a>`;
@@ -266,12 +268,12 @@ export function createLocalView(client=null) {
     catch(err){status(`${err.message}. Refresh to recover confirmed state.`,true);}
     finally{busy=false;if(!stale)refreshScope=null;render();}
   }
-  async function browserConnect(index,network=false) {
+  async function browserConnect(index,network=false,chooseAccount=false) {
     if(busy)return;
     let connected=false;
     busy=true;c.connectionError=null;closeConfirmation();status(network?'Confirm the local network in your wallet…':'Choose the disposable account in your wallet…');render();
     try {
-      if(network)await c.setupNetwork();else await c.connect(index);
+      if(network)await c.setupNetwork();else await c.connect(index,{chooseAccount});
       if(c.account&&!c.connectionError){connected=true;$('#wallet-dialog').close();status('Browser wallet connected. Refreshing confirmed positions…');}
     }catch(error){c.connectionError=c.connectionError||error.message;status(c.connectionError,true);}
     finally{busy=false;render();}
@@ -330,10 +332,11 @@ export function createLocalView(client=null) {
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;
-    const relevant=b.matches('[data-browser-provider],[data-browser-network],[data-connect],[data-local-id],[data-local-account],[data-local-action],[data-local-refresh],[data-local-cancel],[data-local-confirm],#disconnect-wallet,#demo-wallet,#mint-submit,#claim-all,#reset-demo,#page-next,#page-prev');
+    const relevant=b.matches('[data-browser-provider],[data-browser-accounts],[data-browser-network],[data-connect],[data-local-id],[data-local-account],[data-local-action],[data-local-refresh],[data-local-cancel],[data-local-confirm],#disconnect-wallet,#demo-wallet,#mint-submit,#claim-all,#reset-demo,#page-next,#page-prev');
     if(!relevant)return;event.stopImmediatePropagation();
     if(b.id==='mint-submit'&&c.account&&!blocked())return;event.preventDefault();
     if(b.matches('[data-browser-provider]'))return void browserConnect(Number(b.dataset.browserProvider));
+    if(b.matches('[data-browser-accounts]'))return void browserConnect(Number(b.dataset.browserAccounts),false,true);
     if(b.matches('[data-browser-network]'))return void browserConnect(null,true);
     if(b.matches('[data-local-refresh]')){if(c.browser)c.recoveryHash=dialog.querySelector('[data-browser-hash]')?.value.trim()||bar.querySelector('[data-browser-hash]')?.value.trim()||null;return void refresh();}
     if(b.matches('[data-local-cancel]'))return closeConfirmation();
