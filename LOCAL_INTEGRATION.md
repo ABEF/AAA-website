@@ -193,3 +193,24 @@ the approved 1% LP conversion loss cap with separate gas; real routes, services
 and independent release approval remain open. No public contracts were deployed.
 See the contract repository's LP_ETH_SETTLEMENT guide and scoped evidence.
 Use main and verify Git/server receipts for publication.
+
+## Local fixed activation and two-transaction flow - 2026-10-20
+
+The local /app/ profile fixes activation at $100 using the fixture's explicit $1
+mock token price; top-ups start at $5. Entry is token quantity, with USD equivalent
+below. Exact ERC20 approval opens the next LP review automatically, but every
+transaction still requires confirmation. Keep the modal open while receipts and
+confirmed balances load. Never optimistically update LP/artwork after approval.
+
+The contract/backend repository now prepares direct exact replacement allowances
+(no automatic reset). Tokens requiring reset fail closed. A separate native fixture
+on 8898 uses production Entry's atomic ETH wrapping path; ETH is one transaction,
+ERC20 at most approval plus Entry. The old 8896 chain is preserved; its WETH pool
+cannot accept native ETH atomically and that input is disabled in its UI. Both
+are local mocks, not public deployment or wallet-extension qualification. Fixed
+$100 is a local UI/API rule; production Entry still has a minimum rather than an
+exact-value cap. Keep this distinction in release documentation.
+
+See contract reports/local-contribution-flow/VERIFICATION.md and docs/WORK_HANDOFF.md.
+Main only; check Git for publication. Public website/server and monitor unchanged.
+

@@ -19,6 +19,7 @@ export const royaltyTrait=n=>{
 export function contributionError(amount, consent, kind='activate') {
   const minimum=kind==='increase'?5:100;
   if(!['activate','increase'].includes(kind)||typeof amount!=='string'||!(/^[1-9][0-9]{0,4}$/).test(amount)||Number(amount)<minimum)return `Enter a whole amount from ${minimum} to 99,999 in local USD value.`;
+  if(kind==='activate'&&amount!=='100')return 'Activation is exactly $100 in value. Add more separately with Grow attached LP.';
   if(consent!==true)return 'Tick the checkbox to confirm that the LP principal cannot be redeemed.';
   return null;
 }
@@ -118,7 +119,7 @@ export function createLocalView() {
   $$('#portfolio-connected .metric-grid article:nth-child(2) > span:last-child, #portfolio-connected .metric-grid article:nth-child(3) > span:last-child').forEach(n=>n.textContent='LP rewards + royalties at today’s price');
   text('#mint-form .mono','LOCAL CONTRACT');text('[data-view="mint"] .subtle-pill','LOCAL MINT');
   text('#mint-form .mint-flow span:last-child','02 · Activate with ZZZ, USDG, USDC or ETH');
-  text('#mint-form > p.small-note','Mint a dormant NFT, then activate from $100 in value. Local mock feed: $1 per token.');
+  text('#mint-form > p.small-note','Mint a dormant NFT, then activate with exactly $100 in value. Local mock feed: $1 per token.');
   text('#mint-form .mint-summary > div:first-child span','Minted · local chain');
   text('#mint-form .mint-summary > div:nth-child(2) span','Mint price · test ETH');
   text('#mint-form .mint-summary > div:last-child b','$100 in value');
@@ -221,15 +222,16 @@ export function createLocalView() {
     const n=c.state.nfts.find(n=>n.token_id===id);if(!n)return;
     selected=id;selectedMode=mode;
     const mine=n.owner===c.account,active=n.position.activated;
-    const assets=c.state.input_assets||[{symbol:'TEST-1',enabled:true}];
+    const assets=(c.state.input_assets||[{symbol:'TEST-1',enabled:true}]).map(a=>({...a,enabled:a.enabled&&(a.symbol!=='ETH'||c.state.contribution_flow?.native_eth_atomic===true)}));
     const chosen=contributionAssets.get(id)||assets.find(a=>a.enabled)?.symbol;
     const contribution=mine&&mode==='contribute';
     let controls='';
-    if(contribution) controls=`<form class="liquidity-form" novalidate data-local-contribution="${id}" data-local-kind="${active?'increase':'activate'}"><h3>${active?'Grow attached LP':'Activate your NFT'}</h3><label class="input-label">CONTRIBUTE WITH<select name="asset">${assets.map(a=>`<option value="${e(a.symbol)}" ${a.symbol===chosen?'selected':''} ${a.enabled?'':'disabled'}>${e(a.symbol)}</option>`).join('')}</select></label><label class="input-label">LOCAL USD VALUE · ${active?5:100}–99,999<input name="amount" type="text" inputmode="numeric" value="${active?5:100}" required></label><p class="small-note">Disposable local assets with $1 mock prices. At least 99% must become added LP; network gas is separate. ETH first wraps to WETH in this test setup, then uses exact approval and Entry. No public route is qualified.</p>${c.state.input_assets?'':'<p class="small-note">This older session supports TEST-1 only. ZZZ, USDG, USDC and ETH require the updated named-asset fixture; TEST-1 is not a substitute for them.</p>'}<label class="checkbox-label"><input name="consent" type="checkbox" required><span>The LP principal cannot be redeemed. Only funded fees can be claimed.</span></label><p class="local-form-feedback" data-local-feedback role="status" aria-live="polite"></p><button type="submit" class="button button-full" ${blocked()?'disabled':''}>Review ${active?'LP addition':'activation'} ↗</button></form>`;
+    if(contribution) controls=`<form class="liquidity-form" novalidate data-local-contribution="${id}" data-local-kind="${active?'increase':'activate'}"><h3>${active?'Grow attached LP':'Activate your NFT'}</h3><label class="input-label">CONTRIBUTE WITH<select name="asset">${assets.map(a=>`<option value="${e(a.symbol)}" ${a.symbol===chosen?'selected':''} ${a.enabled?'':'disabled'}>${e(a.symbol)}${a.symbol==='ETH'&&!a.enabled?' · native test setup required':''}</option>`).join('')}</select></label><label class="input-label">${e(chosen)} AMOUNT<input name="amount" type="text" inputmode="numeric" value="${active?5:100}" ${active?'':'readonly'} required><span data-local-equivalent>${active?'5':'100'} ${e(chosen)} = $${active?'5':'100'} at the local mock price${active?' · minimum $5':' · fixed activation value'}</span></label><p class="small-note">Disposable local assets with $1 mock prices. At least 99% must become added LP; network gas is separate. ERC20: exact approval if needed, then one LP transaction. Native ETH: one atomic LP transaction in the native test setup. No public route is qualified.</p>${c.state.input_assets?'':'<p class="small-note">This older session supports TEST-1 only. ZZZ, USDG, USDC and ETH require the updated named-asset fixture; TEST-1 is not a substitute for them.</p>'}<label class="checkbox-label"><input name="consent" type="checkbox" required><span>The LP principal cannot be redeemed. Only funded fees can be claimed.</span></label><p class="local-form-feedback" data-local-feedback role="status" aria-live="polite"></p><button type="submit" class="button button-full" ${blocked()?'disabled':''}>Review ${active?'LP addition':'activation'} ↗</button></form>`;
     else if(mine)controls=`<div class="local-actions">${active?`<button class="button" data-local-action="claim" data-local-token="${id}" ${blocked()||!hasClaim(n)?'disabled':''}>Claim LP fees + royalties</button>`:''}<button class="button button-secondary" data-local-id="${id}" data-local-grow ${blocked()?'disabled':''}>${active?'Grow attached LP':'Activate your NFT'}</button></div>`;
     withArtworkContinuity($('#nft-dialog-content'),()=>{$('#nft-dialog-content').innerHTML=`<div class="nft-detail-art">${buttonArt(n)}</div><div class="nft-detail-heading"><h2 id="nft-details-title">PoPL #${n.mint_ordinal}</h2><span class="level-badge">${e(n.position.evolution||'Unavailable')}</span></div><div class="nft-detail-traits">${traits(n)}</div>${contribution?`<div class="position-attached-lp"><span>LP attached</span><strong>${usd(lpValue(n))}</strong></div>`:positionFinancialDetails(n)}${controls}`;});
     const input=$('#nft-dialog [name="amount"]'),consent=$('#nft-dialog [name="consent"]'),asset=$('#nft-dialog [name="asset"]');
-    if(input&&contributionAmounts.has(id))input.value=contributionAmounts.get(id);
+    if(input&&active&&contributionAmounts.has(id))input.value=contributionAmounts.get(id);
+    if(input)updateContributionQuote(input.form);
     if(input&&sameContribution(approvedContribution,{session:c.session.token,account:c.account,id,amount:input.value,asset:asset.value})){
       consent.checked=true;$('#nft-dialog [data-local-feedback]').textContent='Previous step confirmed. Review the next transaction to finish adding LP.';
     }
@@ -242,6 +244,11 @@ export function createLocalView() {
     catch(err){status(`${err.message}. Refresh to recover confirmed state.`,true);}
     finally{busy=false;render();}
   }
+  function updateContributionQuote(form) {
+    const symbol=form.elements.asset.value,amount=form.elements.amount.value;
+    form.elements.amount.parentElement.firstChild.textContent=`${symbol} AMOUNT`;
+    form.querySelector('[data-local-equivalent]').textContent=`${amount||'0'} ${symbol} = $${amount||'0'} at the local $1 mock price · ${form.dataset.localKind==='activate'?'fixed $100 activation':'minimum $5'}`;
+  }
   async function prepare(action,extras={}) {
     if(blocked()){status(busy?'A local operation is already running. Please wait.':'Refresh confirmed balances before reviewing a transaction.',true);return;}if(!c.account)return openWallet();
     if(extras.id)selected=extras.id;busy=true;const current=++sequence;render();contributionBusy(true);status('Preparing your transaction and estimating gas. Nothing has been sent…');
@@ -250,7 +257,7 @@ export function createLocalView() {
       confirmDraft={...draft,targetId:extras.id||null,contributionContext:['activate','increase'].includes(action)?{session:c.session.token,account:c.account,id:extras.id,amount:extras.amount,asset:extras.asset||'TEST-1'}:null};$('#nft-dialog').close();
       const claims=draft.claims.map(a=>`${units(a.simulated_raw,a.decimals)} ${a.symbol} (${a.royalty?'royalties':'LP fees'})`).join(' + ');
       const recipient=draft.action==='transfer'?row('New NFT owner',c.state.accounts.find(a=>a!==draft.account)):'';
-      dialog.innerHTML=`<div class="dialog-heading"><p class="eyebrow">LOCAL WALLET · ANVIL 31337</p><button class="icon-button" data-local-cancel aria-label="Cancel transaction">×</button></div><h2>${({wrap:'Wrap test ETH',approve:(draft.approval_raw==='0'?'Reset allowance · ':'Approve ')+(draft.approval_asset||(draft.contribution_asset==='ETH'?'WETH':draft.contribution_asset)||'TEST-1'),activate:'Activate your NFT',increase:'Add attached LP',mint:'Mint a dormant NFT',claim:'Claim funded fees',transfer:'Transfer your NFT'})[draft.action]}</h2><p class="small-note">${draft.action==='wrap'?'This test step wraps ETH into WETH in your wallet. It does not add LP. Review approval and Entry separately next.':draft.action==='approve'?'Token allowance only. After confirmation, review the LP transaction separately.':draft.action==='transfer'?'Attached LP and all unclaimed rights follow the NFT to the other local wallet.':'Exact calldata simulated against the local deployment. Confirmation expires in 60 seconds.'}</p><div class="nft-detail-rewards">${row('Wallet',short(draft.account))}${row('To',draft.transaction.to)}${recipient}${row('Value',units(BigInt(draft.transaction.value).toString())+' test ETH')}${draft.contribution?row('Contribution',draft.contribution+' '+(draft.contribution_asset||'TEST-1')):''}${!['approve','wrap'].includes(draft.action)&&draft.minimum_lp_usd_18?row('Minimum LP added · 99%',usd(draft.minimum_lp_usd_18)):''}${draft.action==='approve'&&draft.approval_raw==='0'?row('Allowance','Reset to zero before exact approval'):''}${claims?row('Simulated claim',claims):''}${row('Network gas · separate maximum',units(draft.network_gas.max_cost_wei,18,12)+' test ETH')}</div><details><summary>Transaction details</summary><code class="local-id">${e(draft.transaction.data)}</code></details><div class="local-actions"><button class="button button-secondary" data-local-cancel>Cancel</button><button class="button" data-local-confirm>Confirm local transaction</button></div>`;
+      dialog.innerHTML=`<div class="dialog-heading"><p class="eyebrow">LOCAL WALLET · ANVIL 31337</p><button class="icon-button" data-local-cancel aria-label="Cancel transaction">×</button></div><h2>${({wrap:'Wrap test ETH',approve:(draft.approval_raw==='0'?'Reset allowance · ':'Approve ')+(draft.approval_asset||(draft.contribution_asset==='ETH'?'WETH':draft.contribution_asset)||'TEST-1'),activate:'Activate your NFT',increase:'Add attached LP',mint:'Mint a dormant NFT',claim:'Claim funded fees',transfer:'Transfer your NFT'})[draft.action]}</h2><p class="small-note">${draft.action==='wrap'?'Unsupported legacy wrapping step. Use the native-ETH setup.':draft.action==='approve'?'Exact token allowance only; no LP is added yet. Next: review and confirm the single LP transaction.':draft.action==='transfer'?'Attached LP and all unclaimed rights follow the NFT to the other local wallet.':'Exact calldata simulated against the local deployment. Confirmation expires in 60 seconds.'}</p><div class="nft-detail-rewards">${row('Wallet',short(draft.account))}${row('To',draft.transaction.to)}${recipient}${row('Value',units(BigInt(draft.transaction.value).toString())+' test ETH')}${draft.contribution?row('Contribution',draft.contribution+' '+(draft.contribution_asset||'TEST-1')):''}${!['approve','wrap'].includes(draft.action)&&draft.minimum_lp_usd_18?row('Minimum LP added · 99%',usd(draft.minimum_lp_usd_18)):''}${draft.action==='approve'&&draft.approval_raw==='0'?row('Allowance','Reset to zero before exact approval'):''}${claims?row('Simulated claim',claims):''}${row('Network gas · separate maximum',units(draft.network_gas.max_cost_wei,18,12)+' test ETH')}</div><details><summary>Transaction details</summary><code class="local-id">${e(draft.transaction.data)}</code></details><div class="local-actions"><button class="button button-secondary" data-local-cancel>Cancel</button><button class="button" data-local-confirm>Confirm local transaction</button></div>`;
       dialog.showModal();status('Review the confirmation. No transaction has been sent.');
     }catch(err){status(err.message,true);}
     finally{busy=false;render();contributionBusy(false);}
@@ -258,7 +265,7 @@ export function createLocalView() {
   async function execute() {
     if(!confirmDraft||busy)return;const draft=confirmDraft;let outcome=null;
     const previous=c.state?.nfts.find(n=>n.token_id===draft.targetId),session=c.session.token,account=c.account;
-    if(['activate','increase'].includes(draft.action))armUpgradeSound();closeConfirmation();refreshScope=operationScope(draft,c.session.token,c.account);busy=true;render();status('Submitting to the disposable local chain…');
+    if(['activate','increase'].includes(draft.action))armUpgradeSound();confirmDraft=null;dialog.innerHTML='<h2>Confirming transaction…</h2><p role="status">Waiting for the local receipt and confirmed balances. Keep this window open; do not repeat the transaction.</p>';refreshScope=operationScope(draft,c.session.token,c.account);busy=true;render();status('Submitting to the disposable local chain…');
     try {
       outcome=await c.execute(draft);
       if(outcome.status==='confirmed'&&['approve','wrap'].includes(draft.action))approvedContribution=draft.contributionContext;
@@ -269,13 +276,19 @@ export function createLocalView() {
       const next=c.state?.nfts.find(n=>n.token_id===draft.targetId);
       if(session===c.session.token&&account===c.account&&previous&&next?.position.activated&&confirmedUpgrade({action:draft.action,confirmed:outcome?.status==='confirmed',before:previous.position.evolution,after:next.position.evolution,previousLP:lpValue(previous),currentLP:lpValue(next)}))queueUpgrade(draft.targetId,draft.action);
       const hashes=outcome.transactions.join(', ');
-      status(`${outcome.status==='confirmed'?'Confirmed '+draft.action:outcome.error}${draft.action==='approve'?' · Approval only. Open the NFT and review its LP contribution next.':''} · ${hashes}`,outcome.status!=='confirmed');
+      status(`${outcome.status==='confirmed'?'Confirmed '+draft.action:outcome.error}${draft.action==='approve'?' · Approval confirmed. Preparing the next step; LP is not added yet.':''} · ${hashes}`,outcome.status!=='confirmed');
       if(outcome.status==='confirmed'&&draft.action==='mint')location.hash='my-nfts';
-      if(outcome.status==='confirmed'&&['approve','wrap','activate','increase','claim'].includes(draft.action)&&draft.targetId&&selected)details(selected,['approve','wrap'].includes(draft.action)?'contribute':'breakdown');
+      if(outcome.status==='confirmed'&&!['approve','wrap'].includes(draft.action))dialog.close();
+      if(outcome.status==='confirmed'&&['activate','increase','claim'].includes(draft.action)&&draft.targetId&&selected)details(selected,['approve','wrap'].includes(draft.action)?'contribute':'breakdown');
     }catch(err){stale=true;status(outcome?.status==='confirmed'?`Confirmed ${draft.action}. Balance refresh failed: ${err.message}. Refresh balances only; do not repeat this transaction. · ${outcome.transactions.join(', ')}`:`${err.message}. Refresh to recover; do not submit a new action.`,true);}
     finally{busy=false;if(!stale){updatingNFT=null;refreshScope=null;}render();if(!stale&&$('#nft-dialog').open&&selected)details(selected,selectedMode);
       if(!stale&&outcome?.status==='confirmed'&&['activate','increase'].includes(draft.action)&&$('#nft-dialog').open&&selected===draft.targetId)$('#nft-dialog').scrollTo({top:0,behavior:'instant'});
     }
+    if(!stale&&outcome?.status==='confirmed'&&['approve','wrap'].includes(draft.action)&&session===c.session.token&&account===c.account&&dialog.open){
+      const context=draft.contributionContext;
+      if(context)await prepare(draft.requested_action,{id:context.id,amount:context.amount,asset:context.asset});
+    }
+    if(!confirmDraft&&dialog.open){dialog.innerHTML='<h2>Review required</h2><p>Use Refresh to inspect confirmed balances before preparing another transaction. Do not repeat a confirmed approval.</p><button class="button" data-local-cancel>Close</button>';}
   }
   document.addEventListener('click',event=>{
     const b=event.target.closest('button');if(!b)return;
@@ -304,7 +317,7 @@ export function createLocalView() {
   },true);
   document.addEventListener('input',event=>{
     const f=event.target.closest('[data-local-contribution]');if(!f)return;
-    approvedContribution=null;
+    updateContributionQuote(f);approvedContribution=null;
     if(['amount','asset'].includes(event.target.name))f.elements.consent.checked=false;
     const feedback=f.querySelector('[data-local-feedback]');feedback.textContent='';feedback.classList.remove('is-error');
   });

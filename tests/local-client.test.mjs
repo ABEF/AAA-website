@@ -230,7 +230,7 @@ test('pending identity cards never read financial payloads or render cached bala
 
 test('contribution review exposes invalid amounts and missing acknowledgement',()=>{
   for(const amount of ['', '99', '100000', '-100', '100.5', '1e3', ' 100', '0100', '100\n', null, 100])assert.match(contributionError(amount,true),/whole amount/);
-  for(const amount of ['100','11111','99999']){assert.equal(contributionError(amount,true),null);assert.match(contributionError(amount,false),/checkbox/);}
+  for(const amount of ['100']){assert.equal(contributionError(amount,true),null);assert.match(contributionError(amount,false),/checkbox/);}
 });
 test('approval acknowledgement stays bound to the exact deployment wallet NFT and amount',()=>{
   const a={session:'a',account:address,id:'123',amount:'100'};
@@ -301,3 +301,5 @@ test('slow final preparation attempt still expires after a busy wait',async()=>{
   c.fetcher=async()=>{const busy=++requests===1;if(!busy)now+=60001;return {ok:!busy,status:busy?409:200,json:async()=>busy?{error:'Local operation in progress; refresh shortly'}:draft(c)};};
   await assert.rejects(c.prepare('mint'),/expired while preparing/);assert.equal(c.pending,null);
 });
+
+test('activation has a fixed value, larger contributions use grow',()=>{for(const amount of ['101','150','99999'])assert.match(contributionError(amount,true,'activate'),/exactly/);for(const amount of ['8','50'])assert.equal(contributionError(amount,true,'increase'),null);});
