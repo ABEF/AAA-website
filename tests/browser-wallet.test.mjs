@@ -601,3 +601,28 @@ test('unsafe numeric financial responses fail before send and over-limit safe nu
  const e=setup();e.state.estimate=30001;
  await assert.rejects(e.wallet.send(e.review()),/Gas requirement changed/);assert.equal(sent(e).length,0);
 });
+
+
+test('EIP1559 paid fee derives from signed cap and canonical base even with uncapped RPC convenience fields',async()=>{
+ const e=setup({handler:(method,params)=>method==='eth_getBlockByNumber'?{hash:params[0]==='0x0'?GENESIS:BLOCK,number:params[0],baseFeePerGas:'0x1'}:undefined,
+ send:(t,{state,receipt,mined})=>{state.transaction={...mined(t),type:'0x2',maxFeePerGas:'0x2',maxPriorityFeePerGas:'0x2',gasPrice:'0x3'};state.receipt={...receipt(),effectiveGasPrice:'0x3'};return HASH;}});
+ const result=await e.wallet.send(e.review());assert.equal(result.status,'confirmed');assert.equal(result.receipt.effectiveGasPrice,'0x2');assert.equal(result.receipt.reportedEffectiveGasPrice,'0x3');
+ await e.wallet.acknowledge(HASH);assert.equal(sent(e).length,1);
+});
+
+test('dynamic fee caps, priority, base and paid gas cannot bypass review limits',async()=>{
+ for(const change of [{maxFeePerGas:'0x3'},{maxPriorityFeePerGas:'0x3'},{baseFeePerGas:'0x3'},{gasUsed:'0x7531'},{type:'0x3'},{maxFeePerGas:null}]){
+  const e=setup({options:{receiptAttempts:21},handler:(m,p)=>m==='eth_getBlockByNumber'?{hash:p[0]==='0x0'?GENESIS:BLOCK,number:p[0],baseFeePerGas:change.baseFeePerGas||'0x1'}:undefined,
+   send:(t,{state,receipt,mined})=>{state.transaction={...mined(t),type:'0x2',maxFeePerGas:'0x2',maxPriorityFeePerGas:'0x1',...change};state.receipt={...receipt(),gasUsed:change.gasUsed||'0x5208'};return HASH;}});
+  const result=await e.wallet.send(e.review());assert.equal(result.status,'unresolved');assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
+  assert.equal(e.calls.filter(c=>c.method==='eth_getTransactionReceipt').length,1);
+ }
+});
+
+test('dynamic effective fee below cap is exact and unknown canonical base fails closed',async()=>{
+ for(const base of ['0x0',null]){
+  const e=setup({handler:(m,p)=>m==='eth_getBlockByNumber'?{hash:p[0]==='0x0'?GENESIS:BLOCK,number:p[0],baseFeePerGas:base}:undefined,
+   send:(t,{state,receipt,mined})=>{state.transaction={...mined(t),type:'0x2',maxFeePerGas:'0x2',maxPriorityFeePerGas:'0x1'};state.receipt=receipt();return HASH;}});
+  const result=await e.wallet.send(e.review());assert.equal(result.status,base===null?'unresolved':'confirmed');if(base!==null)assert.equal(result.receipt.effectiveGasPrice,'0x1');
+ }
+});

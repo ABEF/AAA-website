@@ -21,6 +21,17 @@ function rpcQuantity(x,field){
   const error=Error(`Invalid wallet response: ${field} must be an unsigned hexadecimal quantity or a safe nonnegative integer (${x==null?'missing':typeof x}).`);
   error.code='INVALID_RPC_QUANTITY';throw error;
 }
+function verificationError(message){const error=Error(message);error.code='RECEIPT_VERIFICATION';return error;}
+function transactionFees(tx){
+  const type=tx.type==null?0n:rpcQuantity(tx.type,'transaction.type');
+  if(type===2n){
+    const cap=rpcQuantity(tx.maxFeePerGas,'transaction.maxFeePerGas'),tip=rpcQuantity(tx.maxPriorityFeePerGas,'transaction.maxPriorityFeePerGas');
+    if(tip>cap)throw verificationError('Transaction priority fee exceeds its signed maximum fee');
+    return {cap,tip,dynamic:true};
+  }
+  if(type!==0n&&type!==1n)throw verificationError('Unsupported transaction fee type; retain this hash for review');
+  return {cap:rpcQuantity(tx.gasPrice,'transaction.gasPrice'),dynamic:false};
+}
 function hash(x){if(typeof x!=='string'||!HASH.test(x))throw Error('Invalid transaction or block hash');return lower(x);}
 function hex(x){return '0x'+x.toString(16);}
 function same(a,b){return lower(a)===lower(b);}
@@ -230,16 +241,16 @@ export class BrowserWallet {
     });}finally{this.busy=false;}
   }
   async checkTransaction(record,tx){
-    const expected=record.transaction;
+    const expected=record.transaction,fees=transactionFees(tx||{});
     if(!tx||!same(tx.hash,record.hash)||!same(tx.from,expected.from)||!same(tx.to,expected.to)||
       !same(tx.input??tx.data,expected.data)||rpcQuantity(tx.value,'transaction.value')!==quantity(expected.value)||
       rpcQuantity(tx.nonce,'transaction.nonce')!==quantity(expected.nonce)||rpcQuantity(tx.chainId,'transaction.chainId')!==31337n||
-      rpcQuantity(tx.gasPrice,'transaction.gasPrice')>quantity(expected.gasPrice))throw Error('Wallet transaction differs from the reviewed transaction. Inspect it before continuing');
+      fees.cap>quantity(expected.gasPrice))throw verificationError('Wallet transaction differs from the reviewed transaction or signed fee cap. Inspect it before continuing');
     // Wallets may pad the gas limit. Recovery accepts that envelope only within
     // operator bounds; the canonical receipt must still fit the original review.
-    const actualGas=rpcQuantity(tx.gas,'transaction.gas'),actualPrice=rpcQuantity(tx.gasPrice,'transaction.gasPrice');
+    const actualGas=rpcQuantity(tx.gas,'transaction.gas'),actualPrice=fees.cap;
     if(actualGas<21000n||actualGas>quantity(this.policy.maxGas)||!actualPrice||
-      actualGas*actualPrice>quantity(this.policy.maxNetworkFee))throw Error('Wallet gas envelope exceeds the reviewed deployment policy');
+      actualGas*actualPrice>quantity(this.policy.maxNetworkFee))throw verificationError('Wallet gas envelope exceeds the reviewed deployment policy');
   }
   async inspect(record,deadline=Infinity){
     const read=(method,params=[])=>this.readUntil(deadline,method,params);
@@ -251,16 +262,21 @@ export class BrowserWallet {
     if(!receipt)return {status:'pending',hash:record.hash,error:'Waiting for the wallet RPC to return the transaction receipt.'};
     const tx=await read('eth_getTransactionByHash',[record.hash]);await this.checkTransaction(record,tx);
     const number=hex(rpcQuantity(receipt.blockNumber,'receipt.blockNumber')),blockHash=hash(receipt.blockHash);
-    const used=rpcQuantity(receipt.gasUsed,'receipt.gasUsed'),paidPrice=rpcQuantity(receipt.effectiveGasPrice,'receipt.effectiveGasPrice');
+    const used=rpcQuantity(receipt.gasUsed,'receipt.gasUsed'),fees=transactionFees(tx);
+    const block=await read('eth_getBlockByNumber',[number,false]);
+    if(!same(block?.hash,blockHash)||rpcQuantity(block.number,'block.number')!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt moved out of the canonical chain; waiting for confirmation'};
+    // EIP-1559 effectiveGasPrice/gasPrice RPC fields are derived convenience fields.
+    // Derive the paid price from signed caps and the canonical block, not a node's uncapped tip+base report.
+    const base=fees.dynamic?rpcQuantity(block.baseFeePerGas,'block.baseFeePerGas'):null;
+    if(fees.dynamic&&base>fees.cap)throw verificationError('Canonical block base fee exceeds the signed transaction fee cap');
+    const paidPrice=fees.dynamic?(base+fees.tip<fees.cap?base+fees.tip:fees.cap):rpcQuantity(receipt.effectiveGasPrice,'receipt.effectiveGasPrice');
     const reviewedGas=quantity(record.transaction.gas),reviewedPrice=quantity(record.transaction.gasPrice);
     if(!same(receipt.transactionHash,record.hash)||!same(receipt.from,record.transaction.from)||
       !same(receipt.to,record.transaction.to)||rpcQuantity(receipt.transactionIndex,'receipt.transactionIndex')!==rpcQuantity(tx.transactionIndex,'transaction.transactionIndex')||
       !same(tx.blockHash,blockHash)||rpcQuantity(tx.blockNumber,'transaction.blockNumber')!==rpcQuantity(receipt.blockNumber,'receipt.blockNumber')||
       !['0x0','0x1'].includes(receipt.status)||used>rpcQuantity(tx.gas,'transaction.gas')||used>reviewedGas||
-      paidPrice>rpcQuantity(tx.gasPrice,'transaction.gasPrice')||paidPrice>reviewedPrice||
-      used*paidPrice>reviewedGas*reviewedPrice)throw Error('Receipt does not match the reviewed transaction');
-    const block=await read('eth_getBlockByNumber',[number,false]);
-    if(!same(block?.hash,blockHash)||rpcQuantity(block.number,'block.number')!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt moved out of the canonical chain; waiting for confirmation'};
+      paidPrice>fees.cap||paidPrice>reviewedPrice||
+      used*paidPrice>reviewedGas*reviewedPrice)throw verificationError('Receipt does not match the reviewed transaction or paid fee');
     // Canonical inclusion establishes the first confirmation. A separately
     // cached eth_blockNumber must not veto that same checked inclusion.
     if(this.policy.confirmations>1){
@@ -270,11 +286,12 @@ export class BrowserWallet {
     // Check again after transaction/confirmation reads so one intermediate
     // receipt cannot be presented as final after an observed reorganization.
     const canonical=await read('eth_getBlockByNumber',[number,false]);
-    if(!same(canonical?.hash,blockHash)||rpcQuantity(canonical.number,'canonical.number')!==quantity(number))return {status:'pending',hash:record.hash,error:'Receipt changed during verification'};
+    if(!same(canonical?.hash,blockHash)||rpcQuantity(canonical.number,'canonical.number')!==quantity(number)||(fees.dynamic&&rpcQuantity(canonical.baseFeePerGas,'canonical.baseFeePerGas')!==base))return {status:'pending',hash:record.hash,error:'Receipt changed during verification'};
     // Logs are fetched and reconciled separately by the confirmed-state backend.
     // Keep the durable journal bounded even for a large combined-claim receipt.
     const summary={};
     for(const field of ['transactionHash','transactionIndex','blockNumber','blockHash','from','to','status','gasUsed','effectiveGasPrice'])summary[field]=receipt[field];
+    if(fees.dynamic){summary.reportedEffectiveGasPrice=typeof receipt.effectiveGasPrice==='string'?receipt.effectiveGasPrice.slice(0,66):null;summary.effectiveGasPrice=hex(paidPrice);summary.feeBasis='eip1559-signed-caps-and-canonical-base';}
     const result={status:receipt.status==='0x1'?'confirmed':'failed',hash:record.hash,receipt:summary};
     this.save({...record,...result});return result;
   }
@@ -288,7 +305,7 @@ export class BrowserWallet {
     let result={status:'pending',hash:record.hash,error:'Waiting for confirmation. The saved transaction has not been resubmitted.'};
     for(let attempt=0;attempt<this.receiptAttempts;attempt++){
       if(this.monotonic()>=deadline||this.closed)return result;
-      try{result=await this.inspect(record,deadline);}catch(error){result={status:'unresolved',hash:record.hash,error:error?.code==='INVALID_RPC_QUANTITY'?error.message:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};}
+      try{result=await this.inspect(record,deadline);}catch(error){const invalid=['INVALID_RPC_QUANTITY','RECEIPT_VERIFICATION'].includes(error?.code);result={status:'unresolved',hash:record.hash,error:invalid?error.message:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};if(invalid)return result;}
       if(TERMINAL.has(result.status)){this.verifiedReceipts.set(record.hash,clone(result));this.progress(result.status,record.hash);return result;}
       if(attempt===this.receiptAttempts-1)return result;
       const left=deadline-this.monotonic();
