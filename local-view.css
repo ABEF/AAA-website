@@ -25,3 +25,6 @@
 @media(prefers-reduced-motion:reduce){.art-image-button .local-art-previous{transition:none}}
 
 .local-form-feedback{font-size:12px;line-height:1.6;color:#a9dae4;margin:12px 0}.local-form-feedback:empty{display:none}.local-form-feedback.is-error{color:#ffb5a5}
+
+.deployment-wallet-totals{grid-template-columns:repeat(2,minmax(0,1fr))}.deployment-wallet-totals strong{overflow-wrap:anywhere}
+@media(max-width:640px){.deployment-wallet-totals{grid-template-columns:1fr}}

@@ -152,6 +152,27 @@ export class DeploymentAPI {
       await this.identity();if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');return {protocol,inventory,nfts,page};
     }finally{if(this.active===controller)this.active=null;}
   }
+  async walletTotals(inventory,{signal}={}){
+    const owner=inventory.wallet,ids=inventory.token_ids,anchor=inventory.provenance;
+    if(inventory.available!==true||!ADDRESS.test(owner)||!Array.isArray(ids)||ids.length>1000||inventory.count!==ids.length||new Set(ids).size!==ids.length)fail('Invalid complete wallet inventory');
+    if(ids.some((id,i)=>raw(id)===0n||(i&&raw(ids[i-1])>=raw(id))))fail('Wallet inventory must be ordered and unique');
+    const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ids.join(','))))].map(n=>n.toString(16).padStart(2,'0')).join('');
+    let offset=0,lp=0n,eth=0n,lpAvailable=true,ethAvailable=true;
+    do{
+      if(signal?.aborted)fail('Wallet totals were cancelled');
+      const part=await this.request(`/v1/wallets/${owner}/summary/${anchor.block_number}/${offset}`,undefined,signal);
+      await this.provenance(part.provenance);
+      const expected=ids.slice(offset,offset+16),next=offset+expected.length<ids.length?offset+expected.length:null;
+      if(part.schema!==1||part.chain_id!==this.manifest.chain_id||part.wallet!==owner||part.nft_contract!==this.manifest.contracts.nft.address||
+        part.inventory_sha256!==digest||part.count!==ids.length||part.chunk_size!==16||part.offset!==offset||part.next_offset!==next||
+        JSON.stringify(part.token_ids)!==JSON.stringify(expected)||part.provenance.block_hash!==anchor.block_hash||part.provenance.block_number!==anchor.block_number)fail('Wallet summary differs from its complete confirmed inventory');
+      if(part.lp_usd_18===null)lpAvailable=false;else lp+=raw(part.lp_usd_18);
+      if(part.claimable_eth_wei===null)ethAvailable=false;else eth+=raw(part.claimable_eth_wei);
+      offset=next;
+    }while(offset!==null);
+    await this.provenance(anchor);if(signal?.aborted)fail('Wallet totals were cancelled');
+    return {available:true,count:ids.length,wallet:owner,lp_usd_18:lpAvailable?lp.toString():null,claimable_eth_wei:ethAvailable?eth.toString():null,provenance:anchor};
+  }
   asset(symbol){const a=this.manifest.input_assets.find(a=>a.symbol===symbol&&a.enabled);if(!a)fail('This contribution asset is not enabled');return a;}
   async price(asset,p){
     const block=await this.provenance(p),oracle=this.manifest.contracts.oracle;

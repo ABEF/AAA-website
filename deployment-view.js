@@ -35,7 +35,7 @@ export function createDeploymentView(config){
   let transactions=null,review=null,stage=null,reviewTimer=null;
   const localSigning=m.environment==='rehearsal'&&m.chain_id===31337&&new URL(m.rpc_url).protocol==='http:'&&new URL(m.rpc_url).hostname==='127.0.0.1';
   const session=new DeploymentSession({storage:store,key:'popl-deployment-address:'+m.id,onChange:()=>{
-    sequence++;quoteSequence++;review=null;api.cancel();snapshot=null;busy=false;preparing=false;error=null;dialog.close();$('#nft-dialog').close();render();
+    sequence++;quoteSequence++;page=0;totalController?.abort();totalController=null;totals=null;totalBusy=false;renderMetrics();review=null;api.cancel();snapshot=null;busy=false;preparing=false;error=null;dialog.close();$('#nft-dialog').close();render();
     if(!session.busy&&session.account)void refresh();
   }});
   if(localSigning)transactions=new DeploymentTransactions(api,session,{onChange:()=>render(),onProgress:value=>{
@@ -51,7 +51,8 @@ export function createDeploymentView(config){
   const blocked=()=>busy||preparing||transactions?.busy||Boolean(pending())||session.busy||!session.account||stale();
   text('.network-tag',m.chain_name+(localSigning?' · local wallet rehearsal':' · read & review'));text('.demo-label',localSigning?'LOCAL ANVIL':'UNSIGNED REVIEW');
   text('.demo-banner-copy',localSigning?'Local Anvil transactions only. No public assets move.':'Confirmed contract data and unsigned preparation. Signing is not enabled.');
-  text('[data-view="my-nfts"] .page-heading p','Your confirmed holdings, attached LP and funded rewards.');
+  text('[data-view="my-nfts"] .page-heading .eyebrow','YOUR PERMANENT POSITIONS');
+  text('[data-view="my-nfts"] .page-heading p:last-of-type','Your confirmed holdings, attached LP and funded rewards.');
   text('#portfolio-disconnected > p:last-of-type','Connect a wallet to read its public holdings on '+m.chain_name+'. No signature or transaction is requested.');
   text('#wallet-dialog > .small-note',localSigning?'Connect your account; every local transaction requires a separate wallet confirmation.':'Only your public account is authorized. This deployment profile cannot sign or send transactions.');
   text('#nft-dialog .eyebrow','CONFIRMED POSITION');
@@ -78,7 +79,22 @@ export function createDeploymentView(config){
     text('#mint-message','0.05 ETH mint price. Network gas is separate. '+(localSigning?'Local Anvil only; confirm each send in your wallet.':'This profile does not submit transactions.'));
     if(readiness){text('#mint-supply',readiness.minted+' / 1,000');text('#mint-remaining',(1000-readiness.minted)+' remaining');}
   }
-  function renderMetrics(){$$('[data-metric]').forEach(n=>n.textContent='Unavailable');}
+  let totals=null,totalController=null,totalBusy=false;
+  const totalsFrame=document.createElement('div');totalsFrame.className='metric-grid deployment-wallet-totals';
+  totalsFrame.innerHTML='<article><span class="stat-label">LP ATTACHED · ALL YOUR NFTs</span><strong data-wallet-total="lp">Unavailable</strong><span data-wallet-total-note></span></article><article class="claim-metric"><span class="stat-label">READY TO CLAIM · ETH</span><strong data-wallet-total="eth">Unavailable</strong><span>LP rewards + royalties · source tokens excluded</span></article>';
+  $('#portfolio-connected .portfolio-account').after(totalsFrame);
+  function renderMetrics(){
+    $$('[data-metric]').forEach(n=>n.textContent='Unavailable');
+    text('[data-wallet-total="lp"]',totalBusy?'Reading all holdings…':usd(totals?.lp_usd_18??null));
+    text('[data-wallet-total="eth"]',totalBusy?'Reading all holdings…':totals?.claimable_eth_wei!=null?units(totals.claimable_eth_wei)+' ETH':'Unavailable');
+    text('[data-wallet-total-note]',totals?`${totals.count} NFTs · confirmed block ${totals.provenance.block_number}`:'Complete confirmed wallet snapshot required');
+  }
+  async function refreshTotals(data,current,owner){
+    totalController?.abort();totalController=new AbortController();const controller=totalController;totalBusy=true;totals=null;renderMetrics();
+    try{const result=await api.walletTotals(data.inventory,{signal:controller.signal});if(current===sequence&&owner===session.account&&!controller.signal.aborted)totals=result;}
+    catch{/* A partial or failed snapshot is never a portfolio total. */}
+    finally{if(totalController===controller){totalBusy=false;renderMetrics();}}
+  }
   function renderCollection(){
     text('#result-count','Collection inventory not configured');$('#positions-body').innerHTML='<tr><td colspan="5">Use My NFTs for your confirmed positions. Full collection aggregation is not enabled in this review profile.</td></tr>';
   }
@@ -86,7 +102,7 @@ export function createDeploymentView(config){
   function traits(n){const art=artFor(n);return n.traits_ready?`<strong>${e(n.traits.rarity)}</strong><span>${e(art?.colorStyle||'')}</span>${paletteTrait(COLORWAYS[n.traits.palette].colors)}${royaltyTrait(n)}`:'<span>Awaiting verified reveal</span>';}
   function renderPortfolio(){
     $('#portfolio-disconnected').hidden=Boolean(session.account);$('#portfolio-connected').hidden=!session.account;
-    text('#portfolio-address',session.account?short(session.account):'');text('#portfolio-label',busy?'READING CONFIRMED STATE':'UNSIGNED REVIEW');
+    text('#portfolio-address',session.account?short(session.account):'');text('#portfolio-label',busy?'READING CONFIRMED STATE':localSigning?'LOCAL ANVIL':'UNSIGNED REVIEW');
     text('.portfolio-account .small-note',snapshot?'Holdings at block '+snapshot.inventory.provenance.block_number:'Confirmed holdings unavailable');
     const items=snapshot?.nfts||[];
     text('#my-count',snapshot?`${snapshot.inventory.count} NFTs owned · showing ${items.length} on this page`:'');
@@ -98,7 +114,7 @@ export function createDeploymentView(config){
   }
   function render(){updateWallet();renderPortfolio();recovery.hidden=!pending();recovery.disabled=Boolean(transactions?.busy);network.hidden=!localSigning||!session.account;network.disabled=Boolean(transactions?.busy)||Boolean(pending());}
   async function refresh({keepDialog=false}={}){
-    if(transactions?.busy)return;const current=++sequence,owner=session.account;api.cancel();busy=true;error=null;if(!keepDialog){review=null;dialog.close();}render();
+    if(transactions?.busy)return;const current=++sequence,owner=session.account;api.cancel();totalController?.abort();totalController=null;totals=null;totalBusy=false;renderMetrics();busy=true;error=null;if(!keepDialog){review=null;dialog.close();}render();
     try{
       const ready=await api.readiness();if(current!==sequence)return;readiness=ready;
       const data=owner?await api.portfolio(owner,page):(await api.protocol(),null);
@@ -109,7 +125,7 @@ export function createDeploymentView(config){
         const previous=snapshot?.nfts.find(n=>n.token_id===target);
         data.nfts=data.nfts.map(n=>n.token_id!==target?n:previous||{...n,position:{...n.position,current_lp_value:{...n.position.current_lp_value,available:false,raw:null},evolution_value_available:false}});
       }
-      snapshot=data;status(pending()?'A saved transaction needs recovery. Check its status before a new review.':localSigning?'Confirmed data loaded. Local Anvil wallet ready.':'Confirmed data loaded. Review only; no transactions can be sent.');
+      snapshot=data;if(data&&!pending())void refreshTotals(data,current,owner);status(pending()?'A saved transaction needs recovery. Check its status before a new review.':localSigning?'Confirmed data loaded. Local Anvil wallet ready.':'Confirmed data loaded. Review only; no transactions can be sent.');
     }catch(err){if(current!==sequence)return;error=err.message;snapshot=null;status(error,true);}
     finally{if(current===sequence){busy=false;render();}}
   }

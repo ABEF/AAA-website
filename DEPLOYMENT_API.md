@@ -54,3 +54,11 @@ records 57 focused checks and eight isolated browser scenarios.
 The shared signer expansion was rejected by automatic approval review and was not
 applied. Public signing, speed-up/cancel handling, full collection aggregation,
 production configuration/services and independent release approval remain open.
+
+### Complete wallet totals
+
+The reviewed API now supplies bounded16-NFT summary chunks at one confirmed
+block. The client checks the complete ordered inventory and every chunk before
+showing wallet-wide attached LP and claimable ETH. Account changes cancel old
+reads and reset pagination. Historical wallet earnings and source-token rewards
+are not substituted into that ETH total. See the [local runbook](https://github.com/ABEF/AAA/blob/main/docs/LOCAL_API_REHEARSAL.md).

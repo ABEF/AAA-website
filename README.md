@@ -227,3 +227,11 @@ the approved 1% LP conversion loss cap with separate gas; real routes, services
 and independent release approval remain open. No public contracts were deployed.
 See the contract repository's LP_ETH_SETTLEMENT guide and scoped evidence.
 Use main and verify Git/server receipts for publication.
+
+### Actual local API rehearsal
+
+The [contract runbook](https://github.com/ABEF/AAA/blob/main/docs/LOCAL_API_REHEARSAL.md)
+starts a separate real Anvil/API stack. Full-wallet LP and funded ETH totals use
+complete same-block chunks, independently of the eight-card page. Missing totals
+are unavailable, never zero. The shared signer stays local-only; public
+DEPLOYMENT remains null. Actual extension and production qualification remain open.
