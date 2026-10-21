@@ -8,7 +8,7 @@ export const DEPLOYMENT = null;
 
 A non-null, independently reviewed configuration selects `read-and-prepare` mode.
 It is a build input, not a URL/localStorage/wallet-supplied setting. It enables
-confirmed reads and unsigned review only. It does not enable public signing or
+confirmed reads and unsigned reviews for nonlocal deployments. A literal-loopback Anvil rehearsal can also submit through the unchanged local-only signer. It does not enable public signing or
 change the isolated `/app/` Anvil profile.
 
 Read the authoritative [operator configuration and recovery guide](https://github.com/ABEF/AAA/blob/main/docs/DEPLOYMENT_WEBSITE.md)
@@ -23,19 +23,20 @@ Implementation boundaries:
   restoration; explicit choice for multiple addresses. No transaction methods.
 - `deployment-view.js`: holdings, eight-card pagination, matching-block earnings,
   token-unit quotes and unsigned reviews. Missing values remain unavailable.
-- `deployment-config.js`: default null; cannot enable a signer.
+- `deployment-transactions.js`: local Anvil-only typed review coordination, exact approval continuation, receipt/effect reconciliation and durable recovery. No nonlocal signing.
+- `deployment-config.js`: default null; cannot enable public signing.
 - `browser-wallet.js` / `browser-client.js`: existing local-only signing; unchanged.
 
 Activation targets $100 with a minimal raw-unit round-up at the reviewed Oracle
 price. Growth requires at least $5. The review checks the 1% marginal execution
 loss bound and displays simulated LP addition and gas separately. An approval
 review is the exact contribution amount to Entry; it never changes LP/artwork.
-The new profile cannot submit either approval or Entry.
+Only the local Anvil rehearsal can submit approval/Entry; the public profile cannot. Read the operator guide for the exact boundary and pending-transaction recovery.
 
 Focused checks, without rerunning unchanged suites:
 
 ```sh
-node --test tests/deployment-api.test.mjs
+node --test tests/deployment-transactions.test.mjs
 node --check deployment-api.js
 node --check deployment-session.js
 node --check deployment-view.js

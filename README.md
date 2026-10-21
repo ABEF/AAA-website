@@ -1,3 +1,5 @@
+Current wallet integration: [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The shared signer remains restricted to chain 31337 by user decision; nonlocal API profiles are read/unsigned-review only. Public mode remains simulated.
+
 # ZZZ PoPL website
 
 A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.

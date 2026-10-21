@@ -34,7 +34,8 @@ export class DeploymentSession {
         if(this.account)this.remember();else this.forget();this.notify();
       };
       const disconnected=()=>{if(this.provider===info.provider)this.disconnect();};
-      this.listeners=[['accountsChanged',changed],['disconnect',disconnected]];
+      const chainChanged=()=>{if(this.provider===info.provider)this.notify();};
+      this.listeners=[['accountsChanged',changed],['disconnect',disconnected],['chainChanged',chainChanged]];
       for(const [name,fn] of this.listeners)this.provider.on?.(name,fn);
       this.account=restore?(list.includes(selected)?selected:null):list.length===1?list[0]:null;
       if(this.account)this.remember();else this.forget();
