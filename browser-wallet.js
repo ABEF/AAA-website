@@ -21,7 +21,7 @@ function rpcQuantity(x,field){
   const error=Error(`Invalid RPC response: ${field} must be an unsigned hexadecimal quantity or a safe nonnegative integer (${x==null?'missing':typeof x}).`);
   error.code='INVALID_RPC_QUANTITY';throw error;
 }
-function verificationError(message){const error=Error(message);error.code='RECEIPT_VERIFICATION';return error;}
+function verificationError(message,reason){const error=Error(message);error.code='RECEIPT_VERIFICATION';if(reason)error.reason=reason;return error;}
 function transactionFees(tx){
   const type=tx.type==null?0n:rpcQuantity(tx.type,'transaction.type');
   if(type===2n){
@@ -297,6 +297,8 @@ export class BrowserWallet {
   }
   async checkTransaction(record,tx){
     const expected=record.transaction,fees=transactionFees(tx||{});
+    if(tx&&same(tx.hash,record.hash)&&same(tx.from,expected.from)&&rpcQuantity(tx.nonce,'transaction.nonce')!==quantity(expected.nonce))
+      throw verificationError(`Your wallet submitted transaction number ${rpcQuantity(tx.nonce,'transaction.nonce')}, but this review requested ${quantity(expected.nonce)}. Inspect the saved transaction in your wallet; it has not been accepted as the reviewed operation. Do not submit it again.`, 'review_nonce_changed');
     if(!tx||!same(tx.hash,record.hash)||!same(tx.from,expected.from)||!same(tx.to,expected.to)||
       !same(tx.input??tx.data,expected.data)||rpcQuantity(tx.value,'transaction.value')!==quantity(expected.value)||
       rpcQuantity(tx.nonce,'transaction.nonce')!==quantity(expected.nonce)||transactionChain(tx)!==quantity(expected.chainId)||
@@ -313,11 +315,20 @@ export class BrowserWallet {
       record={...record,status:'pending',receipt:null};this.save(record);
     }
     await this.assertNetwork(deadline);
-    const receipt=await read('eth_getTransactionReceipt',[record.hash]);
-    if(!receipt)return {status:'pending',hash:record.hash,error:'Waiting for the chain to confirm this transaction.'};
-    const tx=await read('eth_getTransactionByHash',[record.hash]);
-    if(!tx)return {status:'pending',hash:record.hash,error:'Receipt found; waiting for its transaction details.'};
+    const [receipt,tx]=await Promise.all([read('eth_getTransactionReceipt',[record.hash]),read('eth_getTransactionByHash',[record.hash])]);
+    if(!tx)return {status:'pending',hash:record.hash,error:receipt?'Receipt found; waiting for its transaction details.':'The saved transaction is not yet visible on the reviewed node. Checking the same hash only.'};
+    // Validate what the wallet actually submitted before waiting for inclusion.
+    // A changed nonce/calldata/fee must not spend the entire polling window hidden.
     await this.checkTransaction(record,tx);
+    if(!receipt){
+      if(tx.blockNumber!=null)return {status:'pending',hash:record.hash,error:'Transaction inclusion reported; waiting for its matching receipt.'};
+      const [mined,pending]=await Promise.all([read('eth_getTransactionCount',[record.transaction.from,'latest']),read('eth_getTransactionCount',[record.transaction.from,'pending'])]);
+      const next=rpcQuantity(mined,'account.latestNonce'),ready=rpcQuantity(pending,'account.pendingNonce'),nonce=rpcQuantity(tx.nonce,'transaction.nonce');
+      await this.assertNetwork(deadline);
+      if(nonce<next)return {status:'unresolved',hash:record.hash,reason:'nonce_consumed',requiresAttention:true,error:'The account has moved past this transaction number, but its receipt is unavailable. Inspect wallet activity for a replacement or cancellation. Keep this hash; do not send again.'};
+      if(nonce>next&&ready<=nonce)return {status:'pending',hash:record.hash,reason:'nonce_gap',requiresAttention:true,error:`This transaction uses number ${nonce}; the node reports ${next} as the next confirmed account number and ${ready} as its pending-state number. Earlier account transactions are missing or not executable on this node. Repeated recovery cannot resolve that queue. Inspect wallet activity; do not resend this operation.`};
+      return {status:'pending',hash:record.hash,error:nonce>next?'Waiting for earlier transactions from this wallet to confirm.':'Transaction submitted. Waiting for inclusion in a block.'};
+    }
     const number=hex(rpcQuantity(receipt.blockNumber,'receipt.blockNumber')),blockHash=hash(receipt.blockHash);
     const used=rpcQuantity(receipt.gasUsed,'receipt.gasUsed'),fees=transactionFees(tx);
     const block=await read('eth_getBlockByNumber',[number,false]);
@@ -363,9 +374,9 @@ export class BrowserWallet {
     let result={status:'pending',hash:record.hash,error:'Waiting for confirmation. The saved transaction has not been resubmitted.'};
     for(let attempt=0;attempt<this.receiptAttempts;attempt++){
       if(this.monotonic()>=deadline||this.closed)return result;
-      try{result=await this.inspect(record,deadline);}catch(error){const invalid=['INVALID_RPC_QUANTITY','RECEIPT_VERIFICATION'].includes(error?.code);result={status:'unresolved',hash:record.hash,error:invalid?error.message:'Receipt verification is unavailable or differs from the review. Recover status before continuing.'};if(invalid)return result;}
+      try{result=await this.inspect(record,deadline);}catch(error){const invalid=['INVALID_RPC_QUANTITY','RECEIPT_VERIFICATION'].includes(error?.code);result={status:'unresolved',hash:record.hash,error:invalid?error.message:'Receipt verification is unavailable or differs from the review. Recover status before continuing.',...(invalid?{requiresAttention:true,...(error.reason?{reason:error.reason}:{})}:{})};if(invalid)return result;}
       if(TERMINAL.has(result.status)){this.verifiedReceipts.set(record.hash,clone(result));this.progress(result.status,record.hash);return result;}
-      if(attempt===this.receiptAttempts-1)return result;
+      if(result.requiresAttention||attempt===this.receiptAttempts-1)return result;
       const left=deadline-this.monotonic();
       if(left<=0)return result;
       await this.pause(Math.min(this.receiptIntervalMs,left));

@@ -710,3 +710,51 @@ test('chain reader changing networks during receipt reads cannot finalize or dis
  const result=await e.wallet.send(e.review());assert.equal(result.status,'unresolved');
  assert.match(result.error,/Configured RPC/);assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
 });
+
+test('pending wallet nonce mutation stops immediately and preserves original reviewed nonce',async()=>{
+  let waits=0;
+  const e=setup({options:{receiptAttempts:21,pause:async()=>waits++},send:(t,{state,mined})=>{state.transaction={...mined(t),nonce:'0xa',blockNumber:null,blockHash:null,transactionIndex:null};return HASH;}});
+  const r=await e.wallet.send(e.review());assert.equal(r.reason,'review_nonce_changed');assert.equal(r.status,'unresolved');assert.match(r.error,/number 10.*requested 0/);assert.equal(waits,0);
+  assert.equal(e.wallet.pending.transaction.nonce,'0x0');assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
+  await assert.rejects(e.wallet.acknowledge(HASH),/reconciled/);
+});
+test('queued nonce gap and repeated recovery return immediately without resend',async()=>{
+  let waits=0;
+  const e=setup({options:{receiptAttempts:21,pause:async()=>waits++},send:(t,{state,mined})=>{state.nonce='0x0';state.transaction={...mined(t),blockNumber:null,blockHash:null,transactionIndex:null};return HASH;}});
+  e.state.nonce='0x5';const t={...tx(),nonce:'0x5'},r=await e.wallet.send(e.review({transaction:t,expectedTransaction:expected(t)}));
+  assert.equal(r.reason,'nonce_gap');assert.equal(r.requiresAttention,true);assert.match(r.error,/number 5.*reports 0/);assert.equal(waits,0);
+  for(let i=0;i<3;i++)assert.equal((await e.wallet.recover()).reason,'nonce_gap');
+  assert.equal(waits,0);assert.equal(sent(e).length,1);assert.equal(e.wallet.pending.hash,HASH);
+});
+test('executable pending sequence is not falsely diagnosed as a nonce gap',async()=>{
+  let waits=0;
+  const e=setup({options:{receiptAttempts:3,pause:async()=>waits++},handler:(m,p,{state})=>m==='eth_getTransactionCount'&&state.transaction?(p[1]==='latest'?'0x3':'0x6'):undefined,send:(t,{state,mined})=>{state.transaction={...mined(t),blockNumber:null,blockHash:null,transactionIndex:null};return HASH;}});
+  e.state.nonce='0x5';const t={...tx(),nonce:'0x5'},r=await e.wallet.send(e.review({transaction:t,expectedTransaction:expected(t)}));
+  assert.equal(r.status,'pending');assert.equal(r.requiresAttention,undefined);assert.equal(waits,2);assert.match(r.error,/earlier transactions/);assert.equal(sent(e).length,1);
+});
+test('consumed nonce without receipt preserves unresolved journal instead of guessing replacement',async()=>{
+  const e=setup({send:(t,{state,mined})=>{state.nonce='0x1';state.transaction={...mined(t),blockNumber:null,blockHash:null,transactionIndex:null};return HASH;}});
+  const r=await e.wallet.send(e.review());assert.equal(r.reason,'nonce_consumed');assert.equal(r.status,'unresolved');assert.ok(e.wallet.pending);assert.equal(sent(e).length,1);
+});
+test('temporarily invisible submitted transaction never permits retry or journal deletion',async()=>{
+  let waits=0;
+  const e=setup({options:{receiptAttempts:3,pause:async()=>waits++},send:()=>HASH});
+  const r=await e.wallet.send(e.review());assert.equal(r.status,'pending');assert.match(r.error,/not yet visible/);assert.equal(waits,2);assert.equal(e.wallet.pending.hash,HASH);assert.equal(sent(e).length,1);
+});
+test('pending economic or gas mutation is detected before any receipt exists',async()=>{
+  for(const change of [{input:'0xdeadbeef'},{value:'0x2'},{to:B},{gasPrice:'0x3'},{gas:'0x100001'},{chainId:'0x1'}]){
+    let waits=0;const e=setup({options:{receiptAttempts:21,pause:async()=>waits++},send:(t,{state,mined})=>{state.transaction={...mined(t),blockNumber:null,blockHash:null,transactionIndex:null,...change};return HASH;}});
+    const r=await e.wallet.send(e.review());assert.equal(r.status,'unresolved');assert.equal(waits,0);assert.equal(sent(e).length,1);assert.equal(e.wallet.pending.hash,HASH);
+  }
+});
+test('resolved pending nonce gap can recover original receipt without another transaction',async()=>{
+  const e=setup({send:(t,{state,mined})=>{state.nonce='0x0';state.transaction={...mined(t),blockNumber:null,blockHash:null,transactionIndex:null};return HASH;}});
+  e.state.nonce='0x5';const t={...tx(),nonce:'0x5'};
+  assert.equal((await e.wallet.send(e.review({transaction:t,expectedTransaction:expected(t)}))).reason,'nonce_gap');
+  e.state.transaction=e.mined(t);e.state.receipt=e.receipt();e.state.nonce='0x6';
+  assert.equal((await e.wallet.recover()).status,'confirmed');await e.wallet.acknowledge(HASH);assert.equal(e.wallet.pending,null);assert.equal(sent(e).length,1);
+});
+test('node numeric nonce responses still support bounded gap diagnostics',async()=>{
+  const e=setup({send:(t,{state,mined})=>{state.nonce=0;state.transaction={...mined(t),nonce:5,blockNumber:null,blockHash:null,transactionIndex:null};return HASH;}});
+  e.state.nonce=5;const t={...tx(),nonce:'0x5'};assert.equal((await e.wallet.send(e.review({transaction:t,expectedTransaction:expected(t)}))).reason,'nonce_gap');
+});

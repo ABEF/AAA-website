@@ -7,6 +7,9 @@ import {COLORWAYS,PATTERNS,findArtwork,paletteTrait,preloadEvolutions} from './a
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const text=(s,v)=>{const n=$(s);if(n)n.textContent=v;};
 const short=a=>a.slice(0,6)+'…'+a.slice(-4);
+export function walletProgressLabel(stage){
+  return ({checking:'Checking review…',wallet:'Confirm in your wallet',submitted:'Transaction submitted',confirming:'Checking confirmation…',confirmed:'Transaction confirmed',failed:'Transaction reverted',reconciling:'Refreshing confirmed balances…'})[stage]||'Checking transaction status…';
+}
 export function nativeRewards(n,scope){
   const rows=(scope?[scope]:['lp','royalties']).flatMap(k=>n.claimable[k]).filter(a=>a.asset===ZERO);
   if(!rows.length||rows.some(a=>a.raw===null||a.available===false))return null;
@@ -42,7 +45,9 @@ export function createDeploymentView(config){
     stage=value.stage;
     const messages={checking:'Checking the reviewed transaction…',wallet:'Confirm in your selected wallet.',submitted:'Transaction sent. Waiting for confirmation…',confirming:'Checking the saved transaction on-chain…',confirmed:'Transaction confirmed. Refreshing confirmed balances…',failed:'Transaction reverted. No LP change was applied.',reconciling:'Transaction confirmed. Checking confirmed balances…'};
     status(messages[value.stage]||'Checking transaction status…');
-    text('.local-confirm [data-deployment-progress]',messages[value.stage]||'Checking transaction status…');render();
+    text('.local-confirm [data-deployment-progress]',messages[value.stage]||'Checking transaction status…');
+    const send=dialog.querySelector('[data-deployment-send]');if(send){send.textContent=walletProgressLabel(value.stage);send.hidden=['submitted','confirming','confirmed','failed','reconciling'].includes(value.stage);}
+    render();
   }});
   const recovery=document.createElement('button');recovery.type='button';recovery.className='text-link';recovery.dataset.deploymentRecover='';recovery.textContent='Recover saved transaction ↻';recovery.hidden=true;bar.append(recovery);
   const network=document.createElement('button');network.type='button';network.className='text-link';network.dataset.deploymentNetwork='';network.textContent='Switch to '+m.chain_name;network.hidden=true;bar.append(network);
@@ -162,7 +167,7 @@ export function createDeploymentView(config){
   function resultDialog(result){
     clearTimeout(reviewTimer);
     const complete=result.reconciled,confirmed=result.status==='confirmed';
-    const title=complete?(confirmed?'Transaction confirmed':'Transaction reverted'):confirmed?'Confirmed · balances catching up':'Check transaction status';
+    const title=complete?(confirmed?'Transaction confirmed':'Transaction reverted'):confirmed?'Confirmed · balances catching up':result.reason==='nonce_gap'?'Transaction waiting for earlier activity':result.reason==='review_nonce_changed'?'Wallet changed the transaction number':'Check transaction status';
     const message=result.error||(complete?(confirmed?'Confirmed contract state is ready to refresh.':'The operation reverted; network gas may have been spent.'):'Check the same saved transaction. Do not submit it again.');
     dialog.innerHTML=`<h2>${e(title)}</h2><p role="status" data-deployment-progress>${e(message)}</p>${result.hash?`<p class="local-id">Transaction: ${e(result.hash)}</p>`:''}${!complete&&!result.hash?'<label>Transaction hash from your wallet<input class="amount-input" data-deployment-hash autocomplete="off" placeholder="0x…"></label>':''}${complete?'':'<button class="button" data-deployment-recover>Recover status</button>'}<button class="button button-secondary" data-deployment-close>Close</button>`;
     if(!dialog.open)dialog.showModal();
@@ -179,8 +184,8 @@ export function createDeploymentView(config){
     if(result.reconciled){review=null;$('#nft-dialog').close();await refresh({keepDialog:true});}
   }
   async function submit(){
-    if(!transactions||!review||transactions.busy)return;const current=sequence,selected=review;clearTimeout(reviewTimer);
-    dialog.querySelectorAll('button').forEach(b=>b.disabled=true);
+    if(!transactions||!review||transactions.busy)return;const current=sequence,selected=review;clearTimeout(reviewTimer);text('[data-deployment-send]',walletProgressLabel('checking'));text('[data-deployment-progress]','Checking the reviewed transaction…');
+    dialog.querySelectorAll('button').forEach(b=>b.disabled=!b.matches('[data-deployment-close]'));
     try{await finish(await transactions.submit(selected),current);}
     catch(err){if(current!==sequence)return;status(err.message,true);
       if(pending())resultDialog({status:'unresolved',hash:pending()?.hash,error:err.message});
@@ -190,7 +195,7 @@ export function createDeploymentView(config){
   async function recover(){
     if(!transactions||transactions.busy||!session.account)return;const current=sequence;
     const hashInput=dialog.querySelector('[data-deployment-hash]')?.value.trim();
-    dialog.querySelectorAll('button').forEach(b=>b.disabled=true);
+    dialog.querySelectorAll('button').forEach(b=>b.disabled=!b.matches('[data-deployment-close]'));
     try{await finish(await transactions.recover(hashInput||undefined),current);}
     catch(err){if(current===sequence){status(err.message,true);resultDialog({status:'unresolved',hash:pending()?.hash,error:err.message});}}
     finally{stage=null;render();}
