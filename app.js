@@ -4,8 +4,13 @@ import {browserMode,BrowserClient} from './browser-client.js';
 import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,queueUpgrade,preloadUpgradeSounds} from './artworks.js';
 import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, WalletDiscovery, walletError} from './wallet.js';
-const {OperationTracker,preserveArtwork} = localMode(location) ? {} : await import('./ui-state.js');
-const {PreviewStore,RESET_KEY,previewChange} = localMode(location) ? {} : await import('./preview-store.js');
+// The local launcher keeps its existing isolated profile. The reviewed API
+// profile is a fixed build input, never selected through a URL or wallet data.
+const DEPLOYMENT = localMode(location) ? null : (await import('./deployment-config.js')).DEPLOYMENT;
+const createDeploymentView = DEPLOYMENT === null ? null : (await import('./deployment-view.js')).createDeploymentView;
+const contractMode = localMode(location) || DEPLOYMENT !== null;
+const {OperationTracker,preserveArtwork} = contractMode ? {} : await import('./ui-state.js');
+const {PreviewStore,RESET_KEY,previewChange} = contractMode ? {} : await import('./preview-store.js');
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -26,7 +31,8 @@ const visualTraits = nft => `<span>${styleLabel(colorwayFor(nft).colorStyle)}</s
 let collection = buildDemoCollection();
 let page = 1, connecting = false, toastTimer, selectedNFT = null, selectedDetailMode = 'breakdown';
 const providers = [];
-const local = localMode(location) ? createLocalView(browserMode(location)?new BrowserClient():null) : null;
+const local = localMode(location) ? createLocalView(browserMode(location)?new BrowserClient():null) : DEPLOYMENT !== null ? createDeploymentView(DEPLOYMENT) : null;
+if(local?.failed)throw new Error('Reviewed deployment profile failed closed.');
 const store = local ? null : new PreviewStore({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)},navigator.locks);
 let storageProblem = null;
 if (!local) try { collection = store.read().collection; } catch(error) { storageProblem = error.message; }

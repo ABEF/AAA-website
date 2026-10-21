@@ -4,10 +4,24 @@ A responsive website and collection application for ZZZ Collection — Proof of 
 
 ## Published demo
 
-The public site serves the verified wallet-code release `f060d66` (2026-10-20).
-It remains a simulation; local browser signing at port 8900 is a separate profile.
-[Publication checks](https://github.com/ABEF/AAA/blob/main/reports/browser-wallet/PUBLICATION.md)
-record exact server/public bytes and the remaining production boundaries.
+The public site remains a simulation; local browser signing at port 8900 is a
+separate profile. The reviewed API adapter is disabled in the public build.
+[Publication checks](https://github.com/ABEF/AAA/blob/main/reports/deployment-adapter/PUBLICATION.md)
+record the current server/public bytes and remaining production boundaries.
+
+## Reviewed API integration - 2026-10-21
+
+A separate build-configured profile reads confirmed holdings and prepares unsigned
+mint, exact approval, activation/growth and ETH-claim reviews against the existing
+APIs. It accepts ordinary authorized accounts, uses real token-unit price quotes,
+and verifies reviewed deployment/config/runtime/calldata/LP/gas bounds.
+
+**The shipped `deployment-config.js` remains `DEPLOYMENT = null`.** The public
+site continues to simulate financial actions; the existing local browser signer
+is unchanged. The new adapter has no send/sign method. See [operator setup](DEPLOYMENT_API.md)
+and [focused evidence](https://github.com/ABEF/AAA/blob/main/reports/deployment-adapter/VERIFICATION.md).
+Actual public signer integration, extension acceptance and live service/route/feed
+qualification remain open.
 
 ## Wallet confirmation reads
 
