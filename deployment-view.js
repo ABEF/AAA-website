@@ -91,7 +91,7 @@ export function createDeploymentView(config){
     text('#mint-message','0.05 ETH mint price. Network gas is separate. '+(localSigning?'Local Anvil only; confirm each send in your wallet.':'This profile does not submit transactions.'));
     if(readiness){text('#mint-supply',readiness.minted+' / 1,000');text('#mint-remaining',(1000-readiness.minted)+' remaining');}
   }
-  let totals=null,totalController=null,totalBusy=false,earnings=null,earningsBusy=false,collection=null,collectionBusy=false,collectionController=null,collectionSequence=0;
+  let totals=null,totalController=null,totalBusy=false,earnings=null,earningsBusy=false,collection=null,collectionBusy=false,collectionController=null,collectionSequence=0,collectionPositions=null,collectionPositionsBusy=false,collectionProgress='',collectionPage=0,collectionDetailSequence=0;
   const totalsFrame=document.createElement('div');totalsFrame.className='metric-grid deployment-wallet-totals';
   totalsFrame.innerHTML='<article><span class="stat-label">LP ATTACHED · ALL YOUR NFTs</span><strong data-wallet-total="lp">Unavailable</strong><span data-wallet-total-note></span></article><article class="claim-metric"><span class="stat-label">READY TO CLAIM · ETH</span><strong data-wallet-total="eth">Unavailable</strong><span>LP rewards + royalties · source tokens excluded</span></article>';
   totalsFrame.insertAdjacentHTML('beforeend','<article><span class="stat-label">EARNINGS · LAST 24H</span><strong data-wallet-earned="last_24h">Unavailable</strong><span>LP rewards + royalties · current prices</span></article><article><span class="stat-label">EARNINGS · ALL TIME</span><strong data-wallet-earned="all_time">Unavailable</strong><span>History of currently held NFTs, including past owners</span></article>');
@@ -99,6 +99,18 @@ export function createDeploymentView(config){
   const collectionFrame=document.createElement('div');collectionFrame.className='metric-grid deployment-collection-earnings';
   collectionFrame.innerHTML='<article><span class="stat-label">HOLDER ALLOCATIONS · LAST 24H</span><strong data-collection-earned="last_24h">Unavailable</strong></article><article><span class="stat-label">HOLDER ALLOCATIONS · ALL TIME</span><strong data-collection-earned="all_time">Unavailable</strong></article><p class="small-note" data-collection-earned-note></p>';
   $('[data-view="collection"] .collection-filters').before(collectionFrame);
+  const collectionTotals=document.createElement('div');collectionTotals.className='metric-grid';
+  collectionTotals.innerHTML='<article><span class="stat-label">TOTAL ATTACHED LP</span><strong data-collection-total>Unavailable</strong><span>Current on-chain value · all NFTs</span></article><article><span class="stat-label">ACTIVATED / MINTED</span><strong data-collection-count>Unavailable</strong><span data-collection-snapshot></span></article>';
+  for(const frame of [collectionTotals,collectionFrame])frame.style.gridTemplateColumns='repeat(auto-fit,minmax(min(100%,260px),1fr))';
+  const allocationNote=collectionFrame.querySelector('[data-collection-earned-note]');
+  $('[data-view="collection"] .positions-section').before(collectionTotals,collectionFrame,allocationNote);
+  text('[data-view="collection"] .page-heading > a','Mint preview ↗');
+  const collectionPager=document.createElement('div');collectionPager.className='local-actions';collectionPager.innerHTML='<button class="button button-secondary" data-collection-page="-1">Previous</button><span role="status"></span><button class="button button-secondary" data-collection-page="1">Next</button>';
+  $('#positions-body').closest('.table-scroll').after(collectionPager);
+  $('[data-view="collection"] > .metric-grid').hidden=true;$('.collection-filters').hidden=false;
+  const columns=$$('[data-view="collection"] thead th');['NFT / STATUS','OWNER','ATTACHED LP','EVOLUTION','View position'].forEach((v,i)=>columns[i].textContent=v);
+  $('#sort-positions option[value="fees"]').disabled=true;
+  for(const selector of ['#nft-search','#status-filter','#sort-positions','#rarity-filter','#color-filter','#color-style-filter'])$(selector).addEventListener(selector==='#nft-search'?'input':'change',()=>{collectionPage=0;renderCollection();});
   function renderMetrics(){
     $$('[data-metric]').forEach(n=>n.textContent='Unavailable');
     for(const period of ['all_time','last_24h'])text(`[data-wallet-earned="${period}"]`,earningsBusy?'Reading earnings…':usd(earnedUSD(earnings,period)));
@@ -117,14 +129,38 @@ export function createDeploymentView(config){
     finally{if(totalController===controller){earningsBusy=false;renderMetrics();}}
   }
   async function refreshCollection(){
-    collectionController?.abort();const controller=new AbortController(),revision=++collectionSequence;collectionController=controller;collectionBusy=true;collection=null;renderCollection();
-    try{const result=await api.collectionEarnings({signal:controller.signal});if(revision===collectionSequence&&!controller.signal.aborted)collection=result;}catch{}
-    finally{if(revision===collectionSequence){collectionBusy=false;renderCollection();}}
+    collectionController?.abort();const controller=new AbortController(),revision=++collectionSequence;collectionController=controller;collectionBusy=true;collection=null;collectionPositions=null;collectionPositionsBusy=true;collectionProgress='';collectionPage=0;collectionDetailSequence++;renderCollection();
+    const earningsRead=(async()=>{try{const result=await api.collectionEarnings({signal:controller.signal});if(revision===collectionSequence&&!controller.signal.aborted)collection=result;}catch{}finally{if(revision===collectionSequence){collectionBusy=false;renderCollection();}}})();
+    try{const result=await api.collectionPositions({signal:controller.signal,onProgress:(done,total)=>{if(revision===collectionSequence&&!controller.signal.aborted){collectionProgress=`${done} / ${total} confirmed positions`;renderCollection();}}});if(revision===collectionSequence&&!controller.signal.aborted)collectionPositions=result;}
+    catch{if(revision===collectionSequence)collectionProgress='Collection unavailable. Refresh to read a complete confirmed snapshot.';}
+    finally{if(revision===collectionSequence){collectionPositionsBusy=false;renderCollection();}}
+    await earningsRead;
   }
   function renderCollection(){
     for(const period of ['all_time','last_24h'])text(`[data-collection-earned="${period}"]`,collectionBusy?'Reading allocations…':usd(earnedUSD(collection,period,true)));
     text('[data-collection-earned-note]',collection?`LP holder + collective allocations and allocated royalties at current prices · block ${collection.provenance.block_number}. Includes ledger rounding dust; excludes compounding, buyback and quarantined funds. Earnings already claimed remain included.`:'Complete confirmed history and reviewed prices required.');
-    text('#result-count','Collection inventory not configured');$('#positions-body').innerHTML='<tr><td colspan="5">Use My NFTs for your confirmed positions. The collection position listing is not enabled in this profile. Confirmed holder allocations are shown above.</td></tr>';
+    text('[data-collection-total]',collectionPositionsBusy?'Reading collection…':usd(collectionPositions?.lp_usd_18??null));
+    text('[data-collection-count]',collectionPositions?`${collectionPositions.activated} / ${collectionPositions.count}`:'Unavailable');
+    text('[data-collection-snapshot]',collectionPositions?`${collectionPositions.dormant} dormant · block ${collectionPositions.provenance.block_number}`:collectionProgress);
+    let rows=collectionPositions?.positions||[];
+    const q=$('#nft-search').value.trim().slice(0,78).replace(/^#/,'').toLowerCase(),filter=selector=>$(selector).value;
+    rows=rows.filter(n=>{const art=n.traits_ready?findArtwork(`${COLORWAYS[n.traits.palette]?.id}-${PATTERNS[n.traits.pattern]?.id}-${n.traits.rarity.toLowerCase()}-dormant`):null;
+      return (!q||String(n.mint_ordinal).includes(q)||n.token_id.includes(q))&&(filter('#status-filter')==='all'||(filter('#status-filter')==='active')===n.position.activated)&&(filter('#rarity-filter')==='all'||n.traits?.rarity.toLowerCase()===filter('#rarity-filter'))&&(filter('#color-style-filter')==='all'||art?.colorStyle.toLowerCase()===filter('#color-style-filter'))&&(filter('#color-filter')==='all'||COLORWAYS[n.traits?.palette]?.colors.some(c=>c.toLowerCase()===filter('#color-filter')));});
+    const mode=filter('#sort-positions');rows.sort((a,b)=>mode==='liquidity'?a.position.current_lp_value.raw===null&&b.position.current_lp_value.raw===null?a.mint_ordinal-b.mint_ordinal:a.position.current_lp_value.raw===null?1:b.position.current_lp_value.raw===null?-1:raw(a.position.current_lp_value.raw)>raw(b.position.current_lp_value.raw)?-1:raw(a.position.current_lp_value.raw)<raw(b.position.current_lp_value.raw)?1:a.mint_ordinal-b.mint_ordinal:mode==='newest'?b.mint_ordinal-a.mint_ordinal:a.mint_ordinal-b.mint_ordinal);
+    const pages=Math.max(1,Math.ceil(rows.length/16));collectionPage=Math.min(collectionPage,pages-1);
+    $('#positions-body').innerHTML=rows.slice(collectionPage*16,collectionPage*16+16).map(n=>{const art=artFor(n);return `<tr><td><button class="text-link" data-collection-id="${n.token_id}">${art?`<img src="${e(art.src)}" alt="" width="42" height="42" loading="lazy">`:''} PoPL #${n.mint_ordinal}</button><span class="small-note">${e(n.position.status)}</span></td><td><span class="mono" title="${e(n.owner)}">${e(short(n.owner))}</span></td><td>${e(usd(n.position.current_lp_value.raw))}</td><td>${e(n.position.evolution_value_available?n.position.evolution:'Unavailable')}</td><td><button class="icon-button" data-collection-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}">↗</button></td></tr>`;}).join('')||`<tr><td colspan="5">${e(collectionPositionsBusy?collectionProgress||'Reading the confirmed collection…':collectionPositions?'No matching positions.':collectionProgress||'Collection unavailable.')}</td></tr>`;
+    text('#result-count',collectionPositions?`${rows.length} matching / ${collectionPositions.count} NFTs`:collectionProgress||'Collection not loaded');
+    collectionPager.hidden=!collectionPositions||rows.length<=16;collectionPager.querySelector('span').textContent=`Page ${collectionPage+1} of ${pages}`;
+    collectionPager.querySelector('[data-collection-page="-1"]').disabled=collectionPage===0;
+    collectionPager.querySelector('[data-collection-page="1"]').disabled=collectionPage+1>=pages;
+  }
+  async function collectionDetails(id){
+    const row=collectionPositions?.positions.find(n=>n.token_id===id);if(!row)return;
+    const revision=++collectionDetailSequence;status('Reading the current confirmed position…');
+    try{const n=await api.nft(id,row.owner,collectionController?.signal);if(revision!==collectionDetailSequence||location.hash!=='#collection')return;
+      $('#nft-dialog-content').innerHTML=`<h2>PoPL #${n.mint_ordinal}</h2><div class="nft-card-traits">${traits(n)}</div><p class="small-note">Owner ${e(n.owner)} · confirmed block ${n.provenance.block_number}</p>${renderPositionAmounts(n)}`;
+      $('#nft-dialog').showModal();status('Current confirmed position loaded.');
+    }catch{if(revision===collectionDetailSequence)status('Position changed or could not be verified. Refresh the collection.',true);}
   }
   const artFor=n=>n.traits_ready&&n.position.evolution_value_available?findArtwork(`${COLORWAYS[n.traits.palette]?.id}-${PATTERNS[n.traits.pattern]?.id}-${n.traits.rarity.toLowerCase()}-${n.position.evolution}`):null;
   function traits(n){const art=artFor(n);return n.traits_ready?`<strong>${e(n.traits.rarity)}</strong><span>${e(art?.colorStyle||'')}</span>${paletteTrait(COLORWAYS[n.traits.palette].colors)}${royaltyTrait(n)}`:'<span>Awaiting verified reveal</span>';}
@@ -225,7 +261,7 @@ export function createDeploymentView(config){
   }
   async function switchNetwork(){try{await transactions?.switchNetwork();status('Selected network verified. Refresh and prepare a new review.');await refresh();}catch(err){status(err.code===4001?'Network switch cancelled.':err.message,true);}}
   document.addEventListener('click',event=>{
-    const b=event.target.closest('button');if(!b||!b.matches('[data-connect],[data-deployment-provider],[data-deployment-account],[data-deployment-refresh],[data-deployment-id],[data-deployment-claim],[data-deployment-page],[data-deployment-close],[data-deployment-send],[data-deployment-recover],[data-deployment-network],#mint-submit,#disconnect-wallet,#claim-all,#demo-wallet,#reset-demo'))return;
+    const b=event.target.closest('button');if(!b||!b.matches('[data-collection-page],[data-collection-id],[data-connect],[data-deployment-provider],[data-deployment-account],[data-deployment-refresh],[data-deployment-id],[data-deployment-claim],[data-deployment-page],[data-deployment-close],[data-deployment-send],[data-deployment-recover],[data-deployment-network],#mint-submit,#disconnect-wallet,#claim-all,#demo-wallet,#reset-demo'))return;
     event.preventDefault();event.stopImmediatePropagation();
     if(b.matches('[data-deployment-send]'))return void submit();
     if(b.matches('[data-deployment-recover]'))return void recover();
@@ -233,6 +269,8 @@ export function createDeploymentView(config){
     if(b.matches('[data-connect]'))return openWallet();
     if(b.matches('[data-deployment-provider]'))return void connect(Number(b.dataset.deploymentProvider));
     if(b.matches('[data-deployment-account]'))return void session.select(b.dataset.deploymentAccount).then(()=>$('#wallet-dialog').close()).catch(err=>status(err.message,true));
+    if(b.matches('[data-collection-page]')){collectionPage=Math.max(0,collectionPage+Number(b.dataset.collectionPage));return renderCollection();}
+    if(b.matches('[data-collection-id]'))return void collectionDetails(b.dataset.collectionId);
     if(b.matches('[data-deployment-refresh]')){if(location.hash==='#collection')void refreshCollection();return void refresh();}
     if(b.matches('[data-deployment-close]')){review=null;dialog.close();return;}
     if(b.matches('[data-deployment-id]'))return details(b.dataset.deploymentId,b.hasAttribute('data-deployment-grow'));
@@ -244,7 +282,7 @@ export function createDeploymentView(config){
   },true);
   document.addEventListener('submit',event=>{const f=event.target;if(!f.matches('[data-deployment-contribution]'))return;event.preventDefault();event.stopImmediatePropagation();if(!f.reportValidity())return;void prepare({action:f.dataset.action,id:f.dataset.deploymentContribution,amount:f.elements.amount.value,asset:f.elements.asset.value});},true);
   document.addEventListener('change',event=>{const f=event.target.closest('[data-deployment-contribution]');if(!f||event.target.name!=='asset')return;f.elements.consent.checked=false;if(f.dataset.action==='activate')void quote(f);});
-  window.addEventListener('hashchange',()=>{if(location.hash==='#collection')void refreshCollection();else {collectionSequence++;collectionController?.abort();collectionController=null;collection=null;collectionBusy=false;}quoteSequence++;review=null;dialog.close();$('#nft-dialog').close();});
+  window.addEventListener('hashchange',()=>{if(location.hash==='#collection')void refreshCollection();else {collectionSequence++;collectionDetailSequence++;collectionController?.abort();collectionController=null;collection=null;collectionPositions=null;collectionBusy=false;collectionPositionsBusy=false;collectionProgress='';renderCollection();}quoteSequence++;review=null;dialog.close();$('#nft-dialog').close();});
   window.addEventListener('pagehide',()=>{sequence++;api.cancel();totalController?.abort();collectionSequence++;collectionController?.abort();dialog.close();});
   if(location.hash==='#collection')void refreshCollection();
   return {updateWallet,renderPortfolio,renderMetrics,renderCollection,renderMint,openWallet,refresh,setProviders:items=>{providers=items;walletOptions();void session.restore(items);}};

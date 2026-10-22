@@ -202,6 +202,44 @@ export class DeploymentAPI {
       if(JSON.stringify(row.current_price)!==JSON.stringify(all.current_price)||fields.some(k=>raw(row[k+'_raw'])>raw(all[k+'_raw'])))fail('Earnings periods or prices differ');}
     return report;
   }
+  async collectionPositions({signal,onProgress}={}){
+    const protocol=await this.protocol(signal),anchor=protocol.provenance;
+    let offset=0,inventory=null,digest=null,count=null,positions=[],ordinals=new Set(),lp=0n,available=true,activated=0;
+    do{
+      if(signal?.aborted)fail('Collection read cancelled');
+      const part=await this.request(`/v1/collection/${anchor.block_number}/${offset}`,undefined,signal);
+      await this.provenance(part.provenance);
+      if(part.schema!==1||part.chain_id!==this.manifest.chain_id||part.available!==true||part.nft_contract!==this.manifest.contracts.nft.address||!integer(part.count,0,1000)||part.offset!==offset||part.chunk_size!==16||!Array.isArray(part.positions)||part.provenance.block_hash!==anchor.block_hash||part.provenance.block_number!==anchor.block_number||part.provenance.block_timestamp!==anchor.block_timestamp)fail('Collection snapshot differs');
+      if(offset===0){
+        inventory=part.inventory_token_ids;count=part.count;
+        if(!Array.isArray(inventory)||inventory.length!==count||new Set(inventory).size!==count||inventory.some((id,i)=>raw(id)===0n||i&&raw(inventory[i-1])>=raw(id)))fail('Invalid complete collection inventory');
+        digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(inventory.join(','))))].map(n=>n.toString(16).padStart(2,'0')).join('');
+      }else if(part.inventory_token_ids!==null)fail('Unexpected repeated collection inventory');
+      const expected=inventory.slice(offset,offset+16),next=offset+expected.length<count?offset+expected.length:null;
+      if(part.count!==count||part.inventory_sha256!==digest||part.next_offset!==next||part.positions.length!==expected.length)fail('Incomplete collection page');
+      let chunkLP=0n,chunkAvailable=true,chunkActive=0;
+      for(const [index,n] of part.positions.entries()){
+        const v=n.position?.current_lp_value,w=n.position?.royalty_weight,active=n.position?.activated;
+        if(n.token_id!==expected[index]||!integer(n.mint_ordinal,1,count)||ordinals.has(n.mint_ordinal)||!ADDRESS.test(n.owner)||n.owner===ZERO||typeof n.traits_ready!=='boolean'||typeof active!=='boolean'||!integer(w,0,3)||(w>0)!==active||!['active','parked','remote','outbound','inbound','dormant'].includes(n.position.status)||(n.position.status==='dormant')!==!active||n.position.principal_redeemable!==false)fail('Invalid collection identity or eligibility');
+        ordinals.add(n.mint_ordinal);
+        if(n.traits_ready){if(!['Commun','Rare','Legendary'].includes(n.traits?.rarity)||!integer(n.traits.palette,0,57)||!integer(n.traits.pattern,0,3)||active&&w!==['Commun','Rare','Legendary'].indexOf(n.traits.rarity)+1)fail('Invalid collection traits');}
+        else if(n.traits!==null||active)fail('Unrevealed NFT cannot be activated');
+        if(typeof v?.available!=='boolean'||v.decimals!==18||v.unit!=='USD'||v.source!=='NFT.currentLPValue'||n.position.evolution_value_available!==v.available)fail('Invalid collection valuation');
+        const amount=v.available?raw(v.raw):null;
+        if(!v.available&&v.raw!==null||!active&&(amount!==0n)||v.available&&!['active','dormant'].includes(n.position.status))fail('Collection value contradicts custody');
+        const stage=!active?'dormant':amount!==null&&amount>=10000n*10n**18n?'singularity':amount!==null&&amount>=1000n*10n**18n?'enhanced':'activated';
+        if(n.position.evolution!==stage)fail('Collection evolution differs from confirmed LP');
+        if(amount===null)chunkAvailable=false;else chunkLP+=amount;
+        if(active)chunkActive++;
+      }
+      if(part.chunk_lp_usd_18!==(chunkAvailable?chunkLP.toString():null)||part.chunk_activated!==chunkActive)fail('Collection chunk total differs from positions');
+      positions.push(...part.positions);lp+=chunkLP;available=available&&chunkAvailable;activated+=chunkActive;
+      if(onProgress)onProgress(positions.length,count);
+      offset=next;
+    }while(offset!==null);
+    await this.provenance(anchor);if(signal?.aborted)fail('Collection read cancelled');
+    return {available:true,positions,count,activated,dormant:count-activated,lp_usd_18:available?lp.toString():null,provenance:anchor,inventory_sha256:digest};
+  }
   async collectionEarnings({signal}={}){
     await this.identity();const result=this.validateEarnings(await this.request('/v1/earnings',undefined,signal),'collection');
     await this.provenance(result.provenance);if(signal?.aborted)fail('Collection read cancelled');return result;

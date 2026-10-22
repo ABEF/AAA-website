@@ -251,3 +251,12 @@ prices, including earlier owners' history. They are separate from claimable ETH.
 Missing chunks or nonzero-component prices mean unavailable, not zero. See the
 [operator definitions](https://github.com/ABEF/AAA/blob/main/docs/EARNINGS_HISTORY.md#current-holdings-totals)
 and [scoped evidence](https://github.com/ABEF/AAA/blob/main/reports/wallet-earnings/VERIFICATION.md).
+
+## Confirmed collection explorer
+
+The opt-in reviewed API profile lists canonical collection positions and complete
+current attached LP, with 16-row pages, search/filters and read-only position
+details. LP is read from NFT.currentLPValue at one confirmed block; every chunk
+must validate before a total appears. Unknown values never become zero. See the
+[operator procedure](https://github.com/ABEF/AAA/blob/main/docs/COLLECTION_READS.md).
+The public configuration remains null; public data/actions are simulated.

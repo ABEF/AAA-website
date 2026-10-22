@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "chain_id": 31337,
+  "nft_contract": "0x0000000000000000000000000000000000000002",
+  "available": true,
+  "count": 2,
+  "inventory_sha256": "5932eb73bc25031e7c2626cb3d72346cc76bd527f0ebd4eee3a6813500d7d466",
+  "inventory_token_ids": [
+    "57668834953523417335750805724198894159101674408155280880167464608522245860580",
+    "106037904223622253812009087963952501785756172868466248078070335118149609916704"
+  ],
+  "offset": 0,
+  "chunk_size": 16,
+  "positions": [
+    {
+      "token_id": "57668834953523417335750805724198894159101674408155280880167464608522245860580",
+      "mint_ordinal": 1,
+      "owner": "0x000000000000000000000000000000000000001e",
+      "traits_ready": true,
+      "traits": {
+        "rarity": "Rare",
+        "palette": 24,
+        "pattern": 2
+      },
+      "position": {
+        "status": "active",
+        "activated": true,
+        "royalty_weight": 2,
+        "principal_redeemable": false,
+        "current_lp_value": {
+          "available": true,
+          "raw": "1432000000000000000000",
+          "decimals": 18,
+          "unit": "USD",
+          "source": "NFT.currentLPValue"
+        },
+        "evolution": "enhanced",
+        "evolution_value_available": true
+      }
+    },
+    {
+      "token_id": "106037904223622253812009087963952501785756172868466248078070335118149609916704",
+      "mint_ordinal": 2,
+      "owner": "0x000000000000000000000000000000000000001f",
+      "traits_ready": false,
+      "traits": null,
+      "position": {
+        "status": "dormant",
+        "activated": false,
+        "royalty_weight": 0,
+        "principal_redeemable": false,
+        "current_lp_value": {
+          "available": true,
+          "raw": "0",
+          "decimals": 18,
+          "unit": "USD",
+          "source": "NFT.currentLPValue"
+        },
+        "evolution": "dormant",
+        "evolution_value_available": true
+      }
+    }
+  ],
+  "next_offset": null,
+  "chunk_lp_usd_18": "1432000000000000000000",
+  "chunk_activated": 1,
+  "lifecycle": {
+    "state": "operating",
+    "state_code": 0,
+    "handoff_phase": "idle",
+    "preparation_active": false,
+    "paused": false,
+    "origin": {
+      "chain_id": 31337,
+      "vault": "0x0000000000000000000000000000000000000003"
+    },
+    "origin_available": true,
+    "predecessor_controller": null,
+    "successor_controller": null,
+    "handoff_destination_controller": null,
+    "peer_deployments_verified": false,
+    "claims_available_by_lifecycle": true,
+    "transfers_available_by_lifecycle": true,
+    "new_economic_work_available_by_lifecycle": true,
+    "scope": "Confirmed same-chain lifecycle only. Flags are lifecycle permissions, not execution guarantees. Peer addresses are source commitments; no peer code or cross-chain finality is verified."
+  },
+  "provenance": {
+    "block_number": 99,
+    "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "block_timestamp": 990,
+    "observed_head": 110,
+    "confirmations": 12,
+    "configuration_sha256": "30af9581ba86e0b5569b03d1a01eed4aac1894ce80c20c6fee4da066698b4040",
+    "finality": "confirmation_depth_only"
+  },
+  "scope": "Chunk only. All inventory chunks at the same block are required for total attached LP. Activated counts eligibility, including parked/remote NFTs. Missing valuation is not zero."
+}
