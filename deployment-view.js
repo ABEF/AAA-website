@@ -22,6 +22,12 @@ export function renderPositionAmounts(n){
   const amount=nativeRewards(n),pending=['lp','royalties'].some(k=>n.claimable[k].some(a=>a.asset!==ZERO&&(a.raw===null||raw(a.raw)>0n)));
   return lp+history+`<div class="position-reward-total"><span>Rewards to claim</span><strong>${amount===null?'Unavailable':e(units(amount))+' ETH'}</strong></div>`+(pending?'<p class="small-note">Additional source-token rewards await conversion or verification.</p>':'');
 }
+export function earnedUSD(report,period,collection=false){
+  const totals=report?.[period+'_usd_at_current_price_18'];
+  const fields=collection?['lp_owner_allocated','lp_collective_allocated','royalties_allocated']:['lp_individual','lp_collective','royalties'];
+  if(!report?.available||!totals||fields.some(k=>totals[k]===null||totals[k]===undefined))return null;
+  return fields.reduce((sum,k)=>sum+raw(totals[k]),0n).toString();
+}
 export function createDeploymentView(config){
   const link=document.createElement('link');link.rel='stylesheet';link.href='./local-view.css';document.head.append(link);
   const bar=document.createElement('div');bar.className='container local-status';bar.innerHTML='<span role="status">Checking reviewed deployment…</span><button type="button" class="text-link" data-deployment-refresh>Refresh ↻</button>';document.querySelector('main').before(bar);
@@ -38,7 +44,7 @@ export function createDeploymentView(config){
   let transactions=null,review=null,stage=null,reviewTimer=null;
   const localSigning=m.environment==='rehearsal'&&m.chain_id===31337&&new URL(m.rpc_url).protocol==='http:'&&new URL(m.rpc_url).hostname==='127.0.0.1';
   const session=new DeploymentSession({storage:store,key:'popl-deployment-address:'+m.id,onChange:()=>{
-    sequence++;quoteSequence++;page=0;totalController?.abort();totalController=null;totals=null;totalBusy=false;renderMetrics();review=null;api.cancel();snapshot=null;busy=false;preparing=false;error=null;dialog.close();$('#nft-dialog').close();render();
+    sequence++;quoteSequence++;page=0;totalController?.abort();totalController=null;totals=null;totalBusy=false;earnings=null;earningsBusy=false;renderMetrics();review=null;api.cancel();snapshot=null;busy=false;preparing=false;error=null;dialog.close();$('#nft-dialog').close();render();
     if(!session.busy&&session.account)void refresh();
   }});
   if(localSigning)transactions=new DeploymentTransactions(api,session,{onChange:()=>render(),onProgress:value=>{
@@ -79,29 +85,46 @@ export function createDeploymentView(config){
   }
   function renderMint(){
     const button=$('#mint-submit');if(!button)return;
+    if(m.environment==='production'){button.type='button';button.disabled=true;button.textContent='Mint on OpenSea';text('#mint-message','Minting is planned on OpenSea. This page demonstrates the NFT; the verified collection link will be added before launch.');return;}
     button.type='button';button.disabled=busy||preparing||transactions?.busy||Boolean(pending())||session.busy||Boolean(readiness?.new_minting_stopped)||readiness?.minted>=1000;
     button.textContent=transactions?.busy?(review?.requested_action==='mint'?(stage==='wallet'?'Confirm mint in wallet…':'Checking mint confirmation…'):'Wallet operation in progress…'):preparing?'Preparing review…':busy?'Reading confirmed state…':session.account?(localSigning?'Review mint ↗':'Review unsigned mint ↗'):'Connect wallet ↗';
     text('#mint-message','0.05 ETH mint price. Network gas is separate. '+(localSigning?'Local Anvil only; confirm each send in your wallet.':'This profile does not submit transactions.'));
     if(readiness){text('#mint-supply',readiness.minted+' / 1,000');text('#mint-remaining',(1000-readiness.minted)+' remaining');}
   }
-  let totals=null,totalController=null,totalBusy=false;
+  let totals=null,totalController=null,totalBusy=false,earnings=null,earningsBusy=false,collection=null,collectionBusy=false,collectionController=null,collectionSequence=0;
   const totalsFrame=document.createElement('div');totalsFrame.className='metric-grid deployment-wallet-totals';
   totalsFrame.innerHTML='<article><span class="stat-label">LP ATTACHED · ALL YOUR NFTs</span><strong data-wallet-total="lp">Unavailable</strong><span data-wallet-total-note></span></article><article class="claim-metric"><span class="stat-label">READY TO CLAIM · ETH</span><strong data-wallet-total="eth">Unavailable</strong><span>LP rewards + royalties · source tokens excluded</span></article>';
+  totalsFrame.insertAdjacentHTML('beforeend','<article><span class="stat-label">EARNINGS · LAST 24H</span><strong data-wallet-earned="last_24h">Unavailable</strong><span>LP rewards + royalties · current prices</span></article><article><span class="stat-label">EARNINGS · ALL TIME</span><strong data-wallet-earned="all_time">Unavailable</strong><span>History of currently held NFTs, including past owners</span></article>');
   $('#portfolio-connected .portfolio-account').after(totalsFrame);
+  const collectionFrame=document.createElement('div');collectionFrame.className='metric-grid deployment-collection-earnings';
+  collectionFrame.innerHTML='<article><span class="stat-label">HOLDER ALLOCATIONS · LAST 24H</span><strong data-collection-earned="last_24h">Unavailable</strong></article><article><span class="stat-label">HOLDER ALLOCATIONS · ALL TIME</span><strong data-collection-earned="all_time">Unavailable</strong></article><p class="small-note" data-collection-earned-note></p>';
+  $('[data-view="collection"] .collection-filters').before(collectionFrame);
   function renderMetrics(){
     $$('[data-metric]').forEach(n=>n.textContent='Unavailable');
+    for(const period of ['all_time','last_24h'])text(`[data-wallet-earned="${period}"]`,earningsBusy?'Reading earnings…':usd(earnedUSD(earnings,period)));
     text('[data-wallet-total="lp"]',totalBusy?'Reading all holdings…':usd(totals?.lp_usd_18??null));
     text('[data-wallet-total="eth"]',totalBusy?'Reading all holdings…':totals?.claimable_eth_wei!=null?units(totals.claimable_eth_wei)+' ETH':'Unavailable');
     text('[data-wallet-total-note]',totals?`${totals.count} NFTs · confirmed block ${totals.provenance.block_number}`:'Complete confirmed wallet snapshot required');
   }
   async function refreshTotals(data,current,owner){
-    totalController?.abort();totalController=new AbortController();const controller=totalController;totalBusy=true;totals=null;renderMetrics();
+    totalController?.abort();totalController=new AbortController();const controller=totalController;totalBusy=true;totals=null;earnings=null;earningsBusy=true;renderMetrics();
     try{const result=await api.walletTotals(data.inventory,{signal:controller.signal});if(current===sequence&&owner===session.account&&!controller.signal.aborted)totals=result;}
     catch{/* A partial or failed snapshot is never a portfolio total. */}
     finally{if(totalController===controller){totalBusy=false;renderMetrics();}}
+    if(controller.signal.aborted||current!==sequence||owner!==session.account)return;
+    try{const result=await api.walletEarnings(data.inventory,{signal:controller.signal});if(current===sequence&&owner===session.account&&!controller.signal.aborted)earnings=result;}
+    catch{/* Missing history/prices must not hide healthy current balances or become zero. */}
+    finally{if(totalController===controller){earningsBusy=false;renderMetrics();}}
+  }
+  async function refreshCollection(){
+    collectionController?.abort();const controller=new AbortController(),revision=++collectionSequence;collectionController=controller;collectionBusy=true;collection=null;renderCollection();
+    try{const result=await api.collectionEarnings({signal:controller.signal});if(revision===collectionSequence&&!controller.signal.aborted)collection=result;}catch{}
+    finally{if(revision===collectionSequence){collectionBusy=false;renderCollection();}}
   }
   function renderCollection(){
-    text('#result-count','Collection inventory not configured');$('#positions-body').innerHTML='<tr><td colspan="5">Use My NFTs for your confirmed positions. Full collection aggregation is not enabled in this review profile.</td></tr>';
+    for(const period of ['all_time','last_24h'])text(`[data-collection-earned="${period}"]`,collectionBusy?'Reading allocations…':usd(earnedUSD(collection,period,true)));
+    text('[data-collection-earned-note]',collection?`LP holder + collective allocations and allocated royalties at current prices · block ${collection.provenance.block_number}. Includes ledger rounding dust; excludes compounding, buyback and quarantined funds. Earnings already claimed remain included.`:'Complete confirmed history and reviewed prices required.');
+    text('#result-count','Collection inventory not configured');$('#positions-body').innerHTML='<tr><td colspan="5">Use My NFTs for your confirmed positions. The collection position listing is not enabled in this profile. Confirmed holder allocations are shown above.</td></tr>';
   }
   const artFor=n=>n.traits_ready&&n.position.evolution_value_available?findArtwork(`${COLORWAYS[n.traits.palette]?.id}-${PATTERNS[n.traits.pattern]?.id}-${n.traits.rarity.toLowerCase()}-${n.position.evolution}`):null;
   function traits(n){const art=artFor(n);return n.traits_ready?`<strong>${e(n.traits.rarity)}</strong><span>${e(art?.colorStyle||'')}</span>${paletteTrait(COLORWAYS[n.traits.palette].colors)}${royaltyTrait(n)}`:'<span>Awaiting verified reveal</span>';}
@@ -119,9 +142,9 @@ export function createDeploymentView(config){
   }
   function render(){updateWallet();renderPortfolio();recovery.hidden=!pending();recovery.disabled=Boolean(transactions?.busy);network.hidden=!localSigning||!session.account;network.disabled=Boolean(transactions?.busy)||Boolean(pending());}
   async function refresh({keepDialog=false}={}){
-    if(transactions?.busy)return;const current=++sequence,owner=session.account;api.cancel();totalController?.abort();totalController=null;totals=null;totalBusy=false;renderMetrics();busy=true;error=null;if(!keepDialog){review=null;dialog.close();}render();
+    if(transactions?.busy)return;const current=++sequence,owner=session.account;api.cancel();totalController?.abort();totalController=null;totals=null;totalBusy=false;earnings=null;earningsBusy=false;renderMetrics();busy=true;error=null;if(!keepDialog){review=null;dialog.close();}render();
     try{
-      const ready=await api.readiness();if(current!==sequence)return;readiness=ready;
+      const ready=m.environment==='rehearsal'?await api.readiness():null;if(current!==sequence)return;readiness=ready;
       const data=owner?await api.portfolio(owner,page):(await api.protocol(),null);
       if(current!==sequence||owner!==session.account)return;// A refresh must not publish a pending contribution's new artwork before
       // its canonical Entry receipt and LP position have been reconciled.
@@ -210,7 +233,7 @@ export function createDeploymentView(config){
     if(b.matches('[data-connect]'))return openWallet();
     if(b.matches('[data-deployment-provider]'))return void connect(Number(b.dataset.deploymentProvider));
     if(b.matches('[data-deployment-account]'))return void session.select(b.dataset.deploymentAccount).then(()=>$('#wallet-dialog').close()).catch(err=>status(err.message,true));
-    if(b.matches('[data-deployment-refresh]'))return void refresh();
+    if(b.matches('[data-deployment-refresh]')){if(location.hash==='#collection')void refreshCollection();return void refresh();}
     if(b.matches('[data-deployment-close]')){review=null;dialog.close();return;}
     if(b.matches('[data-deployment-id]'))return details(b.dataset.deploymentId,b.hasAttribute('data-deployment-grow'));
     if(b.matches('[data-deployment-claim]'))return void prepare({action:'claim',ids:[b.dataset.deploymentClaim]});
@@ -221,7 +244,8 @@ export function createDeploymentView(config){
   },true);
   document.addEventListener('submit',event=>{const f=event.target;if(!f.matches('[data-deployment-contribution]'))return;event.preventDefault();event.stopImmediatePropagation();if(!f.reportValidity())return;void prepare({action:f.dataset.action,id:f.dataset.deploymentContribution,amount:f.elements.amount.value,asset:f.elements.asset.value});},true);
   document.addEventListener('change',event=>{const f=event.target.closest('[data-deployment-contribution]');if(!f||event.target.name!=='asset')return;f.elements.consent.checked=false;if(f.dataset.action==='activate')void quote(f);});
-  window.addEventListener('hashchange',()=>{quoteSequence++;review=null;dialog.close();$('#nft-dialog').close();});
-  window.addEventListener('pagehide',()=>{sequence++;api.cancel();dialog.close();});
+  window.addEventListener('hashchange',()=>{if(location.hash==='#collection')void refreshCollection();else {collectionSequence++;collectionController?.abort();collectionController=null;collection=null;collectionBusy=false;}quoteSequence++;review=null;dialog.close();$('#nft-dialog').close();});
+  window.addEventListener('pagehide',()=>{sequence++;api.cancel();totalController?.abort();collectionSequence++;collectionController?.abort();dialog.close();});
+  if(location.hash==='#collection')void refreshCollection();
   return {updateWallet,renderPortfolio,renderMetrics,renderCollection,renderMint,openWallet,refresh,setProviders:items=>{providers=items;walletOptions();void session.restore(items);}};
 }

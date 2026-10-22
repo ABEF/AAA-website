@@ -1,0 +1,479 @@
+{
+  "wallet": {
+    "available": true,
+    "scope": "wallet_chunk",
+    "all_time": [
+      {
+        "asset": "0x0000000000000000000000000000000000000000",
+        "symbol": "ETH",
+        "decimals": 18,
+        "lp_individual_raw": "0",
+        "lp_collective_raw": "0",
+        "royalties_raw": "100",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_individual": "0",
+          "lp_collective": "0",
+          "royalties": null
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000014",
+        "symbol": "ZZZ",
+        "decimals": 18,
+        "lp_individual_raw": "80",
+        "lp_collective_raw": "10",
+        "royalties_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_individual": null,
+          "lp_collective": null,
+          "royalties": "0"
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000015",
+        "symbol": "USDC",
+        "decimals": 6,
+        "lp_individual_raw": "0",
+        "lp_collective_raw": "0",
+        "royalties_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_individual": "0",
+          "lp_collective": "0",
+          "royalties": "0"
+        }
+      }
+    ],
+    "last_24h": [
+      {
+        "asset": "0x0000000000000000000000000000000000000000",
+        "symbol": "ETH",
+        "decimals": 18,
+        "lp_individual_raw": "0",
+        "lp_collective_raw": "0",
+        "royalties_raw": "100",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_individual": "0",
+          "lp_collective": "0",
+          "royalties": null
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000014",
+        "symbol": "ZZZ",
+        "decimals": 18,
+        "lp_individual_raw": "80",
+        "lp_collective_raw": "10",
+        "royalties_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_individual": null,
+          "lp_collective": null,
+          "royalties": "0"
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000015",
+        "symbol": "USDC",
+        "decimals": 6,
+        "lp_individual_raw": "0",
+        "lp_collective_raw": "0",
+        "royalties_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_individual": "0",
+          "lp_collective": "0",
+          "royalties": "0"
+        }
+      }
+    ],
+    "window": {
+      "after_timestamp_exclusive": -1,
+      "through_timestamp_inclusive": 990
+    },
+    "event_count": 10,
+    "clock": "on-chain processing/allocation time",
+    "rounding": "Exact 1e36 ledger indexes; NFT whole units enter the period when carried fractions cross one raw unit.",
+    "unprocessed_revenue_included": false,
+    "claims_and_conversions_are_income": false,
+    "all_time_usd_at_current_price_18": {
+      "lp_individual": null,
+      "lp_collective": null,
+      "royalties": null
+    },
+    "last_24h_usd_at_current_price_18": {
+      "lp_individual": null,
+      "lp_collective": null,
+      "royalties": null
+    },
+    "usd_valuation": "Original earned currencies marked at the current confirmed snapshot; not historical USD, realized proceeds or current claimable value.",
+    "schema": 1,
+    "chain_id": 31337,
+    "wallet": "0x000000000000000000000000000000000000001e",
+    "nft_contract": "0x0000000000000000000000000000000000000002",
+    "inventory_sha256": "e9a643e8cab66ee47e00fc353c50bb2b0c492b60e4ff04c9f8ecd8f4f68e62e0",
+    "count": 1,
+    "offset": 0,
+    "chunk_size": 16,
+    "token_ids": [
+      "57668834953523417335750805724198894159101674408155280880167464608522245860580"
+    ],
+    "next_offset": null,
+    "ownership_scope": "Lifetime earnings of NFTs owned at this snapshot, including earlier owners; not personal wallet income.",
+    "lifecycle": {
+      "state": "operating",
+      "state_code": 0,
+      "handoff_phase": "idle",
+      "preparation_active": false,
+      "paused": false,
+      "origin": {
+        "chain_id": 31337,
+        "vault": "0x0000000000000000000000000000000000000003"
+      },
+      "origin_available": true,
+      "predecessor_controller": null,
+      "successor_controller": null,
+      "handoff_destination_controller": null,
+      "peer_deployments_verified": false,
+      "claims_available_by_lifecycle": true,
+      "transfers_available_by_lifecycle": true,
+      "new_economic_work_available_by_lifecycle": true,
+      "scope": "Confirmed same-chain lifecycle only. Flags are lifecycle permissions, not execution guarantees. Peer addresses are source commitments; no peer code or cross-chain finality is verified."
+    },
+    "provenance": {
+      "block_number": 99,
+      "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "block_timestamp": 990,
+      "observed_head": 110,
+      "confirmations": 12,
+      "configuration_sha256": "c024ef4efef590a41eb4848d93c953ab568e5d76ca527b1ebea92ab699000de8",
+      "epochs": [
+        {
+          "controller": "0x0000000000000000000000000000000000000001",
+          "history": {
+            "available": true,
+            "from_block": 10,
+            "start_block_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "start_parent_hash": "0x00000000000000000000000000000000000000000000000000000000000186a9",
+            "through_block": 99,
+            "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "indexer_next_block": 100,
+            "logs_examined": 10,
+            "claim_events": 0,
+            "royalty_conversion_events": 0,
+            "lp_conversion_events": 0,
+            "minted_count": 2,
+            "scope": "All owners and all prior claims through the exact confirmed block, per NFT and asset.",
+            "completeness": "Operator-maintained complete indexer ingestion; SQLite is not a cryptographic log-completeness proof."
+          },
+          "activation_cutoff": null
+        }
+      ],
+      "finality": "confirmation_depth_only",
+      "completeness": "Complete configured indexed history and pinned RPC reconciliation; not a log-completeness proof."
+    }
+  },
+  "collection": {
+    "available": true,
+    "scope": "collection",
+    "all_time": [
+      {
+        "asset": "0x0000000000000000000000000000000000000000",
+        "symbol": "ETH",
+        "decimals": 18,
+        "lp_processed_raw": "0",
+        "lp_owner_allocated_raw": "0",
+        "lp_collective_allocated_raw": "0",
+        "lp_compounding_allocated_raw": "0",
+        "lp_buyback_allocated_raw": "0",
+        "lp_collective_quarantined_raw": "0",
+        "royalties_received_raw": "100",
+        "royalties_allocated_raw": "100",
+        "royalties_quarantined_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_processed": "0",
+          "lp_owner_allocated": "0",
+          "lp_collective_allocated": "0",
+          "lp_compounding_allocated": "0",
+          "lp_buyback_allocated": "0",
+          "lp_collective_quarantined": "0",
+          "royalties_received": null,
+          "royalties_allocated": null,
+          "royalties_quarantined": "0"
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000014",
+        "symbol": "ZZZ",
+        "decimals": 18,
+        "lp_processed_raw": "100",
+        "lp_owner_allocated_raw": "80",
+        "lp_collective_allocated_raw": "10",
+        "lp_compounding_allocated_raw": "5",
+        "lp_buyback_allocated_raw": "5",
+        "lp_collective_quarantined_raw": "0",
+        "royalties_received_raw": "0",
+        "royalties_allocated_raw": "0",
+        "royalties_quarantined_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_processed": null,
+          "lp_owner_allocated": null,
+          "lp_collective_allocated": null,
+          "lp_compounding_allocated": null,
+          "lp_buyback_allocated": null,
+          "lp_collective_quarantined": "0",
+          "royalties_received": "0",
+          "royalties_allocated": "0",
+          "royalties_quarantined": "0"
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000015",
+        "symbol": "USDC",
+        "decimals": 6,
+        "lp_processed_raw": "0",
+        "lp_owner_allocated_raw": "0",
+        "lp_collective_allocated_raw": "0",
+        "lp_compounding_allocated_raw": "0",
+        "lp_buyback_allocated_raw": "0",
+        "lp_collective_quarantined_raw": "0",
+        "royalties_received_raw": "0",
+        "royalties_allocated_raw": "0",
+        "royalties_quarantined_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_processed": "0",
+          "lp_owner_allocated": "0",
+          "lp_collective_allocated": "0",
+          "lp_compounding_allocated": "0",
+          "lp_buyback_allocated": "0",
+          "lp_collective_quarantined": "0",
+          "royalties_received": "0",
+          "royalties_allocated": "0",
+          "royalties_quarantined": "0"
+        }
+      }
+    ],
+    "last_24h": [
+      {
+        "asset": "0x0000000000000000000000000000000000000000",
+        "symbol": "ETH",
+        "decimals": 18,
+        "lp_processed_raw": "0",
+        "lp_owner_allocated_raw": "0",
+        "lp_collective_allocated_raw": "0",
+        "lp_compounding_allocated_raw": "0",
+        "lp_buyback_allocated_raw": "0",
+        "lp_collective_quarantined_raw": "0",
+        "royalties_received_raw": "100",
+        "royalties_allocated_raw": "100",
+        "royalties_quarantined_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_processed": "0",
+          "lp_owner_allocated": "0",
+          "lp_collective_allocated": "0",
+          "lp_compounding_allocated": "0",
+          "lp_buyback_allocated": "0",
+          "lp_collective_quarantined": "0",
+          "royalties_received": null,
+          "royalties_allocated": null,
+          "royalties_quarantined": "0"
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000014",
+        "symbol": "ZZZ",
+        "decimals": 18,
+        "lp_processed_raw": "100",
+        "lp_owner_allocated_raw": "80",
+        "lp_collective_allocated_raw": "10",
+        "lp_compounding_allocated_raw": "5",
+        "lp_buyback_allocated_raw": "5",
+        "lp_collective_quarantined_raw": "0",
+        "royalties_received_raw": "0",
+        "royalties_allocated_raw": "0",
+        "royalties_quarantined_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_processed": null,
+          "lp_owner_allocated": null,
+          "lp_collective_allocated": null,
+          "lp_compounding_allocated": null,
+          "lp_buyback_allocated": null,
+          "lp_collective_quarantined": "0",
+          "royalties_received": "0",
+          "royalties_allocated": "0",
+          "royalties_quarantined": "0"
+        }
+      },
+      {
+        "asset": "0x0000000000000000000000000000000000000015",
+        "symbol": "USDC",
+        "decimals": 6,
+        "lp_processed_raw": "0",
+        "lp_owner_allocated_raw": "0",
+        "lp_collective_allocated_raw": "0",
+        "lp_compounding_allocated_raw": "0",
+        "lp_buyback_allocated_raw": "0",
+        "lp_collective_quarantined_raw": "0",
+        "royalties_received_raw": "0",
+        "royalties_allocated_raw": "0",
+        "royalties_quarantined_raw": "0",
+        "current_price": {
+          "available": false,
+          "usd_per_token_18": null,
+          "reason": "price_not_configured"
+        },
+        "usd_at_current_price_18": {
+          "lp_processed": "0",
+          "lp_owner_allocated": "0",
+          "lp_collective_allocated": "0",
+          "lp_compounding_allocated": "0",
+          "lp_buyback_allocated": "0",
+          "lp_collective_quarantined": "0",
+          "royalties_received": "0",
+          "royalties_allocated": "0",
+          "royalties_quarantined": "0"
+        }
+      }
+    ],
+    "window": {
+      "after_timestamp_exclusive": -1,
+      "through_timestamp_inclusive": 990
+    },
+    "event_count": 10,
+    "clock": "on-chain processing/allocation time",
+    "rounding": "Exact 1e36 ledger indexes; NFT whole units enter the period when carried fractions cross one raw unit.",
+    "unprocessed_revenue_included": false,
+    "claims_and_conversions_are_income": false,
+    "all_time_usd_at_current_price_18": {
+      "lp_processed": null,
+      "lp_owner_allocated": null,
+      "lp_collective_allocated": null,
+      "lp_compounding_allocated": null,
+      "lp_buyback_allocated": null,
+      "lp_collective_quarantined": "0",
+      "royalties_received": null,
+      "royalties_allocated": null,
+      "royalties_quarantined": "0"
+    },
+    "last_24h_usd_at_current_price_18": {
+      "lp_processed": null,
+      "lp_owner_allocated": null,
+      "lp_collective_allocated": null,
+      "lp_compounding_allocated": null,
+      "lp_buyback_allocated": null,
+      "lp_collective_quarantined": "0",
+      "royalties_received": null,
+      "royalties_allocated": null,
+      "royalties_quarantined": "0"
+    },
+    "usd_valuation": "Original earned currencies marked at the current confirmed snapshot; not historical USD, realized proceeds or current claimable value.",
+    "schema": 1,
+    "chain_id": 31337,
+    "token_id": null,
+    "owner": null,
+    "lifecycle": {
+      "state": "operating",
+      "state_code": 0,
+      "handoff_phase": "idle",
+      "preparation_active": false,
+      "paused": false,
+      "origin": {
+        "chain_id": 31337,
+        "vault": "0x0000000000000000000000000000000000000003"
+      },
+      "origin_available": true,
+      "predecessor_controller": null,
+      "successor_controller": null,
+      "handoff_destination_controller": null,
+      "peer_deployments_verified": false,
+      "claims_available_by_lifecycle": true,
+      "transfers_available_by_lifecycle": true,
+      "new_economic_work_available_by_lifecycle": true,
+      "scope": "Confirmed same-chain lifecycle only. Flags are lifecycle permissions, not execution guarantees. Peer addresses are source commitments; no peer code or cross-chain finality is verified."
+    },
+    "provenance": {
+      "block_number": 99,
+      "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "block_timestamp": 990,
+      "observed_head": 110,
+      "confirmations": 12,
+      "configuration_sha256": "c024ef4efef590a41eb4848d93c953ab568e5d76ca527b1ebea92ab699000de8",
+      "epochs": [
+        {
+          "controller": "0x0000000000000000000000000000000000000001",
+          "history": {
+            "available": true,
+            "from_block": 10,
+            "start_block_hash": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "start_parent_hash": "0x00000000000000000000000000000000000000000000000000000000000186a9",
+            "through_block": 99,
+            "block_hash": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "indexer_next_block": 100,
+            "logs_examined": 10,
+            "claim_events": 0,
+            "royalty_conversion_events": 0,
+            "lp_conversion_events": 0,
+            "minted_count": 2,
+            "scope": "All owners and all prior claims through the exact confirmed block, per NFT and asset.",
+            "completeness": "Operator-maintained complete indexer ingestion; SQLite is not a cryptographic log-completeness proof."
+          },
+          "activation_cutoff": null
+        }
+      ],
+      "finality": "confirmation_depth_only",
+      "completeness": "Operator-maintained complete ingestion and pinned RPC; not a cryptographic log-completeness proof."
+    }
+  }
+}

@@ -173,6 +173,75 @@ export class DeploymentAPI {
     await this.provenance(anchor);if(signal?.aborted)fail('Wallet totals were cancelled');
     return {available:true,count:ids.length,wallet:owner,lp_usd_18:lpAvailable?lp.toString():null,claimable_eth_wei:ethAvailable?eth.toString():null,provenance:anchor};
   }
+
+  validateEarnings(report,scope){
+    if(report.schema!==1||report.chain_id!==this.manifest.chain_id||report.available!==true||report.scope!==scope||
+      report.claims_and_conversions_are_income!==false||report.unprocessed_revenue_included!==false||
+      report.clock!=='on-chain processing/allocation time'||
+      report.window?.through_timestamp_inclusive!==report.provenance?.block_timestamp||
+      report.window?.after_timestamp_exclusive!==Math.max(-1,report.provenance.block_timestamp-86400))fail('Invalid earnings accounting scope');
+    const fields=scope==='collection'?['lp_processed','lp_owner_allocated','lp_collective_allocated','lp_compounding_allocated','lp_buyback_allocated','lp_collective_quarantined','royalties_received','royalties_allocated','royalties_quarantined']:['lp_individual','lp_collective','royalties'];
+    for(const period of ['all_time','last_24h']){
+      const rows=report[period],seen=new Set(),totals=Object.fromEntries(fields.map(k=>[k,0n]));
+      if(!Array.isArray(rows)||rows.length!==this.manifest.reward_assets.length)fail('Incomplete earnings currencies');
+      for(const row of rows){
+        const asset=this.manifest.reward_assets.find(a=>a.address===row.asset),price=row.current_price;
+        if(!asset||seen.has(row.asset)||row.decimals!==asset.decimals||row.symbol!==asset.symbol||typeof price?.available!=='boolean'||!object(row.usd_at_current_price_18))fail('Invalid earnings currency');seen.add(row.asset);
+        const mark=price.available?raw(price.usd_per_token_18):null;
+        if(mark===0n||mark!==null&&mark>10n**36n||mark===null&&price.usd_per_token_18!==null)fail('Invalid earnings price');
+        for(const field of fields){
+          const amount=raw(row[field+'_raw']);
+          const value=mark===null?(amount===0n?0n:null):amount*mark/10n**BigInt(asset.decimals);
+          if(row.usd_at_current_price_18[field]!== (value===null?null:value.toString()))fail('Earnings value differs from original earned currency');
+          totals[field]=totals[field]===null||value===null?null:totals[field]+value;
+        }
+      }
+      for(const field of fields)if(report[period+'_usd_at_current_price_18']?.[field]!== (totals[field]===null?null:totals[field].toString()))fail('Incomplete earnings total');
+    }
+    for(const row of report.last_24h){const all=report.all_time.find(a=>a.asset===row.asset);
+      if(JSON.stringify(row.current_price)!==JSON.stringify(all.current_price)||fields.some(k=>raw(row[k+'_raw'])>raw(all[k+'_raw'])))fail('Earnings periods or prices differ');}
+    return report;
+  }
+  async collectionEarnings({signal}={}){
+    await this.identity();const result=this.validateEarnings(await this.request('/v1/earnings',undefined,signal),'collection');
+    await this.provenance(result.provenance);if(signal?.aborted)fail('Collection read cancelled');return result;
+  }
+  async walletEarnings(inventory,{signal}={}){
+    const {wallet:owner,token_ids:ids,provenance:anchor}=inventory;
+    if(inventory.available!==true||!ADDRESS.test(owner)||owner===ZERO||inventory.nft_contract!==this.manifest.contracts.nft.address||!Array.isArray(ids)||ids.length>1000||inventory.count!==ids.length||new Set(ids).size!==ids.length)fail('Invalid earnings inventory');
+    if(ids.some((id,i)=>raw(id)===0n||(i&&raw(ids[i-1])>=raw(id))))fail('Invalid ordered earnings inventory');
+    const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ids.join(','))))].map(n=>n.toString(16).padStart(2,'0')).join('');
+    const fields=['lp_individual','lp_collective','royalties'];let offset=0,result=null;
+    do{
+      if(signal?.aborted)fail('Earnings read cancelled');
+      const part=this.validateEarnings(await this.request(`/v1/wallets/${owner}/earnings/${anchor.block_number}/${offset}`,undefined,signal),'wallet_chunk');
+      await this.provenance(part.provenance);
+      const expected=ids.slice(offset,offset+16),next=offset+expected.length<ids.length?offset+expected.length:null;
+      if(part.wallet!==owner||part.nft_contract!==this.manifest.contracts.nft.address||part.inventory_sha256!==digest||part.count!==ids.length||part.chunk_size!==16||part.offset!==offset||part.next_offset!==next||JSON.stringify(part.token_ids)!==JSON.stringify(expected)||part.provenance.block_hash!==anchor.block_hash||part.provenance.block_number!==anchor.block_number||part.provenance.block_timestamp!==anchor.block_timestamp)fail('Earnings differ from complete confirmed holdings');
+      if(!ids.length&&['all_time','last_24h'].some(period=>part[period].some(row=>fields.some(k=>raw(row[k+'_raw'])!==0n))))fail('Empty holdings cannot have earnings');
+      if(!result)result=clone(part);
+      else for(const period of ['all_time','last_24h'])for(const row of result[period]){
+        const add=part[period].find(a=>a.asset===row.asset);
+        if(JSON.stringify(row.current_price)!==JSON.stringify(add.current_price))fail('Earnings price changed between chunks');
+        for(const field of fields)row[field+'_raw']=(raw(row[field+'_raw'])+raw(add[field+'_raw'])).toString();
+      }
+      offset=next;
+    }while(offset!==null);
+    // Sum exact earned raw amounts before USD rounding, never 63 rounded displays.
+    for(const period of ['all_time','last_24h']){
+      const values=Object.fromEntries(fields.map(k=>[k,0n]));
+      for(const row of result[period])for(const field of fields){
+        const amount=raw(row[field+'_raw']),price=row.current_price;
+        const value=price.available?amount*raw(price.usd_per_token_18)/10n**BigInt(row.decimals):amount===0n?0n:null;
+        row.usd_at_current_price_18[field]=value===null?null:value.toString();
+        values[field]=values[field]===null||value===null?null:values[field]+value;
+      }
+      result[period+'_usd_at_current_price_18']=Object.fromEntries(fields.map(k=>[k,values[k]===null?null:values[k].toString()]));
+    }
+    await this.provenance(anchor);if(signal?.aborted)fail('Earnings read cancelled');
+    delete result.offset;delete result.next_offset;delete result.chunk_size;
+    return {...result,scope:'wallet',token_ids:[...ids],inventory_sha256:digest};
+  }
   asset(symbol){const a=this.manifest.input_assets.find(a=>a.symbol===symbol&&a.enabled);if(!a)fail('This contribution asset is not enabled');return a;}
   async price(asset,p){
     const block=await this.provenance(p),oracle=this.manifest.contracts.oracle;
@@ -190,6 +259,7 @@ export class DeploymentAPI {
   async prepare(intent){
     const m=this.manifest,owner=intent?.account;
     if(!ADDRESS.test(owner)||owner===ZERO||!['mint','activate','increase','claim'].includes(intent.action))fail('Invalid selected action');
+    if(intent.action==='mint'&&m.environment!=='rehearsal')fail('Production minting is planned on OpenSea. This website mint page is a demonstration.');
     const protocol=await this.protocol();let payload,draft,expected,source=null,amount=null,claims=null;
     if(intent.action==='mint'){
       const r=await this.readiness();if(!protocol.minting.available_by_controls||r.new_minting_stopped||r.minted>=1000)fail('Minting is currently unavailable');

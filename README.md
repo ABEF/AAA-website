@@ -235,3 +235,19 @@ starts a separate real Anvil/API stack. Full-wallet LP and funded ETH totals use
 complete same-block chunks, independently of the eight-card page. Missing totals
 are unavailable, never zero. The shared signer stays local-only; public
 DEPLOYMENT remains null. Actual extension and production qualification remain open.
+
+## Production mint venue and earnings
+
+Production minting is intended for OpenSea. This website's Mint page is a
+demonstration; direct local minting remains an integration test tool. The reviewed
+production profile refuses direct mint preparation. The separately tracked OpenSea
+integration and collection URL must be qualified before launch. Activation, growth, positions and claims
+remain website responsibilities. Public signing is still disabled.
+
+The opt-in API profile displays 24h/all-time earnings for every currently held
+NFT, independent of the visible page, and collection holder allocations. Earnings
+include LP individual/collective shares and royalties at the confirmed current
+prices, including earlier owners' history. They are separate from claimable ETH.
+Missing chunks or nonzero-component prices mean unavailable, not zero. See the
+[operator definitions](https://github.com/ABEF/AAA/blob/main/docs/EARNINGS_HISTORY.md#current-holdings-totals)
+and [scoped evidence](https://github.com/ABEF/AAA/blob/main/reports/wallet-earnings/VERIFICATION.md).
