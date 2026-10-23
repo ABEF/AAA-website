@@ -1,3 +1,32 @@
+## Governed contract custody candidate - 2026-10-23
+
+Local follow-up: final affected custody/royalty/parking/access tests pass 64/64;
+33 source-object size gates pass (Migration runtime 23,754 bytes, 822 margin).
+The delayed local destination binding preserves the original exit/budget. Prior
+183-case accounting and 34-case canonical results retain their earlier source
+scope; this is not a fresh full regression or Anvil custody rehearsal. Read the
+verification and Git/publication record for status; production remains unapproved.
+
+Contract work replaces old LP v3 bridge/pair paths with governed external custody;
+whole-collection ownership/reward handoff is retained. Normal exit consolidates
+principal into ZZZ with its reviewed 3% budget. A separately approved raw emergency
+exit skips swaps/prices and has no USD-loss guarantee. Recipients may be EOAs or
+contracts, explicitly trusted by governance. Local completion requires real LP;
+remote delivery/return needs reviewed finality/closure proofs, not governance or
+timeout acknowledgement. No actual verifier/provider/remote ledger is supplied.
+Royalty currencies use separate full-balance custody; that currency's claims and
+valuation are unavailable until full backing returns. Restoration is not income.
+The current production inventory layout is explicitly blocked pending review.
+
+Read the contract [operator runbook](../zzz-protocol-v2-reviewed/zzz-protocol-v2/docs/GOVERNED_CUSTODY_HANDOFF.md)
+and [verification/publication record](../zzz-protocol-v2-reviewed/zzz-protocol-v2/reports/custody-handoff/VERIFICATION.md).
+Use those records/Git for exact checks and publication, not this note alone.
+Future live UI/API/keeper handling must expose pending custody safely and disclose
+the governance custody trust before public funds. Website code/server are unchanged.
+Keep shared signer Anvil-only and public DEPLOYMENT null. Preserve 8902/Anvil,
+NFTs/LP/balances/journals, paused monitoring and the temporary dist repair overlay;
+never build/deploy that overlay. Production is NOT APPROVED. Main only.
+
 ## Contract local pair-conversion checkpoint - 2026-10-23
 
 Contract main `f65292503cb18a1ddd1e363c4970607a16eb267c` is published:
