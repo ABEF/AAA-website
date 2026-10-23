@@ -1,3 +1,25 @@
+## Contract local pair-conversion checkpoint - 2026-10-23
+
+Contract main `f65292503cb18a1ddd1e363c4970607a16eb267c` is published:
+typed atomic local LP pair conversion, unchanged NFT shares/old rewards/inbox,
+selected historical compound conversion and protected incumbent NAV. Same-chain
+records carry composition epoch/current-token idle; composed buckets cannot use
+V3 principal bridging. Backend preparation recognizes current/legacy result ABIs
+and checks historical prices. See the contract repository's
+`reports/pair-composition/VERIFICATION.md` and `docs/PAIR_MIGRATION.md`.
+
+Evidence: 141 final affected Solidity cases, 176 backend/configuration cases and
+33 normal object gates. Real routes, composed controller cutover, future-chain
+accounting and independent approval remain open. Production is NOT APPROVED.
+
+This checkpoint changes repository memory only. Website code, shared signer and
+coordinator are unchanged; signing remains Anvil-only and public DEPLOYMENT null.
+No public deployment/transaction or server change. Last recorded static site
+code remains 9be6d11; no unchanged server verification was rerun. Preserve local
+8902/Anvil/NFT/LP state, user journals and the temporary dist repair overlay;
+never deploy that overlay. Monitoring remains paused. Main only; maintain the
+contract's sole Todo, feature evidence, operator manual, roadmap and both memories.
+
 ## Confirmed collection explorer - 2026-10-23
 
 Publication: backend `d1b11eb` and website `9be6d11` are on main. The static
