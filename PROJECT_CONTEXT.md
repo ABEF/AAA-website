@@ -1,3 +1,26 @@
+## Pricing documentation and reference snapshot - 2026-10-25
+
+Contract documentation `14ee92e` is pushed on main; see the
+[dated reference](https://github.com/ABEF/AAA/blob/main/reports/price-reference-20261025/OBSERVATION.md)
+and [operator manual](https://github.com/ABEF/AAA/blob/main/docs/OPERATOR_MANUAL.md).
+At 25 October 00:02:43 Paris, the candidate ETH feed showed $2,340.61 (updated
+24 October 22:01:14); ZZZ's approximately $0.01031019 was pool spot times ETH.
+These historical references are NOT configured PoPL oracle prices. Real source
+pairs, product/proxy independence and provider costs remain unqualified. Two
+proxies for the same upstream do not supply independence. No runtime prices or
+feed addresses were changed.
+
+Public push-feed getters need no separate per-read LINK transfer; on-chain reads
+consume gas and custom data/RPC/hosting costs can apply. The 500,000-gas call
+ceiling is not a flat fee. Post-seal immediate governance uses setDualFeed;
+setFeed is retired. The central Todo, latest gas margin and operator guidance
+are corrected. Existing source-bound tests are reused, not rerun.
+
+MEMORY ONLY: website source/build/server, existing8902/Anvil/NFT/LP/balances/
+journals/dist overlay, signer, services and paused monitoring are unchanged.
+Public DEPLOYMENT null; signing Anvil-only; production NOT APPROVED. Main only;
+retain the contract repository's sole Todo and preserve unrelated drafts.
+
 ## Contract on-chain safety and cost checkpoint - 2026-10-24
 
 Contract implementation `8d0234d` is pushed on main and remote-verified.
