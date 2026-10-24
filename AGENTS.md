@@ -1,3 +1,28 @@
+## Contract v4 routing and loss-policy publication - 2026-10-24
+
+Contract implementation59a2563 is pushed on main and its remote hash verified.
+The undeployed candidate adds typed hookless static v4 conversion for Entry and
+LP/royalty balances, with exact native settlement, pins, fixed parent output and
+preserved per-NFT accounting. Governance can change all three execution-loss
+categories to0..10%; defaults1% contribution/1% conversion/3% maintenance remain.
+Captured operations and original approved custody minima cannot be weakened by
+later changes. Gas and stricter venue/caller guards remain separate.
+
+Read [operator policy](https://github.com/ABEF/AAA/blob/main/docs/EXECUTION_LOSS_POLICY.md),
+[typed routes](https://github.com/ABEF/AAA/blob/main/docs/TYPED_V4_ROUTES.md) and
+[scoped evidence](https://github.com/ABEF/AAA/blob/main/reports/typed-v4-routes/VERIFICATION.md).
+83 distinct Solidity and112 Python passes across scoped runs,35 normal production
+size gates and131 source/test hashes are recorded; no full fresh regression or
+actual-provider qualification is claimed. Actual routes/feeds, native website/
+release inventory, ETH/WETH principal boundary, OpenSea mint, remote handoff and
+independent audit remain open. Production NOT APPROVED.
+
+This website commit changes repository memory only. No source/build/server,
+existing8902/Anvil/NFT/LP/balances/journals/dist overlay, signer or monitor change.
+Public DEPLOYMENT remains null, shared signer Anvil-only and monitoring paused.
+Preserve older drafts; main only. Contract Todo/features/operator/roadmap/memories
+are aligned; publication receipt records actual hashes separately.
+
 ## Bounded operating controls published - 2026-10-24
 
 Contract `143734c632eea5ae3a91cb43e490f457bd600261` is pushed on main and its
