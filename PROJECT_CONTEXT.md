@@ -1,3 +1,22 @@
+## Contract on-chain safety and cost checkpoint - 2026-10-24
+
+Contract implementation `8d0234d` is pushed on main and remote-verified.
+[Internal review](https://github.com/ABEF/AAA/blob/main/reports/onchain-safety/REVIEW.md)
+and [scoped verification](https://github.com/ABEF/AAA/blob/main/reports/onchain-safety/VERIFICATION.md)
+cover bounded sequencer reads, one memory-only pair snapshot per Strategy plan,
+packed contribution bounds and static-loop reward contexts. Exact rounding,
+owner/approval/LP settlement/final fingerprint guards and execution limits remain.
+145 distinct Solidity cases,83 backend checks,37 normal object gates and120
+source/test/script bindings are recorded, not a fresh full regression. Actual
+independent feeds, routes, gas/services and independent audit remain unqualified.
+
+This is MEMORY ONLY: no website source/build/server, signer, wallet coordinator,
+existing8902/Anvil/NFT/LP/balances/journals/dist overlay, service or monitor change.
+Public DEPLOYMENT null; signer Anvil-only; monitor paused. Production NOT APPROVED.
+Use main only and the contract repository's sole Todo/operator guide. Old local
+drafts remain outside publication. Contract publication receipt records status
+separately; no public financial action follows from these records.
+
 ## Contract pricing security publication - 2026-10-24
 
 Contract implementation `b5002df` is pushed on main. Read the contract
