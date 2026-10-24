@@ -1,3 +1,36 @@
+## Bounded operating controls published - 2026-10-24
+
+Contract `143734c632eea5ae3a91cb43e490f457bd600261` is pushed on main and its
+remote hash verified. Future VRF confirmations/callback gas can be tuned within
+existing bounds; provider/lane/subscription/payment and pending draws stay fixed.
+Buyback has a governance operating limit from zero through immutable maxTradeUSD;
+zero stops swaps/direct ZZZ burns before oracle or reserve access. Setters allow
+ordinary pause and reject preparation/canonical locks and reentry. Read
+[scope and evidence](https://github.com/ABEF/AAA/blob/main/reports/post-seal-controls/VERIFICATION.md)
+and [internal review](https://github.com/ABEF/AAA/blob/main/reports/post-seal-controls/REVIEW.md).
+
+Nine new VRF cases plus six affected existing cases and 35 distinct buyback cases
+pass across scoped runs, including only targeted test repairs/reruns. All 34
+production size gates pass (32 source objects unchanged); 78 compiler bindings
+match and 104 Solidity inputs typecheck. Inventory distinguishes fixed provider
+policy from the two mutable future fields. The event catalog retains all 103
+old descriptors and adds 16 current topics, including both new controls; retired
+descriptors do not enable old modules. No full fresh regression is claimed.
+
+Future tuning cannot repair an already-submitted VRF callback. Actual provider
+bounds/funding/recovery remain unqualified. Resize/remove keeper buyback tasks
+after lowering/stopping the cap to avoid intentional simulation failures/backoff.
+Successors review their own policy. Typed v4 conversion, native website/inventory,
+actual routes/feeds/services and independent audit remain open. Preserve 1%/3%
+execution limits and separate gas; production remains NOT APPROVED.
+
+This changes website memories only. Website source/build/server, existing 8902/
+Anvil/NFT/LP/balances/journals/dist overlay, signing and paused monitoring are
+unchanged. Public DEPLOYMENT is null; signer is Anvil-only. No private key access
+or public transaction. Main only; preserve old unrelated contract drafts. Keep
+sole Todo, features, roadmap, operator guide and both memories aligned; consult
+the separate contract operating-controls publication receipt for publication.
+
 ## Native ETH V2 contract candidate published - 2026-10-24
 
 Contract implementation `f907733e9d9fb7bcb31f930be3bc734e43138c25` is pushed on
