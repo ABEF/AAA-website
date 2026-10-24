@@ -1,3 +1,26 @@
+## Contract pricing security publication - 2026-10-24
+
+Contract implementation `b5002df` is pushed on main. Read the contract
+[pricing design/operator guide](https://github.com/ABEF/AAA/blob/main/docs/PRICE_SECURITY.md)
+and [source-scoped verification](https://github.com/ABEF/AAA/blob/main/reports/price-security/VERIFICATION.md).
+Two reviewed USD sources per priced asset and a fixed pre-pull Entry/Vault basis
+now protect contribution accounting. Actual owner/key/ticks/liquidity, raw
+spending and unchanged deployment spot are checked separately. The user selected
+3% feed disagreement (300bps); the separate default1% execution floor still
+applies. No average, stable peg, single-source or stale fallback is permitted.
+
+Current backend/preflight pricing_version2 is explicit with native accounting2,
+routing2 and15helper bindings. Actual feed pairs, ages, proxy/common-mode reviews,
+routes, operating gas/recovery and independent audit remain open. Fresh historical
+local scaffolds fail closed for incompatible current artifacts; existing8902,
+Anvil/NFT/LP/balances/journals/dist overlay are preserved. Source-scoped evidence
+is not a fresh full regression or production qualification.
+
+This website change is MEMORY ONLY. No website source/build/server, signer,
+wallet coordinator, service or monitor action. Public DEPLOYMENT remains null,
+signer Anvil-only and monitoring paused. Use main only and retain the contract
+repo's single Todo/operator guide as authoritative. Production NOT APPROVED.
+
 ## Contract native production-preflight publication - 2026-10-24
 
 Contract implementation7e6702d is pushed on main and its exact remote hash
