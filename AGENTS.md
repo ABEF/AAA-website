@@ -1,3 +1,31 @@
+## Contract native production-preflight publication - 2026-10-24
+
+Contract implementation7e6702d is pushed on main and its exact remote hash
+verified. The schema-5 native/accounting-V2/routing-V2/governed inventory and
+bounded read-only observer check exact core/helper bindings, approved versus
+actual pins, native identity, current caps and typed source/conversion policies.
+No missing read becomes zero or an approval. Historical qualification keeps its
+real tested block and current configuration/fee scope; current history and fresh
+observations remain separate. Legacy schema4 is not reinterpreted.
+
+[Runbook](https://github.com/ABEF/AAA/blob/main/docs/PRODUCTION_PREFLIGHT.md),
+[scoped verification](https://github.com/ABEF/AAA/blob/main/reports/native-preflight/VERIFICATION.md)
+and [internal review](https://github.com/ABEF/AAA/blob/main/reports/native-preflight/REVIEW.md)
+record73 distinct focused Python passes across scoped runs. The complete mock
+observer/gate composition is not actual-provider qualification. All131 prior
+contract/source bindings match; unchanged Solidity suites/build/sizes were
+reused, not rerun. Actual public deployments, authority wallets, feeds/routes,
+VRF/services/OpenSea/artwork, operating gas/recovery and independent audit remain
+open. The current example is blocked; production NOT APPROVED.
+
+This commit changes website repository memory only. No source/build/server,
+existing8902/Anvil/NFT/LP/balances/journals/dist overlay, signing or service
+change. Public DEPLOYMENT remains null; signer Anvil-only; monitoring paused.
+The current inventory excludes nonzero creator inboxes, legacy V1 import,
+cross-chain canonical activation and atomic ETH/WETH principal conversion.
+Main only; preserve older drafts. Sole Todo/features/operator/roadmap and both
+memories are updated; publication receipt retains exact commit identities.
+
 ## Contract v4 routing and loss-policy publication - 2026-10-24
 
 Contract implementation59a2563 is pushed on main and its remote hash verified.
