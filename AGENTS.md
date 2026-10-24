@@ -1,3 +1,38 @@
+## Pre-production internal audit - 2026-10-25
+
+MEMORY ONLY. Read [internal findings](https://github.com/ABEF/AAA/blob/main/reports/preproduction-audit-20261025/REVIEW.md) and
+[scoped verification](https://github.com/ABEF/AAA/blob/main/reports/preproduction-audit-20261025/VERIFICATION.md).
+Keeper now preserves the signing-time fee review before signing, binds actual
+chain/gas/max-fee, derives dynamic spend from signed caps/canonical base fee and
+enforces captured L1/total semantics. Preflight checks accounting version. Old
+pending records remain intact; missing original reviews need operator reconciliation,
+never guessed historical limits, deletion or resend. No existing journal was upgraded.
+
+Current native/schema-5 operations, captured/default loss floors, pause-versus-
+custody authority and retired bridge instructions are corrected in place. The
+operator/recovery guides, architecture, sole Todo, features, roadmap and release
+record align. New composed installed-v4 and repaired non-vacuous growth-invariant
+evidence is scoped with explicit local substitutes; no fresh full regression,
+real-service or independent audit approval is implied. Production NOT APPROVED.
+
+Two activation gates found in this audit remain open: selected-fee thin-market
+deployed-LP feasibility, and versioned caller maximum-loss binding. Current
+Entry captures execution-time policy, not the earlier reviewed cap. Do not
+promise review-pinned1% or enable public activation before this is resolved.
+Keep safety floors; the explicit thin-market rejection must roll back all
+economic changes, with earlier approval/gas correctly distinguished.
+
+No new unprivileged theft/replay exploit was confirmed in inspected paths; accepted
+immediate governance/recipient trust, actual feeds/routes/VRF/authorities/OpenSea,
+native website/Linux operations, future-chain canonical transport and independent
+audit remain open. Vault's prior normal runtime margin is25bytes; no size/gas
+guard is relaxed. Solidity production source remains unchanged in this audit.
+
+Preserve unrelated drafts,8902/Anvil/NFT/LP/balances/journals/dist overlay,
+Anvil-only signing/null public DEPLOYMENT and paused monitoring. No website
+source/build/server/service, public transaction, deployment or monitor action.
+Main only. Inspect Git and the audit publication receipt for actual push status.
+
 ## Pricing documentation and reference snapshot - 2026-10-25
 
 Contract documentation `14ee92e` is pushed on main; see the
