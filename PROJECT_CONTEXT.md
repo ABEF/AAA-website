@@ -1,3 +1,31 @@
+## Native ETH V2 contract candidate published - 2026-10-24
+
+Contract implementation `f907733e9d9fb7bcb31f930be3bc734e43138c25` is pushed on
+main and its remote hash verified. It supersedes the older unimplemented-port
+notes below. Actual ETH now spans Entry/Vault/manager, indexed fees, reserves,
+claims, buyback, raw custody exit/return and versioned canonical funding/abort.
+Explicit native API/keeper profiles preserve legacy WETH histories and journals.
+Read [scoped verification](https://github.com/ABEF/AAA/blob/main/reports/native-eth-port/VERIFICATION.md)
+and [internal review](https://github.com/ABEF/AAA/blob/main/reports/native-eth-port/REVIEW.md).
+
+Focused affected checks pass; repaired cases retain their scope, not a full fresh
+regression. All 34 production object gates pass. Adversarial maximum-domain freeze
+uses 11,713,754 gas under the unchanged 12M budget and preserves all 132 companion
+and 12 inbox prefunds through abort. 113 final source/test hashes match; production
+compiler bindings also match. No actual native market/provider is qualified.
+
+Preserve 1% contribution/reward conversion, 3% ordinary maintenance and separate gas.
+ZZZ needs a cheaper qualified conversion route. Atomic ETH/WETH conversion,
+legacy V1 canonical import, native website manifest, actual inventory/services,
+target-chain qualification and independent audit remain open. Production is NOT
+APPROVED. Public DEPLOYMENT stays null and the shared signer stays Anvil-only.
+
+This update changes website memories only: no source/build/server, existing 8902/
+Anvil/NFT/LP/balances/journals/dist overlay, signing policy or paused monitor
+change. Main only; preserve older unrelated contract drafts. Maintain the sole
+contract Todo, feature evidence, roadmap, operator guide and both memories.
+Publication is recorded separately in the contract native-port receipt.
+
 ## Audit checkpoint published - 2026-10-24
 
 Contract audit fixes and native-design review `e6b5872` are pushed on main.
