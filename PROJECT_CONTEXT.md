@@ -1,3 +1,22 @@
+## Contract services and callable-reference checkpoint - 2026-10-25
+
+Contract-side optional Pyth reader, current mint/VRF qualification, frozen-review
+tooling and source-bound callable function documentation are updated. Read the
+contract repository's reports/release-services-20261025 review/verification and
+publication receipt for exact commit, scoped tests and remaining gates. The
+operator manual links all current reads/writes with inputs, outputs and roles.
+
+User selected OpenSea buyer total0.05ETH, recipient net after actual platform fee,
+gas separate. Existing direct mint still pays all0.05ETH; a compatible primary-
+drop implementation remains open. No provider, ZZZ source pair, updater, VRF,
+authority wallet or independent audit is approved. Source/runtime presence and
+an exported review bundle do not supply those approvals.
+
+This website update is MEMORY ONLY. Source/build/server, dist repair overlay,
+8902/Anvil/NFT/LP/balances/journals and paused monitoring remain unchanged.
+Shared signer/client/coordinator remain unchanged and Anvil-only; public
+DEPLOYMENT is null. Main only; preserve unrelated drafts. Production NOT APPROVED.
+
 ## Native readiness publication checkpoint - 2026-10-25
 
 Website implementation94510a6 and contract/backend89e91a0 are pushed on main;
