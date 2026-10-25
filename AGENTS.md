@@ -1,3 +1,37 @@
+## Reviewed contract contributions and resilient history - 2026-10-25
+
+MEMORY ONLY. Website source/build/server,8902/Anvil/NFT/LP/balances/journals/dist
+overlay, signer and paused monitor are unchanged. Read the contract
+[review](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-improvement-20261025/REVIEW.md),
+[coverage](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-improvement-20261025/COVERAGE.md)
+and [verification](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-improvement-20261025/VERIFICATION.md).
+
+The undeployed native pricingV2 candidate now requires explicit reviewed EntryV1:
+executeReviewed(Request,uint16 maximumLossBps), Entry.REVIEW_POLICY_VERSION1 and
+Pricing.ENTRY_REVIEW_VERSION1. New execute legacy calls revert. API/config/trace/
+schema5inventory use review_policy_version1 and new exact selectors; response
+reviewed_maximum_loss_bps differs from actual execution_limit_bps, provenance
+carries review version. Legacy pricing1/local responses and saved journals retain
+their original shape/ABI. Never silently reinterpret old profiles or fall back.
+
+Current website historical profile still has1%/old Entry selector; matching native
+V2 review/wallet integration remains OPEN before public signing. Preserve its
+strict rejection of incompatible runtime and Anvil-only signer; public DEPLOYMENT
+stays null. No production wallet capability or service configuration was enabled.
+
+Contract candidate also fixes fixed revealed rarity weight1/2/3 versus dormant
+economic eligibility0 (separate royalty_activated flag), upper-bound buyback USD
+ceilings, atomic proven-ancestor indexer rollback and no-redirect/closed-error RPC.
+Defaults2%contribution/1%conversion/3%maintenance, maxima10%, gas separate. Final
+normal37size gates pass across42sources; Registry818initcode margin, Vault57runtime
+margin. Exact scoped tests and reuse limits belong to the verification receipt,
+not a blanket full-regression/independent audit claim. Real services/feeds/routes/
+VRF/authorities/OpenSea/artwork/economics/operations/audit remain open.
+
+The sole Todo, features, roadmap/release and operator manual are updated in the
+contract repo. Main only; preserve unrelated drafts. Local saves, commit, push and
+deployment are distinct; check Git and publication receipt. Production NOT APPROVED.
+
 ## Liquidity operations and keeper presets - 2026-10-25
 
 MEMORY ONLY. No website code/build/server change. Read [scoped verification](https://github.com/ABEF/AAA/blob/main/reports/liquidity-operations-20261025/VERIFICATION.md),
