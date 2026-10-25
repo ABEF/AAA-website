@@ -1,3 +1,15 @@
+## Native readiness publication checkpoint - 2026-10-25
+
+Website implementation94510a6 and contract/backend89e91a0 are pushed on main;
+remote hashes verified. Contract repo reports/native-readiness-20261025/PUBLICATION.md
+records exact scope.119final affected JS and4isolated browser checks pass;
+earlier121retain pre-review scope.5,599-file external build passed;5,598 existing
+dist files/repair overlay are unchanged. Shared signer/client/coordinator remain
+byte-identical and Anvil-only, public DEPLOYMENT null. No static server/service,
+8902/Anvil/NFT/LP/balance/journal or paused monitor action. Real native wallets/
+providers/feeds/routes/VRF/authorities/OpenSea/operations/audit remain open.
+Preserve main-only workflow, unrelated drafts and both project memories.
+
 ## Native-V2 read/unsigned integration - 2026-10-25
 
 The user explicitly approved applying the local native website integration.
