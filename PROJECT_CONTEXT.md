@@ -1,3 +1,23 @@
+## Contract architecture pruning - 2026-10-25
+
+Contract candidate now uses accounting3/local8wordPositions, localstatus0..4,
+directgovernance2 and canonicalLP_ONLY_V4. Removed scheduler/roles/genericexecutor,
+remote provenance, zeroassetbacking hooks, primaryfeed shadow and obsolete
+stablecoin/Pons input research.31contracts/608functions/13receive hooks.
+49distinct Solidity/512distinct Python methods pass across recorded scopes,
+127inputs typecheck/36normal gates; no freshfullregression/independentapproval.
+Access total42177/6975margin; Vault runtime22852/1724margin; RoyaltyFactory69tight.
+ETH/fixedZZZ inputs only; WETH/stable royalty/conversion and historical readers
+remain necessary. No integrated bridge; samechainhandoff/custody remain.
+
+This update is MEMORY ONLY. Existing website native2 profile needs explicit
+native3 integration/qualification; never relabel old contracts/Anvil/journals.
+Website source/build/server/dist overlay,8902/Anvil/NFT/LP/balances/journals,
+signer/services and paused monitor remain unchanged. Public DEPLOYMENT null,
+signing Anvil-only. No deployment/public transaction/seal. Main only. Source
+review/verification in contract reports/architecture-pruning-20261025; actual
+feeds/routes/VRF/authorities/OpenSea/operations/audit stay open. Production NOT APPROVED.
+
 ## One fixed ZZZ and contract day audit - 2026-10-25
 
 The contract candidate fixes ZZZ across activation, native pool admission,
