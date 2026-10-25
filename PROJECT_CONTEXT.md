@@ -1,3 +1,26 @@
+## Contract ETH/ZZZ simplification - 2026-10-25
+
+Contract candidate accepts only native ETH and fixed, once-before-seal ZZZ for
+activation/growth. Normal exit converts to ZZZ; explicit raw exit sends actual
+ETH/ZZZ. Contribution and normal-exit setup must match before sealing. New token
+migration uses custody exit and a fresh reviewed deployment, not rebinding ZZZ.
+Marketplace royalty currencies remain separate.
+
+Creator inboxes and integrated cross-chain/proof intake are removed; same-chain
+pool moves, trusted custody return, royalties and complete collection handoff
+remain. Current profiles use fee-intake1/custody2/LP-only V3 and15 helpers
+(including the fixed noncustodial source-policy factory). Historical deployments,
+events and journals keep old profiles. Read contract reports/simplification-20261025
+for exact source scopes,89 distinct Solidity behaviors, backend/API evidence,
+normal limits and remaining release gates.31contracts/649function reference.
+Access minimal initcode margin is29bytes; actual role arrays need qualification.
+
+This website change is MEMORY ONLY. Source/build/server,dist repair overlay,
+8902/Anvil/NFT/LP/balances/journals and paused monitoring remain unchanged.
+Shared signer/client/coordinator remain Anvil-only; public DEPLOYMENT null.
+No public contract transaction/deployment/seal or release approval. Main only;
+preserve unrelated drafts and distinguish publication from a local save.
+
 ## Contract publication and operator reference - 2026-10-25
 
 Contract main implementation `03a0d76` and website memory-only `e96cc38` are
