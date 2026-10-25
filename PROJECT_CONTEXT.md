@@ -1,3 +1,29 @@
+## Full contract audit - 2026-10-26
+
+Contract implementation 5b6cf6bcc944b65a7e78129a24015176f11c9b0c on main records the broad internal audit
+started25October. Three backend defects fixed: current dormant3 activation,
+typed native contribution-policy address and actual Rpc integer-chain-ID history
+audit. Production44Solidity sources and all economic/permission/profile rules
+unchanged. Fresh11distinct Python methods and one gas/accounting method pass.
+Activation call9,591,082<12M in the composed fault fixture; not realnativegasproof.
+
+Fresh Slither0.11.6 completes:399flags manually reviewed,165falsepositive/
+152acceptedrisk/82informational,47currentbindings. Internalcoveragegate nowPASS,
+not independent audit. Solc86input output succeeds; Forge's later hostsignature
+cache CLI failure preserved.37object lengths matchnormalcapture;265AST testpass.
+No full release regression or greenCIclaim. Current website native reader still
+accounting2only; example copy still offers oldUSDC/USDG/99%rules. Align current3/
+ETHfixedZZZ/98%default in a separately authorized source release before rollout.
+
+MEMORY ONLY here. Website source/build/server/distoverlay, existing8902/Anvil/
+NFT/LP/balances/journals, signer/services andpausedmonitor unchanged. Public
+DEPLOYMENTnull, signingAnvil-only; no publicRPC/financialtransaction/deployment/
+seal. Realfeeds/routes/VRF/authorities/OpenSea/gas/operations andindependent audit
+stayopen. Retiredroyaltyreceiver cannotforwardnewunadmittedcurrencies; actual
+ZZZburnABI remains unqualified. ProductionNOTAPPROVED. Mainonly; soleTodo/features/
+operator/release andcontext live in contract reports/full-audit-20261025. Actual
+publication is separately verified in its receipt; publication never deploys.
+
 ## Contract day-change audit - 2026-10-25
 
 Contract implementation fbf31c61ad7abbe2b3a86ca9614c6e77294599b8 on main records the independent review of
