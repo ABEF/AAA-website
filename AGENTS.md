@@ -1,3 +1,22 @@
+## Contract residual cleanup - 2026-10-25
+
+Contract cleanup removes unused Registry WETH metadata only; real converter
+wrapper checks remain. Creator-payment measurement CLI/tests are retired.
+Unused finality/import declarations/imports and unreachable NFT_baseURI are gone.
+31contracts/644functions; Registry runtime9,987 saves2,040bytes. Registry storage
+is fresh-deployment only (contributionPool slot5to2); no old Anvil state changed.
+10selected Solidity/6scoped Python cases,122-input typecheck/36normal object
+gates pass; no full regression/provider/independent approval.65TodoIDs/statuses
+remain; operator/security/current instructions align. Access29-byte minimal
+argument margin and real services/OpenSea/qualification/audit remain open.
+
+This website update is MEMORY ONLY. Website source/build/server/dist overlay,
+8902/Anvil/NFT/LP/balances/journals and paused monitoring remain unchanged.
+Signer Anvil-only; public DEPLOYMENT null. No public tx/deployment/seal or service
+operation. Main only; unrelated drafts preserved. Production NOT APPROVED.
+See contract reports/obsolete-code-20261025/REVIEW.md and eventual publication
+receipt for exact source/evidence/push status; local saves are distinct.
+
 ## Simplification source publication - 2026-10-25
 
 Contract implementation `82ba6ed` and website memory-only `ce1f31e` are pushed on
