@@ -1,3 +1,27 @@
+## Contract deep cleanup - 2026-10-25
+
+Contract cleanup reuses the inherited royalty balance helper and existing Module
+error; wire functions, storage, rights and rates remain. New GuardianChanged and
+constructor role logs add visibility only. Obsolete native/outage test assumptions
+are replaced by actual v4/native and isolated-royalty eligibility checks.
+Reference evidence snapshot2 binds all project/dependency/build inputs; this is
+not a website/deployed accounting upgrade. Current source stays accounting3,
+direct governance2/local canonicalV4. Native website2 remains historical.
+
+32 scoped Solidity methods and41 Python methods pass;37 normal gates,75 closed
+production inputs and265 AST inputs. No full regression, fresh Slither, actual
+market/provider/operating or independent approval. Access +45 runtime/+175creation
+bytes; total initcode42352 with6800 margin. Vault22852/1724 unchanged; Factory69
+runtime margin remains tight. Report in contract reports/deep-cleanup-20261025.
+
+This is MEMORY ONLY. Website source/build/server/dist overlay,8902/Anvil/NFT/LP/
+balances/journals, signer/services and paused monitor unchanged. Public DEPLOYMENT
+null, signing Anvil-only. No RPC/public transaction/deployment/seal. Keep sole
+Todo/features/operator/callable reference and evidence aligned. Actual website3,
+feeds/routes/VRF/authorities/OpenSea/operating/gas qualification and independent
+audit remain open. Main only; production NOT APPROVED. Publication separately
+verified in the contract report receipt.
+
 ## Contract auditability refactor - 2026-10-25
 
 Contract source shares collect/close settlement and read-only v3 validation;
