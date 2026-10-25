@@ -1,3 +1,22 @@
+## One fixed ZZZ and contract day audit - 2026-10-25
+
+The contract candidate fixes ZZZ across activation, native pool admission,
+immutable Buyback and normal exit. No token-retarget setter remains; issuer
+migration uses custody exit and a fresh deployment. Historical funded dust no
+longer needs old venue liveness; poisoned indexer log identities fail atomically.
+28distinct Solidity behaviors across three recorded fixture scopes,35Python
+methods,124-input ABI/AST and36normal object gates pass.31contracts/643functions.
+Vault23,889/687margin; Access minimal49123/29margin, actual release arrays open.
+Sole Todo/operator/features and recovery guidance updated; real dependencies,
+OpenSea/authority/services/rehearsals and independent audit remain open.
+See contract reports/daily-security-20261025/REVIEW.md and VERIFICATION.md.
+
+MEMORY ONLY: website source/build/server/dist overlay,8902/Anvil/NFT/LP/balances/
+journals, signer and paused monitoring remain unchanged. Public DEPLOYMENT null,
+signing Anvil-only. No deployment/public transaction/seal or service operation.
+Main only; preserve unrelated drafts. Production NOT APPROVED. Publication
+requires the separate verified receipt; a local save alone is not a push.
+
 ## Contract residual cleanup - 2026-10-25
 
 Contract cleanup removes unused Registry WETH metadata only; real converter
