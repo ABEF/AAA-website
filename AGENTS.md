@@ -1,3 +1,26 @@
+## Contract day-change audit - 2026-10-25
+
+Contract implementation fbf31c61ad7abbe2b3a86ca9614c6e77294599b8 on main records the independent review of
+reference35007db and24commits in the25-hour Paris day. No production Solidity
+changed. Backend native royalty custody read/replay and evidence validation are
+fixed; native tests isolate exact-input and oversized guard behavior. Rights,
+rates, authority, source/accounting3/governance2/localV4 stay unchanged.
+
+Fresh evidence:3project EVM methods,4isolated gas comparisons and83distinct Python
+methods across recorded scopes. Normal37gates/75inputs are exact reused evidence;
+265ASTinputs refresh only the changed test. Snapshot3 is evidence format, not a
+website or deployed profile upgrade. Current static Slither triage is stale and
+fails release. Actual feeds/routes/VRF/authorities/OpenSea/native website3/services/
+operating/max-state gas and independent audit remain open. Production NOT APPROVED.
+Contract reports/day-readiness-20261025 contains review, verification and gates.
+
+MEMORY ONLY. Website source/build/server/dist overlay, existing8902/Anvil/NFT/LP/
+balances/journals, signer/services and paused monitor unchanged. Public DEPLOYMENT
+null, signing Anvil-only. No public RPC/transaction/deployment/seal. Main only;
+preserve unrelated drafts. Sole Todo/features/operator/roadmap/callable reference
+are maintained in contract repository. Source publication is separate from
+deployment; actual remote verification goes in the contract publication receipt.
+
 ## Contract deep cleanup - 2026-10-25
 
 Contract cleanup reuses the inherited royalty balance helper and existing Module
