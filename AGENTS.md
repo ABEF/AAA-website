@@ -1,3 +1,27 @@
+## Contract auditability refactor - 2026-10-25
+
+Contract source shares collect/close settlement and read-only v3 validation;
+separate LP/royalty converter wrappers inherit a neutral abstract base. Private
+NFT/bucket names and numeric handoff phases are explicit. Wire encodings/storage
+and financial ordering are preserved; neutral struct provenance and duplicate
+error ABI metadata are documented. No new authority or economic rule.
+
+Source-scoped evidence:26 distinct selected Solidity methods across recorded
+fixture scopes,20 event-schema methods,131-input typecheck and37 normal object
+gates;44 production hashes match.31 concrete contracts/608 functions/13 receive
+hooks. Vault22,852/1,724 margin; Liquidity344 bytes smaller; each converter122
+smaller; Handoff139 larger under the unchanged compiler profile. No full
+regression, actual-provider qualification or independent audit is inferred.
+
+This is MEMORY ONLY. Existing website native2/Anvil runtime/journals retain their
+own identities; explicit native3 integration and real services remain open.
+Public DEPLOYMENT null, signing Anvil-only, monitor paused. No website source,
+build/dist/server/service,8902/Anvil/NFT/LP/balance/journal or public transaction,
+deployment/seal change. Main only. See contract reports/auditability-refactor-20261025
+for review/verification and separate publication. Actual feeds/routes/VRF,
+authorities/OpenSea/operating rehearsals and independent audit remain open.
+Production NOT APPROVED.
+
 ## Contract architecture pruning - 2026-10-25
 
 Contract candidate now uses accounting3/local8wordPositions, localstatus0..4,
