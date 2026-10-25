@@ -1,3 +1,17 @@
+## Contract publication and operator reference - 2026-10-25
+
+Contract main implementation `03a0d76` and website memory-only `e96cc38` are
+pushed and remote-verified. See contract reports/release-services-20261025/PUBLICATION.md
+for exact source/package hashes, scoped evidence and open gates. The operator
+manual links32 contracts/698 callable functions with inputs/outputs and roles;
+future behavior/ABI/permission changes must update it. This is not an audit.
+
+Website source/build/server,5,598 dist files/repair overlay,8902/Anvil/NFT/LP/
+balances/journals/services and paused monitoring remain unchanged. Signer stays
+Anvil-only and public DEPLOYMENT null. All actual service/authority/OpenSea/
+operating and independent-audit gates remain open; production NOT APPROVED.
+Main only, preserve unrelated drafts and maintain both project memories.
+
 ## Contract services and callable-reference checkpoint - 2026-10-25
 
 Contract-side optional Pyth reader, current mint/VRF qualification, frozen-review
