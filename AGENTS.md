@@ -1,3 +1,28 @@
+## Native-V2 read/unsigned integration - 2026-10-25
+
+The user explicitly approved applying the local native website integration.
+Schema2 now matches accounting2/routing2/pricing2/review1, nativezero dual bounds,
+reviewed parent/runtime/asset policy identities, captured cap/upper-input floor
+and exact reviewed Entry calldata. Schema1 preserves original deployments and
+journals; current data cannot silently downgrade. Native claim inventories must
+include both ETH ledgers, and NFT earnings reuse full raw/price/period validation.
+
+Read contract repo reports/native-readiness-20261025/REVIEW.md and VERIFICATION.md.
+119affected post-review JS checks pass; earlier121retain pre-fix scope. Four
+isolated browser cases use actual Python DTOs over synthetic dependencies, not
+real wallet/chain/provider acceptance. The shared browser-wallet.js, browser-
+client.js and deployment-transactions.js remain byte-identical and Anvil-only;
+public DEPLOYMENT is null. Native public submission is not enabled.
+
+The clean build is external; preserve existing dist repair overlay,8902/Anvil/
+NFT/LP/balances/journals, existing server and paused monitoring. No deployment,
+service restart/reset, public transaction, sealing or key use. Source publication
+is separate from static deployment; inspect Git/publication receipt. Current
+contract Vault saves256runtime bytes and leaves313, with unchanged ABI/storage.
+Actual qualified feeds/routes/VRF/authorities/OpenSea/native services/operating
+rehearsals and independent audit remain open. Main only; preserve unrelated work,
+maintain contract sole Todo/features/operator/roadmap and both memories.
+
 ## Reviewed contract contributions and resilient history - 2026-10-25
 
 MEMORY ONLY. Website source/build/server,8902/Anvil/NFT/LP/balances/journals/dist
