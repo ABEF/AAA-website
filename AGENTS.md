@@ -57,6 +57,13 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 
 ## Documentation and verification
 
+Current keeper/LP source audit is in the contract repository's
+reports/keeper-lp-audit-20261026. Health now requires exact loaded-config digest;
+typed conversion flags distinguish malformed data from valid disabled controls.
+No website signer/policy change follows.354Python passes/5Unix skips and9range
+methods are scoped evidence, not a Linux/public-service qualification.
+
+
 Contract TODO.md generated from docs/project-todo.json is the single task list.
 Maintain source-linked features/operator/roadmap/release/context there; no website
 Todo page. Keep concise current docs, not another dated preamble on every change.

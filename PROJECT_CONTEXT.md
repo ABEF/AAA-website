@@ -46,8 +46,15 @@ Contract docs consolidation [5114a1c](https://github.com/ABEF/AAA/commit/5114a1c
 replaces accumulated obsolete guidance, merges five redundant pages and preserves
 historical audit bytes. [Cleanup record](https://github.com/ABEF/AAA/blob/main/reports/documentation-cleanup-20261026/README.md)
 records actual scope; publication is separate from deployment.
-Latest functional backend379ae19 passes167distinct affected Python methods,
-31new/136existing. No new implementation/tests are claimed for this docs cleanup.
+Latest keeper/LP source [885af8e](https://github.com/ABEF/AAA/commit/885af8edaadbc4fa7f8da8021c1d2d2fe66a4a6d) binds
+health to loaded config, rejects malformed conversion flags and repairs current
+rehearsal/range verification.354affected Python passes/5Unix skips,9range methods
+including1,000fuzz. Production Solidity/economics/ABI unchanged. Updated Linux
+process/systemd/actual-provider campaigns remain unexecuted/unqualified.
+[Audit evidence](https://github.com/ABEF/AAA/blob/main/reports/keeper-lp-audit-20261026/VERIFICATION.md)
+is source-scoped, not production approval. Old backend379ae19 fee-integrity
+evidence retains its167affected-method scope; counts are not added together.
+No website source/build/server or existing runtime change follows this memory.
 Original website memory preimages are retained externally under
 documentation-cleanup-20261026/website-originals; earlier details remain in Git.
 
