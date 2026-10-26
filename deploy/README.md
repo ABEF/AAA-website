@@ -31,3 +31,9 @@ erase journals, certificates or unrelated virtual hosts.
 Keep deployment keys/credentials outside repositories and public archives.
 No contract deployment, public signing or real-fund action is implied. See
 [full environment procedures](../SITE_ENVIRONMENTS.md) and linked contract manual.
+
+Certificate renewal uses the enabled certbot.timer and the source-controlled
+deploy/popl-integration-renew-hook.sh installed executable at
+/etc/letsencrypt/renewal-hooks/deploy/popl-integration-nginx. It tests/reloads
+Nginx only when RENEWED_LINEAGE is exactly the popl-integration certificate;
+demo renewal configuration is unchanged. Keep this hook when maintaining TLS.

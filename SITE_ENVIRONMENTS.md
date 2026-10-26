@@ -40,3 +40,9 @@ The demo still serves9be6d1. Subsequent documentation commits do not change
 either deployed revision; inspect site-identity.json and the server release
 record before an update. After reload, use bounded read-only verification
 retries if necessary; do not blindly reinstall or alter the demo.
+
+Certificate renewal uses the enabled certbot.timer and the source-controlled
+deploy/popl-integration-renew-hook.sh installed executable at
+/etc/letsencrypt/renewal-hooks/deploy/popl-integration-nginx. It tests/reloads
+Nginx only when RENEWED_LINEAGE is exactly the popl-integration certificate;
+demo renewal configuration is unchanged. Keep this hook when maintaining TLS.
