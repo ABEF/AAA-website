@@ -1,7 +1,7 @@
 // Production API integration for reads and unsigned preparation only.
 // This module has no wallet submission, signer, private key or broadcast path.
 import {createChainReader} from './browser-wallet.js';
-import {NativeProfile,NATIVE_ROLES,NATIVE_VERSIONS,validateNativeManifest} from './deployment-native.js';
+import {NativeProfile,CurrentNativeProfile,NATIVE_ROLES,NATIVE_VERSIONS,CURRENT_ROLES,CURRENT_VERSIONS,validateNativeManifest,validateCurrentManifest} from './deployment-native.js';
 export const ZERO='0x'+'0'.repeat(40), ZERO_HASH='0x'+'0'.repeat(64);
 const ADDRESS=/^0x[0-9a-f]{40}$/, HASH=/^0x[0-9a-f]{64}$/, DIGEST=/^[0-9a-f]{64}$/;
 const fail=message=>{throw new Error(message||'Deployment response failed validation. Nothing was submitted.');};
@@ -28,36 +28,36 @@ function endpoint(value,rehearsal){
 }
 export function validateDeployment(value,origin=globalThis.location?.origin){
   const m=clone(value);
-  if(!object(m)||![1,2].includes(m.schema)||m.mode!=='read-and-prepare'||!['production','rehearsal'].includes(m.environment)||!DIGEST.test(m.id)||
+  if(!object(m)||![1,2,3].includes(m.schema)||m.mode!=='read-and-prepare'||!['production','rehearsal'].includes(m.environment)||!DIGEST.test(m.id)||
     !integer(m.chain_id,1,Number.MAX_SAFE_INTEGER)||!HASH.test(m.genesis_hash)||!integer(m.deployment_block,0,Number.MAX_SAFE_INTEGER)||
     !HASH.test(m.deployment_block_hash)||!integer(m.confirmations,1,128)||!integer(m.max_age_seconds,1,120)||
     !/^[A-Za-z0-9 ._-]{1,50}$/.test(m.chain_name)||!/^\/[a-z0-9][a-z0-9/_-]{0,80}$/.test(m.api_prefix)||m.api_prefix.includes('//')||m.api_prefix.endsWith('/'))fail('Invalid reviewed deployment configuration');
-  if(Object.keys(m).some(k=>!['schema','mode','environment','id','chain_id','genesis_hash','deployment_block','deployment_block_hash','confirmations','max_age_seconds','chain_name','api_prefix','rpc_url','projection_sha256','transaction_sha256','activation_sha256','transaction_fee_review','activation_fee_review','contracts','pool_id','input_assets','reward_assets','limits',...(m.schema===2?NATIVE_VERSIONS:[])].includes(k)))fail('Unexpected deployment setting');
+  if(Object.keys(m).some(k=>!['schema','mode','environment','id','chain_id','genesis_hash','deployment_block','deployment_block_hash','confirmations','max_age_seconds','chain_name','api_prefix','rpc_url','projection_sha256','transaction_sha256','activation_sha256','transaction_fee_review','activation_fee_review','contracts','pool_id','input_assets','reward_assets','limits',...(m.schema===3?CURRENT_VERSIONS:m.schema===2?NATIVE_VERSIONS:[])].includes(k)))fail('Unexpected deployment setting');
   const page=new URL(origin),rehearsal=m.environment==='rehearsal';
   if(rehearsal?(page.protocol!=='http:'||page.hostname!=='127.0.0.1'):(page.protocol!=='https:'||m.chain_id===31337))fail('Deployment profile is not permitted on this origin');
   m.rpc_url=endpoint(m.rpc_url,rehearsal);
   for(const name of ['projection_sha256','transaction_sha256','activation_sha256'])if(!DIGEST.test(m[name]))fail('Missing reviewed API configuration identity');
   for(const name of ['transaction_fee_review','activation_fee_review'])if(!HASH.test(m[name]))fail('Missing reviewed fee policy');
   if(!object(m.contracts))fail();const targets=new Set();
-  for(const role of m.schema===2?NATIVE_ROLES:['access','nft','vault','entry','claim_router','oracle']){
+  for(const role of m.schema===3?CURRENT_ROLES:m.schema===2?NATIVE_ROLES:['access','nft','vault','entry','claim_router','oracle']){
     const c=m.contracts[role];if(!ADDRESS.test(c?.address)||c.address===ZERO||targets.has(c.address)||!code(c.runtime_code))fail('Invalid reviewed contract identity');targets.add(c.address);
   }
   if(!Array.isArray(m.input_assets)||!m.input_assets.length||m.input_assets.length>4||!HASH.test(m.pool_id)||m.pool_id===ZERO_HASH)fail('Invalid contribution inventory');
   const symbols=new Set(),assets=new Set();
   for(const a of m.input_assets){
-    if(m.schema===2){if(symbols.has(a.symbol)||assets.has(a.address)||targets.has(a.address))fail('Repeated or colliding native contribution asset');}
+    if(m.schema>=2){if(symbols.has(a.symbol)||assets.has(a.address)||targets.has(a.address))fail('Repeated or colliding native contribution asset');}
     else if(!['ETH','ZZZ','USDC','USDG'].includes(a.symbol)||symbols.has(a.symbol)||!ADDRESS.test(a.address)||assets.has(a.address)||targets.has(a.address)||
       !integer(a.decimals,0,18)||!ADDRESS.test(a.valuation_asset)||a.valuation_asset===ZERO||!HASH.test(a.route_id)||typeof a.enabled!=='boolean'||
       ((a.symbol==='ETH')!==(a.address===ZERO))||(a.address!==ZERO&&!code(a.runtime_code))||
       (a.address!==ZERO&&a.valuation_asset!==a.address)||(a.address===ZERO&&(a.decimals!==18||a.route_id!==ZERO_HASH)))fail('Invalid activation asset or route');
     symbols.add(a.symbol);assets.add(a.address);
   }
-  if(!Array.isArray(m.reward_assets)||!m.reward_assets.length||m.reward_assets.length>(m.schema===2?49:32))fail('Invalid reward inventory');
+  if(!Array.isArray(m.reward_assets)||!m.reward_assets.length||m.reward_assets.length>(m.schema>=2?49:32))fail('Invalid reward inventory');
   const rewards=new Set();for(const a of m.reward_assets){if(!ADDRESS.test(a.address)||rewards.has(a.address)||!integer(a.decimals,0,36)||! /^(ETH|WETH|ZZZ|USDG|USDC)$/.test(a.symbol)||(a.address===ZERO&&(a.symbol!=='ETH'||a.decimals!==18)))fail('Invalid reward currency');rewards.add(a.address);}
-  if(m.schema===2&&!rewards.has(ZERO))fail('Native reward inventory must include ETH');
+  if(m.schema>=2&&!rewards.has(ZERO))fail('Native reward inventory must include ETH');
   if(!object(m.limits)||!integer(m.limits.gas,21000,12000000))fail('Invalid gas limit');
   for(const name of ['gas_price_wei','network_fee_wei','native_value_wei','contribution_usd_18'])if(raw(m.limits[name])===0n)fail('Missing bounded spending policy');
-  if(m.schema===2)validateNativeManifest(m);
+  if(m.schema===3)validateCurrentManifest(m);else if(m.schema===2)validateNativeManifest(m);
   return freeze(m);
 }
 export async function jsonRequest(fetcher,url,body,{signal,timeout=30000,maxBytes=2097152}={}){
@@ -80,7 +80,7 @@ export async function jsonRequest(fetcher,url,body,{signal,timeout=30000,maxByte
 export class DeploymentAPI {
   constructor(manifest,{origin=globalThis.location?.origin,fetcher=globalThis.fetch,reader,clock=()=>Date.now()}={}){
     this.manifest=validateDeployment(manifest,origin);this.origin=origin;this.fetcher=fetcher;this.clock=clock;
-    this.reader=reader||createChainReader(this.manifest.rpc_url,{fetcher});this.native=this.manifest.schema===2?new NativeProfile(this.manifest,this.reader):null;this.revision=0;this.active=null;
+    this.reader=reader||createChainReader(this.manifest.rpc_url,{fetcher});this.native=this.manifest.schema===3?new CurrentNativeProfile(this.manifest,this.reader):this.manifest.schema===2?new NativeProfile(this.manifest,this.reader):null;this.revision=0;this.active=null;
   }
   request(path,body,signal){if(!/^\/v1\/[a-z0-9/_-]+$/.test(path))fail('Unsupported API path');return jsonRequest(this.fetcher,this.origin+this.manifest.api_prefix+path,body,{signal});}
   cancel(){this.revision++;this.active?.abort();this.active=null;}
@@ -102,7 +102,7 @@ export class DeploymentAPI {
       (transaction&&p.transaction_configuration_sha256!==m.transaction_sha256)||
       (activation&&p.activation_configuration_sha256!==m.activation_sha256))fail('API data differs from the reviewed deployment or confirmation policy');
     if(!this.native&&((p.accounting_version!==undefined&&p.accounting_version!==1)||(activation&&((p.routing_version??1)!==1||(p.pricing_version??1)!==1||(p.review_policy_version??0)!==0))))fail('Native execution data cannot be interpreted as a legacy deployment');
-    if(this.native&&((p.accounting_version!==undefined&&p.accounting_version!==2)||(activation&&(p.accounting_version!==2||p.routing_version!==2||p.pricing_version!==2||p.review_policy_version!==1))))fail('API native execution profile differs from the reviewed deployment');
+    if(this.native&&((p.accounting_version!==undefined&&p.accounting_version!==m.accounting_version)||(activation&&(p.accounting_version!==m.accounting_version||p.routing_version!==2||p.pricing_version!==2||p.review_policy_version!==1))))fail('API native execution profile differs from the reviewed deployment');
     const now=Math.floor(this.clock()/1000);if(p.block_timestamp>now+30||now-p.block_timestamp>m.max_age_seconds)fail('Confirmed data is stale. Refresh before reviewing.');
     const [block,head]=await Promise.all([this.reader.request({method:'eth_getBlockByNumber',params:[hex(BigInt(p.block_number)),false]}),this.reader.request({method:'eth_blockNumber'})]);
     if(block?.hash!==p.block_hash||quantity(block.number)!==BigInt(p.block_number)||quantity(block.timestamp)!==BigInt(p.block_timestamp)||quantity(head)<BigInt(p.block_number+m.confirmations-1))fail('API snapshot is not confirmed on the reviewed RPC');
@@ -114,14 +114,14 @@ export class DeploymentAPI {
   }
   async protocol(signal){
     await this.identity();const p=await this.snapshot(await this.request('/v1/protocol',undefined,signal));
-    if(this.native&&p.provenance.accounting_version!==2)fail('Protocol omitted its native accounting profile');
+    if(this.native&&p.provenance.accounting_version!==this.manifest.accounting_version)fail('Protocol omitted its native accounting profile');
     for(const role of ['access','nft','vault','claim_router'])if(p.contracts?.[role]!==this.manifest.contracts[role].address)fail('Protocol contract binding changed');
     if(!object(p.lifecycle)||typeof p.lifecycle.new_economic_work_available_by_lifecycle!=='boolean'||typeof p.minting?.available_by_controls!=='boolean')fail('Missing canonical lifecycle');
     return p;
   }
   async readiness(signal){const r=await this.snapshot(await this.request('/v1/mint-readiness',undefined,signal));if(r.nft!==this.manifest.contracts.nft.address||!integer(r.minted,0,1000)||typeof r.new_minting_stopped!=='boolean')fail('Invalid mint readiness');return r;}
   validateNFT(n,id,owner){
-    if(this.native&&n.provenance?.accounting_version!==2)fail('NFT omitted its native accounting profile');
+    if(this.native&&n.provenance?.accounting_version!==this.manifest.accounting_version)fail('NFT omitted its native accounting profile');
     if(n.token_id!==id||n.owner!==owner||!integer(n.mint_ordinal,1,1000)||typeof n.traits_ready!=='boolean'||
       typeof n.position?.activated!=='boolean'||n.position.principal_redeemable!==false||!object(n.claimable)||
       typeof n.position.current_lp_value?.available!=='boolean'||n.position.current_lp_value.decimals!==18||n.position.current_lp_value.unit!=='USD')fail('NFT ownership or position changed; refresh your holdings');
@@ -137,6 +137,7 @@ export class DeploymentAPI {
       }
       if(this.native&&!seen.has(ZERO))fail('Native ledger omitted ETH; the combined balance is unavailable');
     }
+    if(this.manifest.schema===3)validateCurrentNFT(n);
     return n;
   }
   async nft(id,owner,signal){if(raw(id)===0n||!ADDRESS.test(owner)||owner===ZERO)fail('Invalid NFT request');const n=await this.snapshot(await this.request('/v1/nfts/'+id,undefined,signal));return this.validateNFT(n,id,owner);}
@@ -144,7 +145,7 @@ export class DeploymentAPI {
     if(!ADDRESS.test(owner)||owner===ZERO||!integer(page,0,124))fail('Invalid wallet request');this.cancel();const revision=this.revision,controller=new AbortController();this.active=controller;
     try{
       const protocol=await this.protocol(controller.signal),inventory=await this.snapshot(await this.request('/v1/wallets/'+owner+'/nfts',undefined,controller.signal));
-      if(this.native&&inventory.provenance?.accounting_version!==2)fail('Wallet inventory omitted its native accounting profile');
+      if(this.native&&inventory.provenance?.accounting_version!==this.manifest.accounting_version)fail('Wallet inventory omitted its native accounting profile');
       if(inventory.available!==true||inventory.wallet!==owner||inventory.nft_contract!==this.manifest.contracts.nft.address||
         !Array.isArray(inventory.token_ids)||inventory.token_ids.length>1000||inventory.count!==inventory.token_ids.length||new Set(inventory.token_ids).size!==inventory.count)fail('Invalid complete wallet inventory');
       inventory.token_ids.forEach(id=>{if(raw(id)===0n)fail();});
@@ -230,7 +231,7 @@ export class DeploymentAPI {
       let chunkLP=0n,chunkAvailable=true,chunkActive=0;
       for(const [index,n] of part.positions.entries()){
         const v=n.position?.current_lp_value,w=n.position?.royalty_weight,active=n.position?.activated;
-        if(n.token_id!==expected[index]||!integer(n.mint_ordinal,1,count)||ordinals.has(n.mint_ordinal)||!ADDRESS.test(n.owner)||n.owner===ZERO||typeof n.traits_ready!=='boolean'||typeof active!=='boolean'||!integer(w,0,3)||(w>0)!==active||!['active','parked','remote','outbound','inbound','dormant'].includes(n.position.status)||(n.position.status==='dormant')!==!active||n.position.principal_redeemable!==false)fail('Invalid collection identity or eligibility');
+        if(n.token_id!==expected[index]||!integer(n.mint_ordinal,1,count)||ordinals.has(n.mint_ordinal)||!ADDRESS.test(n.owner)||n.owner===ZERO||typeof n.traits_ready!=='boolean'||typeof active!=='boolean'||!integer(w,0,3)||(w>0)!==active||!(this.manifest.schema===3?['active','parked','outbound','dormant']:['active','parked','remote','outbound','inbound','dormant']).includes(n.position.status)||(n.position.status==='dormant')!==!active||n.position.principal_redeemable!==false)fail('Invalid collection identity or eligibility');
         ordinals.add(n.mint_ordinal);
         if(n.traits_ready){if(!['Commun','Rare','Legendary'].includes(n.traits?.rarity)||!integer(n.traits.palette,0,57)||!integer(n.traits.pattern,0,3)||active&&w!==['Commun','Rare','Legendary'].indexOf(n.traits.rarity)+1)fail('Invalid collection traits');}
         else if(n.traits!==null||active)fail('Unrevealed NFT cannot be activated');
@@ -375,4 +376,23 @@ export class DeploymentAPI {
       prepared_at:draft.prepared_at,expires_at:draft.expires_at,provenance:draft.provenance,
       ...(nativeReview||{}),signing_enabled:false,notice:'Unsigned review only. Public signing is not enabled.'});
   }
+}
+
+function validateCurrentNFT(n){
+  const p=n.position,value=p.current_lp_value,active=p.activated;
+  if(!['active','parked','outbound','dormant'].includes(p.status)||(p.status==='dormant')!==!active||
+    !integer(p.royalty_weight,0,3)||(p.royalty_weight>0)!==active||
+    (raw(p.shares_raw)>0n)!==active||(raw(p.bucket_id)>0n)!==active)fail('Current NFT custody or eligibility contradicts its profile');
+  if(active&&(!n.traits_ready||p.royalty_weight!==['Commun','Rare','Legendary'].indexOf(n.traits.rarity)+1))fail('Current royalty entitlement differs from rarity');
+  if(value.available&&!['active','dormant'].includes(p.status)||!active&&(!value.available||raw(value.raw)!==0n||raw(p.cumulative_gross_contribution_usd_18)!==0n))fail('Current NFT valuation contradicts custody');
+  const stage=!active?'dormant':value.available&&raw(value.raw)>=10000n*10n**18n?'singularity':value.available&&raw(value.raw)>=1000n*10n**18n?'enhanced':'activated';
+  if(p.evolution!==stage)fail('Current NFT evolution differs from confirmed LP');
+  if(['active','parked'].includes(p.status)){
+    const c=p.local_custody;
+    if(!object(c)||!HASH.test(c.pool_id)||c.pool_id===ZERO_HASH||raw(c.share_numerator_raw)!==raw(p.shares_raw)||
+      raw(c.share_denominator_raw)!==raw(c.bucket_total_shares_raw)||raw(c.bucket_total_shares_raw)<raw(p.shares_raw)||
+      !integer(c.last_rebalance_at,0,Number.MAX_SAFE_INTEGER)||
+      (p.status==='active'?(raw(c.lp_token_id)===0n):c.lp_token_id!==null))fail('Current local custody differs from NFT shares');
+  }else if(p.local_custody!==null)fail('Nonlocal current NFT contains local custody');
+  if(!active&&['lp','royalties'].some(k=>n.claimable[k].some(r=>r.raw!==null&&raw(r.raw)>0n)))fail('Inactive NFT has reward entitlement');
 }

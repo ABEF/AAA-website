@@ -9,7 +9,11 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 
 - Website: ABEF/AAA-website, this checkout. Contracts: ABEF/AAA, sibling
   zzz-protocol-v2-reviewed/zzz-protocol-v2. Use main only.
-- Current public website is a simulation. Do not present demo numbers/buttons
+- Keep two explicit public targets: popldemo is the existing demo, poplint is
+  current3 integration with its own dist-poplint build, /var/www/popl-integration
+  root, Nginx site/certificate and read-only configuration. Never use the demo
+  installer/dist/root to publish poplint. See SITE_ENVIRONMENTS.md.
+- Current public demo website is a simulation. Do not present demo numbers/buttons
   as deployment or actual revenue. Public DEPLOYMENT remains null; browser
   signing remains Anvil-only. No public payment capability is authorized.
 - Preserve existing Anvil services, NFTs/LP/balances/journals, port8902 and dist

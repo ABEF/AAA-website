@@ -8,11 +8,19 @@ are authoritative for production behavior.
 
 ## Current state
 
-Public demonstration: https://popldemo.0xwave.com. This website's public mode
+Public demonstration: https://popldemo.0xwave.com, preserved unchanged.
+Separate current-contract integration target: https://www.poplint.0xwave.com.
+See SITE_ENVIRONMENTS.md for isolated builds, roots, config and rollback; never
+mix the demo installer or simulated balances into integration. Missing reviewed
+contracts/API is unconfigured, not an example deployment.
+This website's public demo mode
 simulates financial actions; DEPLOYMENT is null and signing remains Anvil-only.
 Published native2 read/unsigned profile and historical local wallets exist.
 The fresh contract candidate is accounting3/directgovernance2/fee1/localV4;
-current3 website acceptance and ETH/fixedZZZ/cap example alignment remain open.
+An explicit current3 reader/unsigned-review implementation now has451affected JS
+passes including46new methods with six real Python DTO fixtures (synthetic RPC,
+feeds and venue). Actual current3 contracts/API/provider/extension qualification
+remains open; the existing demo source/build/server is a separate release target.
 Do not relabel old fixtures/journals or infer current services are running from
 an old local URL. Existing source/build/server/dist/Anvil state is unchanged by
 this documentation/memory update.

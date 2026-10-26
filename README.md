@@ -4,6 +4,14 @@ Current wallet integration: [local API wallet rehearsal](DEPLOYMENT_API.md) supp
 
 A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.
 
+## Demo and integration targets
+
+The existing [popldemo](https://www.popldemo.0xwave.com/) remains the public
+simulation. [Poplint](https://www.poplint.0xwave.com/) is a separate current3
+read/unsigned-review build. Missing reviewed contracts/API displays unconfigured,
+never demo holdings. Public signing remains disabled. See
+[environment and deployment procedures](SITE_ENVIRONMENTS.md).
+
 ## Published demo
 
 The public site remains a simulation; local browser signing at port 8900 is a

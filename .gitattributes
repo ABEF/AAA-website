@@ -5,3 +5,6 @@ assets/nfts/manifest.json text eol=lf
 assets/nfts/inventory.json text eol=lf
 assets/nfts/sources/provenance.json text eol=lf
 assets/nfts/sources/*.webp binary
+
+# Preserve existing Windows line endings in this view.
+deployment-view.js whitespace=cr-at-eol

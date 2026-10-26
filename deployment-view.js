@@ -12,7 +12,7 @@ export function walletProgressLabel(stage){
 }
 // A manifest is an approved ceiling; the captured on-chain cap is shown in review.
 export function contributionPolicyText(manifest){
-  if(manifest.schema!==2)return 'At least 99% must become added LP; network gas is separate.';
+  if(manifest.schema<2)return 'At least 99% must become added LP; network gas is separate.';
   const cap=manifest.limits.maximum_contribution_loss_bps;
   if(!Number.isSafeInteger(cap)||cap<0||cap>1000)throw Error('Invalid reviewed contribution ceiling');
   return 'The reviewed deployment permits up to '+(cap/100)+'% execution loss or undeployed value. Your review verifies the current limit and added LP; network gas is separate.';

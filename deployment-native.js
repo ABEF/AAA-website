@@ -1,4 +1,4 @@
-// Explicit native-V2 read/unsigned profile. No wallet, signing or broadcast.
+// Explicit versioned native read/unsigned profiles. No signing or broadcast.
 const ZERO='0x'+'0'.repeat(40), ZERO_HASH='0x'+'0'.repeat(64);
 const ADDRESS=/^0x[0-9a-f]{40}$/, HASH=/^0x[0-9a-f]{64}$/;
 const fail=message=>{throw Error(message);};
@@ -8,6 +8,9 @@ const code=x=>typeof x==='string'&&/^0x(?:[0-9a-f]{2})+$/.test(x)&&x.length<=100
 const word=n=>BigInt(n).toString(16).padStart(64,'0'),addr=a=>a.slice(2).padStart(64,'0');
 export const NATIVE_ROLES=['access','nft','vault','entry','claim_router','oracle','pools','budget','activation_assets','contribution_pricing'];
 export const NATIVE_VERSIONS=['accounting_version','pricing_version','routing_version','review_policy_version'];
+export const CURRENT_ROLES=[...NATIVE_ROLES,'fees','handoff'];
+export const CURRENT_VERSIONS=[...NATIVE_VERSIONS,'governance_version','fee_intake_version','canonical_schema'];
+export const CURRENT_CANONICAL_SCHEMA='0x9b5a59d6f91788ab6de97291bf61eab0a5eeee8b439b7c976b8f278e06e34368';
 export function validateNativeManifest(m){
   if(m.accounting_version!==2||m.pricing_version!==2||m.routing_version!==2||m.review_policy_version!==1||
     !keys(m.contracts,NATIVE_ROLES)||!integer(m.limits?.maximum_contribution_loss_bps,0,1000))fail('Explicit reviewed native-V2 deployment policy is required');
@@ -22,6 +25,9 @@ export function validateNativeManifest(m){
   }
 }
 const SELECTORS={
+  'GOVERNANCE_VERSION()':'0xf3f0172e','FEE_INTAKE_VERSION()':'0x5b9715f3','SCHEMA()':'0xb4a8b1b8',
+  'SOURCE_POLICY_VERSION()':'0x9694a103','zzz()':'0xa4dff0a2','isSealed()':'0x631f9852',
+  'canonicalChainId()':'0x0c7bdd72','canonicalHandoff()':'0x2e0ea955','governance()':'0x5aa6e675',
   'ACCOUNTING_VERSION()':'0xebbc42b6','PRICING_VERSION()':'0x5f9c8132','REVIEW_POLICY_VERSION()':'0x96b09228',
   'ENTRY_REVIEW_VERSION()':'0x49de0529','migrationBudget()':'0x7d13e4db','contributionPricing()':'0x2cf518cc',
   'oracle()':'0x7dc0d1d0','vault()':'0xfbfa77cf','access()':'0x71907f17','registry()':'0x7b103999',
@@ -49,7 +55,7 @@ export class NativeProfile {
     await Promise.all(Object.values(m.contracts).map(async c=>{
       if(await this.reader.request({method:'eth_getCode',params:[c.address,block]})!==c.runtime_code)fail('A reviewed native contract implementation changed');
     }));
-    const numbers=[['vault','ACCOUNTING_VERSION()',2],['oracle','PRICING_VERSION()',2],['entry','REVIEW_POLICY_VERSION()',1],
+    const numbers=[['vault','ACCOUNTING_VERSION()',m.accounting_version],['oracle','PRICING_VERSION()',2],['entry','REVIEW_POLICY_VERSION()',1],
       ['contribution_pricing','ENTRY_REVIEW_VERSION()',1],['budget','MAX_LOSS_BPS()',1000],['contribution_pricing','active()',0]];
     const bindings=[['vault','migrationBudget()','budget'],['vault','access()','access'],['nft','access()','access'],
       ['nft','claimRouter()','claim_router'],['claim_router','access()','access'],['claim_router','nft()','nft'],
@@ -98,5 +104,39 @@ export class NativeProfile {
     const lower=BigInt('0x'+bounds[0]),upper=BigInt('0x'+bounds[1]),fingerprint='0x'+bounds[2];
     if(lower<=0n||upper<lower||upper>10n**36n||fingerprint===ZERO_HASH)fail('Dual-source price bounds are unavailable or invalid');
     return {lower,upper,fingerprint,policy_id:asset.price_policy_id,asset:asset.address};
+  }
+}
+
+// Fresh local-Position3 is an explicit third manifest, never a relabelled V2.
+export function validateCurrentManifest(m){
+  if(m.accounting_version!==3||m.governance_version!==2||m.fee_intake_version!==1||
+    m.canonical_schema!==CURRENT_CANONICAL_SCHEMA||!keys(m.contracts,CURRENT_ROLES))fail('Explicit current3 governance, fee and canonical policy is required');
+  // Reuse asset field validation only; the historical profile itself is unchanged.
+  validateNativeManifest({...m,accounting_version:2,contracts:Object.fromEntries(NATIVE_ROLES.map(k=>[k,m.contracts[k]]))});
+  if(m.input_assets.length!==2||!m.input_assets.some(a=>a.symbol==='ETH')||!m.input_assets.some(a=>a.symbol==='ZZZ')||
+    m.input_assets.some(a=>!['ETH','ZZZ'].includes(a.symbol)))fail('Current contributions require reviewed ETH and fixed ZZZ only');
+}
+export class CurrentNativeProfile extends NativeProfile {
+  async _verify(block){
+    await super._verify(block);
+    const m=this.m,zzz=m.input_assets.find(a=>a.symbol==='ZZZ').address;
+    const numbers=[['access','GOVERNANCE_VERSION()',2],['fees','FEE_INTAKE_VERSION()',1],
+      ['activation_assets','SOURCE_POLICY_VERSION()',1],['access','isSealed()',1],
+      ['vault','canonicalChainId()',m.chain_id]];
+    const bindings=[['access','canonicalHandoff()','handoff'],['fees','access()','access'],['handoff','access()','access']];
+    const modules=[['fees','a93341f4bc02ec5f35c323a55f9fd5355df1a75bdfec48a3279200374d036b04'],
+      ['handoff','8793ebf778da79e95ce07a99a87738bb03de82612fccea3b04b4a321177b66b7']];
+    await Promise.all([...numbers.map(async([role,method,wanted])=>{
+      if(BigInt('0x'+(await this.call(role,method,'',block))[0])!==BigInt(wanted))fail('Current contract version/domain differs: '+method);
+    }),...bindings.map(async([role,method,target])=>{
+      if((await this.call(role,method,'',block))[0]!==addr(m.contracts[target].address))fail('Current contract parent binding differs: '+method);
+    }),...modules.map(async([role,id])=>{
+      if((await this.call('access','module(bytes32)',id,block))[0]!==addr(m.contracts[role].address))fail('Current sealed module differs: '+role);
+    }), (async()=>{
+      if('0x'+(await this.call('handoff','SCHEMA()','',block))[0]!==CURRENT_CANONICAL_SCHEMA)fail('Current canonical schema differs');
+      if((await this.call('activation_assets','zzz()','',block))[0]!==addr(zzz))fail('Fixed ZZZ identity differs');
+      const governor=(await this.call('access','governance()','',block))[0];
+      if(governor==='0'.repeat(64)||governor===addr(m.contracts.access.address)||!/^0{24}[0-9a-f]{40}$/.test(governor))fail('Invalid current governance identity');
+    })()]);
   }
 }

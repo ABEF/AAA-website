@@ -4,3 +4,6 @@ dist/
 .env.*
 !.env.example
 *.log
+
+# Separate integration artifacts must never replace or enter the demo release.
+dist-poplint*/
