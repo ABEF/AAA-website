@@ -1,73 +1,78 @@
 # Website current project context
 
-Reviewed2026-10-26. [AGENTS.md](AGENTS.md) owns website work rules. The contract
-repository's [documentation map](https://github.com/ABEF/AAA/blob/main/docs/README.md),
-[current context](https://github.com/ABEF/AAA/blob/main/PROJECT_CONTEXT.md),
-[sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) and operator manual
-are authoritative for production behavior.
+Reviewed 2026-10-27 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
+[environment procedures](SITE_ENVIRONMENTS.md) and the contract repository's
+[sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) before making changes.
+This is durable repository context, not global personal memory.
 
-## Current state
+## Two separate public sites
 
-Public demonstration: https://popldemo.0xwave.com, preserved unchanged.
-Separate current-contract integration target: https://www.poplint.0xwave.com.
-See SITE_ENVIRONMENTS.md for isolated builds, roots, config and rollback; never
-mix the demo installer or simulated balances into integration. Missing reviewed
-contracts/API is unconfigured, not an example deployment.
-This website's public demo mode
-simulates financial actions; DEPLOYMENT is null and signing remains Anvil-only.
-Published native2 read/unsigned profile and historical local wallets exist.
-The fresh contract candidate is accounting3/directgovernance2/fee1/localV4;
-An explicit current3 reader/unsigned-review implementation now has451affected JS
-passes including46new methods with six real Python DTO fixtures (synthetic RPC,
-feeds and venue). Actual current3 contracts/API/provider/extension qualification
-remains open; the existing demo source/build/server is a separate release target.
-Do not relabel old fixtures/journals or infer current services are running from
-an old local URL. Existing source/build/server/dist/Anvil state is unchanged by
-this documentation/memory update.
+| Target | Purpose | Server release root |
+| --- | --- | --- |
+| https://www.popldemo.0xwave.com/ and existing apex | Existing simulated product demonstration | `/var/www/aaa-website/current` |
+| https://www.poplint.0xwave.com/ and redirected apex | Current-contract read/unsigned-review integration | `/var/www/popl-integration/current` |
 
-## Production rules to align
+Website implementation f23c5599185997da1f36c4f64fea021b3f99b27a is published on main
+and deployed only to poplint. Its independent certificate, Nginx site, build,
+identity and checksums are verified. Demo release9be6d1, public content and its
+existing enabled-site configuration hashes remain unchanged. Both www sites and
+integration identity return HTTPS200 from desktop checks; source/publication and
+serving evidence live in the contract repo's
+[current3 website report](https://github.com/ABEF/AAA/blob/main/reports/current3-website-20261026/DEPLOYMENT.md).
 
-1,000 ERC-721 NFTs,600Commun/300Rare/100Legendary. Mint creates noLP; intended
-OpenSea primary mint0.05ETH buyer gross, gas separate, recipient net after actual
-platform fee. Current direct mint pays full0.05ETH and is not compatible yet.
-Activation/growth accept ETH/fixedZZZ only, minimum$100/$5, actual LP measured,
-default2%contribution/1%conversion/3%maintenance loss with10%governance maxima,
-gas separate and tighter caller/venue minima. Dual reviewed prices agree within
-selected3%; actual sources/routes remain unqualified.
+Poplint is deliberately **unconfigured**: integration-config.js is null, no
+reviewed contracts/API are invented, balances stay unavailable and no demo
+fallback runs. Public signing stays disabled; no public contract was deployed.
+Build it only with build-integration.mjs into a new dist-poplint directory and
+use install-integration-release.sh, never the demo installer/root/dist. A
+deployable artifact requires an exact40-character source revision. See the
+environment map for verification, bounded read-only retry and rollback.
 
-LP fees80/10/5/5: individual share/equal activated collective/compound/buyback.
-Royalties actually received use activated rarity1/2/3 and are separate. NFT net
-income = individual+collective LP+royalties; reserves/claims/conversions/imports
-are not added as new income. Earned includes prior payouts/past owners, claimable
-is the remaining funded amount. Today's original-currency USD history differs
-from ETH conversion proceeds; missing values stay unavailable.
+## Current implementation and evidence
 
-One contribution pool at a time; current hookless native ETH/ZZZ, shared LP with
-independent NFT shares. Governed same-pair pool moves and trusted external
-custody remain; creator inboxes/integrated bridges are removed. Exiting principal
-does not relocate canonical NFT/reward rights. Same-chain funded handoff is
-separate; no forced custodian return or post-halt recovery is promised.
+Explicit website schema3 checks accounting3/governance2/fee1/pricing2/routing2/
+review1/localV4, twelve runtime/parent/module pins and fixed ZZZ admission. HTTP
+schema2 remains distinct. Existing schema1/native2 deployments, journals and
+the shared Anvil-only signer retain their meaning; no automatic profile upgrade.
 
-## Documentation and evidence
+One final affected selection has451JS passes including46new methods. Six fixtures
+come from actual Python API/projection/preparation code with synthetic dependency,
+RPC, price and venue state. Separate integration-shell checks have7passes and
+three headless browser cases. These are separate scopes, not a new full regression
+or actual extension/provider qualification. Preserve earlier failed fixture and
+harness attempts and original source identities. The contract report retains
+exact source pins, test outputs, serving checks and current limits.
 
-Contract docs consolidation [5114a1c](https://github.com/ABEF/AAA/commit/5114a1c62a8519c91233983d9123b137a24bbc60)
-replaces accumulated obsolete guidance, merges five redundant pages and preserves
-historical audit bytes. [Cleanup record](https://github.com/ABEF/AAA/blob/main/reports/documentation-cleanup-20261026/README.md)
-records actual scope; publication is separate from deployment.
-Latest keeper/LP source [885af8e](https://github.com/ABEF/AAA/commit/885af8edaadbc4fa7f8da8021c1d2d2fe66a4a6d) binds
-health to loaded config, rejects malformed conversion flags and repairs current
-rehearsal/range verification.354affected Python passes/5Unix skips,9range methods
-including1,000fuzz. Production Solidity/economics/ABI unchanged. Updated Linux
-process/systemd/actual-provider campaigns remain unexecuted/unqualified.
-[Audit evidence](https://github.com/ABEF/AAA/blob/main/reports/keeper-lp-audit-20261026/VERIFICATION.md)
-is source-scoped, not production approval. Old backend379ae19 fee-integrity
-evidence retains its167affected-method scope; counts are not added together.
-No website source/build/server or existing runtime change follows this memory.
-Original website memory preimages are retained externally under
-documentation-cleanup-20261026/website-originals; earlier details remain in Git.
+Current product:1,000 ERC721 NFTs,600Commun/300Rare/100Legendary. Native ETH and
+fixed ZZZ only for contribution; $100activation/$5growth, stronger pool minima.
+Default loss budgets2/1/3%, governed maximum10%, gas separate and tighter caller/
+venue bounds retained. Dual sources agree within3%; actual providers/routes remain
+unqualified. Rarity weights1/2/3 affect actual received royalties only. Fixed
+LP allocation80/10/5/5; NFT income is individual+equal collective+royalties,
+excluding reserves and duplicate claims/conversions/imports. Current owner holds
+unclaimed rights. Missing price/history stays unavailable, not guessed zero.
 
-No website source/build/server, contracts, financial transaction, services,
-monitor or existing local data changed. Main only; monitor paused. Actual
-prices/routes/VRF/authorities/OpenSea/current3website/hosting/gas/operations,
-permanent artwork and independent audit/remediation remain open. Production
-NOT APPROVED. Repository memory is durable context, not global personal memory.
+Artwork and balances update only after confirmed deployed LP; claim refresh does
+not evolve artwork. Preserve approved texture, four mapped evolutions, per-NFT
+pending state, rarity/color/card rules and ACTI/EV timing from AGENTS.md.
+
+## Continuation and authorization
+
+The user declined extra sale-rights UI; the stable Todo task is Not planned,
+not implemented. Underlying economic rights are unchanged. Intended production
+minting is OpenSea (0.05ETH buyer gross, recipient net after platform fee), but
+the actual mint integration remains unfinished. The website mint is a demo.
+
+Actual current3 contracts/API/feeds/routes/VRF/authorities/OpenSea, permanent
+artwork hosting, complete history, target gas/operating qualification and
+independent audit/remediation remain open. Production NOT APPROVED.
+
+Preserve local Anvil/NFTs/LP/balances/journals/port8902/dist overlay. No reset,
+keeper restart, public signing or public financial transaction occurred. The
+staging monitor remains paused. A deployment SSH key was explicitly authorized;
+its private half and server credentials stay outside Git/public artifacts. Do
+not probe credentials or add privileged access without authorization.
+
+Main only. Website docs receipts after f23c559 do not deploy a new artifact;
+public site-identity.json remains the authority for the served source revision.
+Contract-side WORK_HANDOFF.md records external backup/evidence locations.

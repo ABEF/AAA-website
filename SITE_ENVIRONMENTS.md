@@ -1,6 +1,6 @@
 # Website environment boundaries
 
-Reviewed 2026-10-26. The contract repository's [environment map](https://github.com/ABEF/AAA/blob/main/docs/SITE_ENVIRONMENTS.md)
+Reviewed 2026-10-27. The contract repository's [environment map](https://github.com/ABEF/AAA/blob/main/docs/SITE_ENVIRONMENTS.md)
 owns the complete operating procedure and decisions.
 
 | Target | URL | Build | Server current root |
@@ -33,3 +33,10 @@ configuration hashes. Roll back only the integration symlink/configuration.
 
 Source-specific evidence belongs in the contract repository; the sole Todo stays
 there. The user declined extra NFT sale-rights UI; economic rights are unchanged.
+
+Current served integration revision: f23c5599185997da1f36c4f64fea021b3f99b27a,
+verified HTTPS with configuration_status unconfigured/public_signing false.
+The demo still serves9be6d1. Subsequent documentation commits do not change
+either deployed revision; inspect site-identity.json and the server release
+record before an update. After reload, use bounded read-only verification
+retries if necessary; do not blindly reinstall or alter the demo.

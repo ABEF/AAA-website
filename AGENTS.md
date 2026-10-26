@@ -1,6 +1,6 @@
 # AAA / ZZZ PoPL website instructions
 
-Reviewed2026-10-26. Read PROJECT_CONTEXT.md and the contract repository's current
+Reviewed2026-10-27. Read PROJECT_CONTEXT.md and the contract repository's current
 AGENTS.md/README/Todo/operator guide. This is current guidance, not an append-only
 history. Previous memory files are backed up outside Git in the contract-side
 documentation-cleanup evidence directory; Git retains every earlier revision.
@@ -61,17 +61,19 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 
 ## Documentation and verification
 
-Current keeper/LP source audit is in the contract repository's
-reports/keeper-lp-audit-20261026. Health now requires exact loaded-config digest;
-typed conversion flags distinguish malformed data from valid disabled controls.
-No website signer/policy change follows.354Python passes/5Unix skips and9range
-methods are scoped evidence, not a Linux/public-service qualification.
+The contract repository's docs/project-todo.json generates its sole TODO.md.
+No website Todo page. Keep feature/operator/roadmap/release/context there current;
+preserve historical report bytes and exact source/evidence scope. User-declined
+sale-rights UI is Not planned, not implemented.
 
+Current3 website evidence is in contract reports/current3-website-20261026:
+451affected JS passes (46new included),7separate integration checks and3browser
+cases; actual Python DTO code uses synthetic dependencies. Poplint serving/TLS
+and demo-preservation checks are separate observations, not real API/provider,
+extension, market or audit approval. Preserve Anvil-only signer, legacy journals
+and null unconfigured integration; public signing remains disabled.
 
-Contract TODO.md generated from docs/project-todo.json is the single task list.
-Maintain source-linked features/operator/roadmap/release/context there; no website
-Todo page. Keep concise current docs, not another dated preamble on every change.
-Run useful affected checks; reuse unchanged evidence only with exact pins and
-never combine overlapping counts as a new regression. Production NOT APPROVED:
-current3 integration, actual services/feeds/routes/VRF/authorities/OpenSea,
-artwork hosting, operating qualification and independent audit remain open.
+Run useful affected checks and reuse unchanged evidence only with exact pins;
+do not add overlapping counts or repeat whole suites for docs. Production remains
+NOT APPROVED: actual current contracts/API/feeds/routes/VRF/authorities/OpenSea,
+metadata hosting, gas/operating qualification and independent audit remain open.
