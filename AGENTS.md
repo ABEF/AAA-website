@@ -1,3 +1,28 @@
+## Backend fee-breakdown integrity - 2026-10-26
+
+Contract implementation 379ae19dbb9c5a45a4ebb5c83be18007b67bc816 on main fixes reporting integrity in five
+Python modules: actual current fee-intake1, exact funded-credit/allocation pairing,
+pinned carried dust, impossible inactive rewards, mandatory native ETH inventory
+and malformed wallet-value error propagation.167distinct affected methods pass:
+31new/136existing,54input hashes stable. No Solidity, API schema, economic right,
+custody authority or signing change. Historical profiles stay explicit.
+
+NFT earnings mean individual+collective LP plus royalties, excluding reserves
+and duplicate claims/conversions/imports. Earnings include earlier payouts and
+past owners; claimable is remaining funded value. Pending royalty claims can
+precede processed history. Today's original-currency prices are not converted
+ETH proceeds. Head-state checks do not prove every historic receipt/timestamp;
+authentic complete logs and independent-provider windows remain required.
+
+MEMORY ONLY in this website repo. Website source/build/server/dist overlay,
+existing8902/Anvil/NFT/LP/balances/journals, signer/services and paused monitor
+unchanged. Public DEPLOYMENT null, signing Anvil-only. No public RPC/transaction/
+deployment/seal/service action. Current3website, actual feeds/routes/VRF/authorities/
+OpenSea/history/targetgas/operations and independent audit stay open. Production
+NOT APPROVED. Sole Todo/features/operator/roadmap/release maintained in contract
+repo reports/backend-remediation-20261026. Main only; publication verified in a
+separate receipt, never inferred from local saves. GitHub is not deployment.
+
 ## Full contract audit - 2026-10-26
 
 Contract implementation 5b6cf6bcc944b65a7e78129a24015176f11c9b0c on main records the broad internal audit
