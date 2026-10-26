@@ -58,6 +58,15 @@ pending state, rarity/color/card rules and ACTI/EV timing from AGENTS.md.
 
 ## Continuation and authorization
 
+Published contract integration/fork checkpoint:
+[8be0f89](https://github.com/ABEF/AAA/commit/8be0f89fd982253ddae7bef2ebfc36b497d836b1).
+Website operating checkpoint77501ce is separate from served poplint artifact
+f23c559 and demo9be6d1. Follow the contract WORK_HANDOFF.md next session; do not
+rerun unchanged checks or change the demo merely to continue current integration.
+Actual reviewed contracts/API/feeds/routes must be supplied before replacing
+the unconfigured state; public signing remains disabled. No overnight monitor,
+service restart or public transaction was requested.
+
 The user declined extra sale-rights UI; the stable Todo task is Not planned,
 not implemented. Underlying economic rights are unchanged. Intended production
 minting is OpenSea (0.05ETH buyer gross, recipient net after platform fee), but
