@@ -12,10 +12,24 @@ read/unsigned-review build. Missing reviewed contracts/API displays unconfigured
 never demo holdings. Public signing remains disabled. See
 [environment and deployment procedures](SITE_ENVIRONMENTS.md).
 
+## Contract source and served releases
+
+Contract source checkpoint: [4579eeb](https://github.com/ABEF/AAA/commit/4579eeb289d4647bd18b785881db9522639eb312).
+Fresh accounting4/custody3/canonical V5 remains distinct from the served
+accounting3 integration build and preserved local Anvil profiles. Keeper source
+now has service-only in-range compound waits, existing-window reset coordination,
+proved internal-harvest clocks and read-only LP diagnostics. Registration uses
+complete actual bucket inventory; no public registration getter exists. These
+source changes do not implement a website feature, update a deployment manifest,
+enable public signing or authorize a site/service rollout. Follow the contract
+[operator guide](https://github.com/ABEF/AAA/blob/main/docs/KEEPER_COORDINATION.md)
+and sole Todo; actual fresh4 integration and live qualification remain open.
+
 ## Published demo
 
-The public site remains a simulation; local browser signing at port 8900 is a
-separate profile. The reviewed API adapter is disabled in the public build.
+The public site remains a simulation; historical local browser-signing
+rehearsals are separate profiles. Preserve the existing port8902 setup and its
+original deployments/journals; this documentation does not start or relabel it. The reviewed API adapter is disabled in the public build.
 [Publication checks](https://github.com/ABEF/AAA/blob/main/reports/deployment-adapter/PUBLICATION.md)
 record the current server/public bytes and remaining production boundaries.
 

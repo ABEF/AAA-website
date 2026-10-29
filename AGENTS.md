@@ -1,6 +1,6 @@
 # AAA / ZZZ PoPL website instructions
 
-Reviewed2026-10-27. Read PROJECT_CONTEXT.md and the contract repository's current
+Reviewed 2026-10-29. Read PROJECT_CONTEXT.md and the contract repository's current
 AGENTS.md/README/Todo/operator guide. This is current guidance, not an append-only
 history. Previous memory files are backed up outside Git in the contract-side
 documentation-cleanup evidence directory; Git retains every earlier revision.
@@ -36,7 +36,11 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 - Mint adds no LP or reward eligibility. Intended primary mint is OpenSea,
   buyer0.05ETH gross/net recipient proceeds after actual platform fee; current
   direct mint is not that integration. Website mint is demonstrative.
-- Holder cannot redeem LP principal. Current owner inherits unclaimed rights;
+- Holders cannot redeem principal during normal operation. The fresh accounting4
+  contract candidate permits a governance-triggered terminal ETH+ZZZ return to
+  current holders, retaining NFT transfers/royalties/earned rewards. Do not label
+  the older served current3 artifact as implementing that lifecycle.
+  Current owner inherits unclaimed rights;
   LP rewards are individual shares+equal activated collective, royalties use
   separate rarity1/2/3. No Power. Do not include compound/buyback/gross intake
   in NFT claimable totals or count claims/conversions twice.
@@ -60,8 +64,8 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
   with distinct colors and useful claimable examples; rarity is not evolution.
 
 Static artwork reference metadata now keeps fixed rarity weight1/2/3 separate
-from activation eligibility. Generator/preview and2784reference descriptions are
-locally corrected;696dormant traits change0to1/2/3.72historical references,
+from activation eligibility. Generator/preview and2784reference descriptions were
+published at cae44a1d; 696 dormant traits changed from 0 to 1/2/3. The 72 historical references,
 all2784SVG image hashes, manifest, effective demo accounting, signer and null
 public configurations are unchanged. Three focused metadata methods and syntax
 checks pass. No asset regeneration/build/deployment/service/Anvil action.
@@ -69,6 +73,17 @@ See the contract [whole-project execution](https://github.com/ABEF/AAA/blob/main
 This does not implement fresh4 integration or qualify marketplace/hosting.
 
 ## Documentation and verification
+
+Contract source checkpoint: [4579eeb](https://github.com/ABEF/AAA/commit/4579eeb289d4647bd18b785881db9522639eb312).
+Fresh accounting4/custody3/canonical V5 remains distinct from the served
+accounting3 integration build and preserved local Anvil profiles. Keeper source
+now has service-only in-range compound waits, existing-window reset coordination,
+proved internal-harvest clocks and read-only LP diagnostics. Registration uses
+complete actual bucket inventory; no public registration getter exists. These
+source changes do not implement a website feature, update a deployment manifest,
+enable public signing or authorize a site/service rollout. Follow the contract
+[operator guide](https://github.com/ABEF/AAA/blob/main/docs/KEEPER_COORDINATION.md)
+and sole Todo; actual fresh4 integration and live qualification remain open.
 
 The contract repository's docs/project-todo.json generates its sole TODO.md.
 No website Todo page. Keep feature/operator/roadmap/release/context there current;
