@@ -59,6 +59,15 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
   Demo default positions retain one dormant, two enhanced and one singularity
   with distinct colors and useful claimable examples; rarity is not evolution.
 
+Static artwork reference metadata now keeps fixed rarity weight1/2/3 separate
+from activation eligibility. Generator/preview and2784reference descriptions are
+locally corrected;696dormant traits change0to1/2/3.72historical references,
+all2784SVG image hashes, manifest, effective demo accounting, signer and null
+public configurations are unchanged. Three focused metadata methods and syntax
+checks pass. No asset regeneration/build/deployment/service/Anvil action.
+See the contract [whole-project execution](https://github.com/ABEF/AAA/blob/main/reports/whole-project-execution-20261029/REVIEW.md).
+This does not implement fresh4 integration or qualify marketplace/hosting.
+
 ## Documentation and verification
 
 The contract repository's docs/project-todo.json generates its sole TODO.md.

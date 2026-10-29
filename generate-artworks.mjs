@@ -108,8 +108,8 @@ for(const art of ARTWORKS){
   const svg=await render(art);
   const traits={paletteId:art.paletteId,colorIds:art.colors,colorStyle:art.colorStyle,pattern:art.pattern,rarity:art.rarity};
   const metadata={name:`PoPL artwork · ${art.colorLabel} · ${art.patternLabel} · ${art.rarityLabel} · ${art.evolutionLabel}`,
-    description:'Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.',
-    image:`../${art.id}.svg`,attributes:[...metadataAttributes(traits,art.evolution),{trait_type:'Royalty Weight',value:art.royaltyWeight}],
+    description:'Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Rarity fixes the NFT-sale royalty weight at 1, 2 or 3; sharing starts only after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.',
+    image:`../${art.id}.svg`,attributes:[...metadataAttributes(traits,art.evolution),{trait_type:'Royalty Weight',value:art.royaltyMultiplier}],
     properties:{visual_only:['Color style','Palette','Colors','Circuit pattern'],palette_id:art.paletteId,color_ids:art.colors,pattern:art.pattern,evolution:art.evolution,
       royalty_multiplier:art.royaltyMultiplier,activation_required:true,example:true,source_artwork:`${art.colors.length===1&&Object.hasOwn(hue,art.colors[0])?art.colors[0]:'cyan'}-${art.rarity}-${art.evolution}.png`}};
   await writeFile(new URL(art.src,import.meta.url),svg);

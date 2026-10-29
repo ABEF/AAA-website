@@ -1,6 +1,6 @@
 {
   "name": "PoPL artwork · Cyan / Amber / Ivory · Twin circuit routes · Legendary · Dormant",
-  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Only rarity sets the separate NFT-sale royalty weight after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
+  "description": "Example artwork metadata. Palette, color style and circuit pattern are immutable visual traits with no effect on LP rewards or royalty weight. Rarity fixes the NFT-sale royalty weight at 1, 2 or 3; sharing starts only after activation. Evolution follows current attached LP value; activation and fee rights persist when market value falls.",
   "image": "../cyan-amber-ivory-ribs-legendary-dormant.svg",
   "attributes": [
     {
@@ -37,7 +37,7 @@
     },
     {
       "trait_type": "Royalty Weight",
-      "value": 0
+      "value": 3
     }
   ],
   "properties": {

@@ -28,6 +28,15 @@ use install-integration-release.sh, never the demo installer/root/dist. A
 deployable artifact requires an exact40-character source revision. See the
 environment map for verification, bounded read-only retry and rollback.
 
+Static artwork reference metadata now keeps fixed rarity weight1/2/3 separate
+from activation eligibility. Generator/preview and2784reference descriptions are
+locally corrected;696dormant traits change0to1/2/3.72historical references,
+all2784SVG image hashes, manifest, effective demo accounting, signer and null
+public configurations are unchanged. Three focused metadata methods and syntax
+checks pass. No asset regeneration/build/deployment/service/Anvil action.
+See the contract [whole-project execution](https://github.com/ABEF/AAA/blob/main/reports/whole-project-execution-20261029/REVIEW.md).
+This does not implement fresh4 integration or qualify marketplace/hosting.
+
 ## Current implementation and evidence
 
 Explicit website schema3 checks accounting3/governance2/fee1/pricing2/routing2/

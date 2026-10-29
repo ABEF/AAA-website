@@ -98,7 +98,7 @@ function openArtwork(id) {
   $('#illustration-image').src = art.src;
   $('#illustration-image').alt = `${art.colorLabel} ${art.rarityLabel} egg NFT · ${art.evolutionLabel}`;
   $('#illustration-title').textContent = `${art.colorLabel} · ${art.rarityLabel} · ${art.evolutionLabel}`;
-  $('#illustration-note').textContent = `${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}. ${art.evolution === 'dormant' ? `Dormant: zero royalty weight. ${art.rarityLabel} becomes ×${art.royaltyMultiplier} after activation.` : `Royalty weight ×${art.royaltyWeight}.`} Colors and circuit patterns are visual traits only; LP fees are unchanged. Artwork and metadata preview.`;
+  $('#illustration-note').textContent = `${styleLabel(art.colorStyle)} · ${patternLabel(art.pattern)}. Royalty weight ×${art.royaltyMultiplier}.${art.evolution === 'dormant' ? ' Sharing starts only after activation.' : ''} Colors and circuit patterns are visual traits only; LP fees are unchanged. Artwork and metadata preview.`;
   $('#illustration-metadata').href = art.metadata;
   $('#illustration-metadata').download = `${art.id}.json`;
   if (!$('#illustration-dialog').open) $('#illustration-dialog').showModal();
