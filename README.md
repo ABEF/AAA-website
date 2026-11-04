@@ -14,16 +14,16 @@ never demo holdings. Public signing remains disabled. See
 
 ## Contract source and served releases
 
-Contract source checkpoint: [4579eeb](https://github.com/ABEF/AAA/commit/4579eeb289d4647bd18b785881db9522639eb312).
-Fresh accounting4/custody3/canonical V5 remains distinct from the served
-accounting3 integration build and preserved local Anvil profiles. Keeper source
-now has service-only in-range compound waits, existing-window reset coordination,
-proved internal-harvest clocks and read-only LP diagnostics. Registration uses
-complete actual bucket inventory; no public registration getter exists. These
-source changes do not implement a website feature, update a deployment manifest,
-enable public signing or authorize a site/service rollout. Follow the contract
-[operator guide](https://github.com/ABEF/AAA/blob/main/docs/KEEPER_COORDINATION.md)
-and sole Todo; actual fresh4 integration and live qualification remain open.
+Contract source checkpoint: [44f5fa7](https://github.com/ABEF/AAA/commit/44f5fa7db5d8472e4cd8f3e1af13a4b9dc27fa09).
+Fresh accounting6/portfolio2/custody5/Entry-routing3/canonical V6 and schema10
+remain distinct from the served accounting3 integration and preserved Anvil
+profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
+terminal governance-only principal batches, entrant-only main growth and scoped
+readiness are contract-source capabilities, not features of the older site.
+See the contract [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md)
+and [audit supplement](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-audit-20261104/REVIEW.md).
+Matching fresh-source website/services and live qualification remain open.
+These documentation changes alter no configuration, signer, build or served site.
 
 ## Published demo
 
@@ -95,7 +95,7 @@ Open `http://127.0.0.1:4173`. Stop the server with Ctrl+C. For a different port,
 - Overview: the opening “Understand PoPL · 26 seconds” button plays the self-hosted, silent explainer in a responsive dialog. Playback starts only on click and stops/resets when closed (including Escape, backdrop click or route change). Native controls support pause, seek and replay; a download link and accessible description are provided. The video is a concept illustration, not evidence of deployed contracts. Overview explains the NFT's attached LP and transferable fee rights through an example position, a contribution diagram and a three-step lifecycle. Selecting the example NFT opens the same position details used by Collection. The LP revenue chart shows the 80/10/5/5 allocation, followed by compact collection LP, 24-hour fees, lifetime fees and pool-volume figures. There are no fee calculators, amount inputs or period controls. NFT-sale royalties have a separate section, followed by the color/evolution guide and seven FAQs that start closed. Small arrow links open Collection and Artwork.
 - Collection: starts with exactly $425,000 in example LP across 100 NFTs; 20 are dormant, and three positions exceed $100,000. Shows lifetime and 24-hour gross fees, level composition, a sample activity chart, pool/status/rarity/contained-color/color-style/search filters, sorting, pagination and NFT details. Position details keep attached LP, lifetime fees and 24-hour fees together in one row.
 - Artwork: browse 2,784 artwork states by contained color, color style, circuit pattern, rarity and evolution; enlarge each image and download its metadata example. The full rendering library is distinct from the fixed inventory of 1,000 NFTs and the 100 seeded example positions.
-- Mint: previews a 0.05 ETH dormant mint within a 1,000-NFT cap (600 Commun, 300 Rare and 100 Legendary). The initial example has 100 minted NFTs with a 60/30/10 rarity mix; later preview mints draw unused full entries from the fixed inventory within remaining rarity quotas. This deterministic simulation is not a VRF request. Each mint creates a dormant NFT with $0 attached LP and no rewards. Minting increases the NFT count, never collection liquidity. In My NFTs, activate it with at least $100 in ZZZ, ETH, USDC or USDG value, funding the single example ZZZ/ETH contribution pool. Later contributions start at $5 in value and increase the attached LP allocation of that same NFT. The artwork controls explore designs; they do not select mint traits.
+- Mint: previews a 0.05 ETH dormant mint within a 1,000-NFT cap (600 Commun, 300 Rare and 100 Legendary). The initial example has 100 minted NFTs with a 60/30/10 rarity mix; later preview mints draw unused full entries from the fixed inventory within remaining rarity quotas. This deterministic simulation is not a VRF request. Each mint creates a dormant NFT with $0 attached LP and no rewards. Minting increases the NFT count, never collection liquidity. Fresh production contributions use native ETH or fixed ZZZ only, defaulting to $100 activation and $5 growth. Some preserved demo/legacy fixtures still show wider example selectors; they are not supported production inputs. Later contributions start at $5 in value and increase the attached LP allocation of that same NFT. The artwork controls explore designs; they do not select mint traits.
 - My NFTs: connect an injected browser wallet (EIP-1193/EIP-6963) or the demo wallet to inspect example owned NFTs, attached LP, generated fees and claimable rewards. Individual and bulk simulated claims include separate funded LP and NFT-sale royalty balances, without reducing principal or gross trading fees. Previously claimed is the NFT's lifetime total across LP rewards and royalties, not its latest claim. Activation and LP additions use separate forms that acknowledge the permanent commitment.
 
 The default connected demo portfolio contains four differently colored NFTs: Cyan Enhanced #444 and Blue Singularity #128 have claimable rewards; Emerald Enhanced #91 is already claimed; Violet Dormant #74 has no rewards. Reset demo restores this baseline; simulated mints can add positions afterward. The v7 saved-state namespace starts the finite artwork inventory without replaying obsolete v6 events. Earlier saved events are not deleted.
@@ -118,9 +118,9 @@ accounts; production extension-wallet signing and public deployment remain open.
 
 No public PoPL deployment is configured. In the default static/demo mode, every NFT, LP valuation, fee history, portfolio assignment, mint, activation and claim in this website is illustrative. Browser-wallet connection retrieves a public address and chain identifier only. The default static mode never requests token approvals, signatures, payments or blockchain transactions. The separate local mode explicitly confirms disposable test transactions.
 
-Connecting a real wallet does not fetch its actual NFTs: it displays the same explicitly labeled example portfolio. The accepted contract configuration is a 0.05 ETH dormant mint, minimum $100 contributed value with at least 99% deployed as LP and gas separate, an 80/10/5/5 revenue split with equal collective shares across active NFTs, and the capped rarity/royalty rules described below. The aligned Solidity update is under verification and remains undeployed; the default simulation does not call it. The local mode uses its compiled core with mock venue/feed/randomness dependencies. Production market integration, a reviewed VRF provider, pricing, bridge transport, staged operations and independent audit remain release gates.
+Connecting a real wallet does not fetch its actual NFTs: it displays the same explicitly labeled example portfolio. The accepted contract configuration is a 0.05 ETH dormant mint, default minimum $100 activation/$5 growth with at least 98% deployed as marginal LP at the default2% contribution cap and gas separate, an 80/10/5/5 revenue split with equal collective shares across active NFTs, and the capped rarity/royalty rules described below. The aligned Solidity update is under verification and remains undeployed; the default simulation does not call it. The local mode uses its compiled core with mock venue/feed/randomness dependencies. Actual pricing/routes/VRF, authorities, OpenSea, current services/site, operating qualification and independent audit remain release gates. The fresh architecture has no integrated bridge or external custody-address exit.
 
-A ZZZ or USDC contribution is entered as a USD-equivalent example. No ZZZ exchange rate or token-quantity quote is simulated. Contributions fund permanent LP attributed to the same NFT; holders can claim funded rewards, never redeem LP principal. Transfers carry the attached LP allocation and fee rights, including unclaimed funded rewards. NFT rarity, color style, palette and circuit pattern remain fixed, and new contributions receive no retroactive fees.
+Some historical demo contribution forms use a USD-equivalent example; fresh ETH/ZZZ execution requires actual token units and reviewed prices. No ZZZ exchange rate or token-quantity quote is simulated. Contributions fund permanent LP attributed to the same NFT; holders claim funded rewards and cannot redeem principal during normal operation. Fresh contracts also support governance-triggered terminal ETH/ZZZ return; the older served build does not implement that lifecycle. Transfers carry the attached LP allocation and fee rights, including unclaimed funded rewards. NFT rarity, color style, palette and circuit pattern remain fixed, and new contributions receive no retroactive fees.
 
 Pool share is secondary context, never a progress target. The website remains a simulation and is not approved for real funds. Metadata JSON files are local examples, not contract tokenURI responses.
 
@@ -141,13 +141,13 @@ The dependency-free static output is written to `dist/` and can be uploaded to a
 
 The collection has $425,000 of permanent LP across 100 example positions, with 20 dormant positions. Total example ZZZ pool liquidity is $1,250,000, so the collection's share is 34%. Example 24-hour pool volume is $848,000. At an assumed 0.30% swap fee, gross pool fees are $2,544 and the collection's proportional fee estimate is $864.96.
 
-This is sample arithmetic, not live chain data or a yield guarantee. TVL share is not generally the fee-earning share of concentrated liquidity. The example assumes the same proportion of active liquidity earns fees throughout the day and excludes Uniswap protocol deductions. Actual revenue depends on the pool, active ranges and a funded reward-sharing arrangement. See [Uniswap fee concepts](https://developers.uniswap.org/docs/get-started/concepts/fees).
+This is sample arithmetic, not live chain data or a yield guarantee. TVL share is not generally the fee-earning share of concentrated liquidity. The example assumes the same proportion of active liquidity earns fees throughout the day and excludes Uniswap protocol deductions. Actual revenue depends on the pool, active ranges and actual harvested receipts from the selected LP. See [Uniswap fee concepts](https://developers.uniswap.org/docs/get-started/concepts/fees).
 
 The collection is modeled as 10 weeks old (70 days), giving $60,547.20 of lifetime gross fees at the example daily rate. Daily fees are apportioned across active NFTs while conserving the aggregate to the cent. Minting and LP additions do not rewrite recorded fee history. LP additions increase both collection LP and total example pool liquidity, leaving external pool liquidity fixed.
 
 Collected LP revenue is allocated 80% to NFT owners, 10% equally to active NFTs as collective rewards, 5% to permanent LP compounding and 5% to ZZZ buyback and burn. The display model uses largest-remainder rounding to conserve cents; Solidity accounts in raw token units. Compounding is an allocation budget and is not silently added to the displayed LP snapshot. Claimable example balances are funded ledger examples, not guaranteed returns derived from the displayed LP value.
 
-A 5% marketplace royalty is requested, but payment depends on marketplace support. All (100%) royalties actually received enter a separate reward pool: Commun ×1, Rare ×2 and Legendary ×3 after activation; dormant NFTs have zero royalty weight. These are relative shares of royalties actually received, not different marketplace royalty rates or multipliers on LP rewards. A separate illustrative royalty round allocates $12.50 per activated rarity unit: $12.50 Commun, $25 Rare and $37.50 Legendary. Dormant NFTs receive zero, and later activations/additions receive no retroactive allocation. Pending royalties and cumulative royalties claimed stay separate from the LP ledger. Combined preview claims clear both funded balances; Previously claimed sums their cumulative histories. Existing v7 claim events without a scope remain LP-only; new combined events use scope=all. No actual marketplace payment or royalty enforcement occurs.
+A 5% marketplace royalty is requested, but payment depends on marketplace support. All (100%) royalties actually received enter a separate reward pool: Commun ×1, Rare ×2 and Legendary ×3 after activation; dormant NFTs display their fixed rarity weight but have zero royalty eligibility until activation. These are relative shares of royalties actually received, not different marketplace royalty rates or multipliers on LP rewards. A separate illustrative royalty round allocates $12.50 per activated rarity unit: $12.50 Commun, $25 Rare and $37.50 Legendary. Dormant NFTs receive zero, and later activations/additions receive no retroactive allocation. Pending royalties and cumulative royalties claimed stay separate from the LP ledger. Combined preview claims clear both funded balances; Previously claimed sums their cumulative histories. Existing v7 claim events without a scope remain LP-only; new combined events use scope=all. No actual marketplace payment or royalty enforcement occurs.
 
 ## Artwork library
 
@@ -161,7 +161,7 @@ The eight base colors are **Cyan, Blue, Violet, Emerald, Amber, Crimson, Ivory a
 
 Reversing color order does not create a different palette. All 58 palettes can appear in Commun, Rare or Legendary. Color style, assigned colors and circuit pattern are visual traits only and have no effect on LP rewards or royalty weights.
 
-The four circuit patterns are Flowing arcs, Segmented panels, Orbital rings and Vertical ribs. The self-contained SVGs preserve the existing raster egg material and silhouette while applying consistent palette and circuit detailing. The original 72 PNGs are retained as historical source artwork.
+The four catalogue patterns are Flowing arcs, Segmented panels, Orbital rings and Twin circuit routes (the retained internal ribs identity). The self-contained SVGs preserve the existing raster egg material and silhouette while applying consistent palette and circuit detailing. The original 72 PNGs are retained as historical source artwork.
 
 | Color style | Commun | Rare | Legendary | Total NFTs |
 | --- | ---: | ---: | ---: | ---: |
@@ -214,7 +214,7 @@ Instructions: [OVH DNS zones](https://docs.ovhcloud.com/en/guides/web-cloud/doma
 
 ## Future live integration
 
-Before replacing the demo ledger, provide reviewed chain/deployment addresses and contract ABIs, verified NFT ownership reads, token valuation sources, a confirmed/reorg-aware indexer for collection totals and fee history, and funded reward balances. The candidate separates paid dormant minting from owner activation and pools physical LP custody. The native/Pons-market adapter, production bridge, valuation policy, staged operations and independent audit remain release gates.
+Before replacing the demo ledger, provide reviewed chain/deployment addresses and contract ABIs, verified NFT ownership reads, token valuation sources, a confirmed/reorg-aware indexer for collection totals and fee history, and funded reward balances. The candidate separates paid dormant minting from owner activation and pools physical LP custody. The fresh principal pool is native ETH/fixed ZZZ, static and hookless. Pons/creator-payment and integrated bridge paths are retired; actual pool/feed/route qualification and independent audit remain release gates.
 
 Verify the separate funded rarity-weighted NFT-sale royalty ledger and its 100%-received accounting; do not reuse LP revenue allocations or infer royalty enforcement from metadata. Production rarity assignment needs reviewed VRF integration, remaining-quota accounting and failure/retry operations. Activation and LP additions need reviewed token approvals, pool parameters, minimum liquidity, deadlines and wallet-confirmed transactions matching the final ABI. Claims must use the actual rewards ABI and current NFT ownership. Verify those integrations against the release checklist before enabling real funds.
 
@@ -226,15 +226,15 @@ local confirmation lifetime/context checks. The associated contract repository
 has bounded parallel read/unsigned-preparation services; neither change turns
 the public simulation into live wallet transactions. Scoped checks: 90 JS passes.
 
-## Holder payout currency: current gap
+## Current payout and contribution boundary
 
-The intended holder payout is native ETH. Current contract LP claims still pay
-source ERC20 assets; the existing ETH converter handles royalties only. The local
-8892 fixture uses generic TEST-1/TEST-2, not real ZZZ or stablecoins. Its balances
-must retain their actual currency until a reviewed conversion exists. See the
-[contract payout audit](https://github.com/ABEF/AAA/blob/main/reports/topup-and-reward-review/ETH_PAYOUT_AUDIT.md).
-
-Contribution selectors show ZZZ, USDG, USDC and ETH. WETH is internal. Grow/Activate has its own contribution dialog; claim controls stay in the breakdown. Confirmed LP reads, not input amounts, select artwork. See LOCAL_INTEGRATION.md for named local fixtures and their limits.
+Fresh source implements native ETH settlement for funded LP rewards and royalties.
+Unconverted source balances remain separate and must never be relabelled ETH.
+Older TEST-1/TEST-2 fixtures retain their actual currencies and explicit runtime
+profiles. Fresh contributions accept native ETH/fixed ZZZ only; some preserved
+demo/legacy selectors still show USDG/USDC. Source documentation does not change
+those running fixtures or enable their use in production. Actual conversion
+routes, feeds and matching website integration remain unqualified.
 
 ## LP reward ETH settlement - 2026-10-20
 

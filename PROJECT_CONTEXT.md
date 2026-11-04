@@ -1,6 +1,6 @@
 # Website current project context
 
-Reviewed 2026-10-29 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
+Reviewed 2026-11-04 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
 [environment procedures](SITE_ENVIRONMENTS.md) and the contract repository's
 [sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) before making changes.
 This is durable repository context, not global personal memory.
@@ -35,20 +35,20 @@ all2784SVG image hashes, manifest, effective demo accounting, signer and null
 public configurations are unchanged. Three focused metadata methods and syntax
 checks pass. No asset regeneration/build/deployment/service/Anvil action.
 See the contract [whole-project execution](https://github.com/ABEF/AAA/blob/main/reports/whole-project-execution-20261029/REVIEW.md).
-This does not implement fresh4 integration or qualify marketplace/hosting.
+This does not implement fresh accounting6 integration or qualify marketplace/hosting.
 
 ## Current implementation and evidence
 
-Contract source checkpoint: [4579eeb](https://github.com/ABEF/AAA/commit/4579eeb289d4647bd18b785881db9522639eb312).
-Fresh accounting4/custody3/canonical V5 remains distinct from the served
-accounting3 integration build and preserved local Anvil profiles. Keeper source
-now has service-only in-range compound waits, existing-window reset coordination,
-proved internal-harvest clocks and read-only LP diagnostics. Registration uses
-complete actual bucket inventory; no public registration getter exists. These
-source changes do not implement a website feature, update a deployment manifest,
-enable public signing or authorize a site/service rollout. Follow the contract
-[operator guide](https://github.com/ABEF/AAA/blob/main/docs/KEEPER_COORDINATION.md)
-and sole Todo; actual fresh4 integration and live qualification remain open.
+Contract source checkpoint: [44f5fa7](https://github.com/ABEF/AAA/commit/44f5fa7db5d8472e4cd8f3e1af13a4b9dc27fa09).
+Fresh accounting6/portfolio2/custody5/Entry-routing3/canonical V6 and schema10
+remain distinct from the served accounting3 integration and preserved Anvil
+profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
+terminal governance-only principal batches, entrant-only main growth and scoped
+readiness are contract-source capabilities, not features of the older site.
+See the contract [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md)
+and [audit supplement](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-audit-20261104/REVIEW.md).
+Matching fresh-source website/services and live qualification remain open.
+These documentation changes alter no configuration, signer, build or served site.
 
 Explicit website schema3 checks accounting3/governance2/fee1/pricing2/routing2/
 review1/localV4, twelve runtime/parent/module pins and fixed ZZZ admission. HTTP
@@ -92,7 +92,7 @@ not implemented. Underlying economic rights are unchanged. Intended production
 minting is OpenSea (0.05ETH buyer gross, recipient net after platform fee), but
 the actual mint integration remains unfinished. The website mint is a demo.
 
-Actual current3 contracts/API/feeds/routes/VRF/authorities/OpenSea, permanent
+Actual current accounting6 contracts/API/feeds/routes/VRF/authorities/OpenSea, permanent
 artwork hosting, complete history, target gas/operating qualification and
 independent audit/remediation remain open. Production NOT APPROVED.
 
