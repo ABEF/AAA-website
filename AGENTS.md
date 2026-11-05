@@ -1,6 +1,6 @@
 # AAA / ZZZ PoPL website instructions
 
-Reviewed 2026-11-04. Read PROJECT_CONTEXT.md and the contract repository's current
+Reviewed 2026-11-05. Read PROJECT_CONTEXT.md and the contract repository's current
 AGENTS.md/README/Todo/operator guide. This is current guidance, not an append-only
 history. Previous memory files are backed up outside Git in the contract-side
 documentation-cleanup evidence directory; Git retains every earlier revision.
@@ -28,14 +28,14 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 
 ## Product and interface rules
 
-Fresh royalty settlement2 source uses original-currency claims, reporting schema3,
+Fresh royalty settlement3 source uses original-currency claims, reporting schema4,
 converter:null. The unsigned review includes admitted royalty currencies and
 verifies their exact reviewed symbols/decimals/amounts; LP rewards retain their
 separate ETH-conversion policy. No royalty swap or WETH unwrap occurs. Historical
 profiles remain ETH-focused; never relabel them. This source change is not a
 website/server rollout: public DEPLOYMENT stays null and browser signing stays
 Anvil-only. Shared browser-wallet.js, existing journals and demo overlays remain
-unchanged. See the contract repository's royalties-in-kind-20261105 evidence and
+unchanged. See the contract repository's royalty-launch-window-20261105 evidence and
 operator guide for current settings/claims/16-currency admission limits.
 
 
@@ -112,3 +112,9 @@ Run useful affected checks and reuse unchanged evidence only with exact pins;
 do not add overlapping counts or repeat whole suites for docs. Production remains
 NOT APPROVED: actual current contracts/API/feeds/routes/VRF/authorities/OpenSea,
 metadata hosting, gas/operating qualification and independent audit remain open.
+
+Fresh royalty3 source uses reporting4: sale closing time plus a fixed1-hour
+activation window; original-currency claims stay locked until then. Source-only,
+no site/service/signer change. Schema3 remains historical royalty2.
+
+Do not display the royalty deadline on dormant NFT cards (user preference).

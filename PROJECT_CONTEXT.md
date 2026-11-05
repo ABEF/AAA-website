@@ -1,6 +1,6 @@
 # Website current project context
 
-Reviewed 2026-11-04 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
+Reviewed 2026-11-05 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
 [environment procedures](SITE_ENVIRONMENTS.md) and the contract repository's
 [sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) before making changes.
 This is durable repository context, not global personal memory.
@@ -108,12 +108,18 @@ Contract-side WORK_HANDOFF.md records external backup/evidence locations.
 
 ## Original-currency royalty source boundary
 
-Fresh royalty settlement2 source uses original-currency claims, reporting schema3,
+Fresh royalty settlement3 source uses original-currency claims, reporting schema4,
 converter:null. The unsigned review includes admitted royalty currencies and
 verifies their exact reviewed symbols/decimals/amounts; LP rewards retain their
 separate ETH-conversion policy. No royalty swap or WETH unwrap occurs. Historical
 profiles remain ETH-focused; never relabel them. This source change is not a
 website/server rollout: public DEPLOYMENT stays null and browser signing stays
 Anvil-only. Shared browser-wallet.js, existing journals and demo overlays remain
-unchanged. See the contract repository's royalties-in-kind-20261105 evidence and
+unchanged. See the contract repository's royalty-launch-window-20261105 evidence and
 operator guide for current settings/claims/16-currency admission limits.
+
+Fresh royalty3 source uses reporting4: sale closing time plus a fixed1-hour
+activation window; original-currency claims stay locked until then. Source-only,
+no site/service/signer change. Schema3 remains historical royalty2.
+
+Do not display the royalty deadline on dormant NFT cards (user preference).

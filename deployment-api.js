@@ -13,8 +13,12 @@ const freeze=x=>{if(object(x)||Array.isArray(x)){Object.values(x).forEach(freeze
 export function positionClaimEntries(n){
   const claims=[];
   for(const [scope,royalty] of [['lp',false],['royalties',true]]){
+    if(royalty&&n.royalty_reporting?.schema===4){
+      if(typeof n.royalty_reporting.opening?.claims_open!=='boolean')fail('Royalty window status unavailable');
+      if(!n.royalty_reporting.opening.claims_open)continue;
+    }
     for(const a of n.claimable[scope]){
-      if(a.asset!==ZERO&&(!royalty||n.royalty_reporting?.schema!==3))continue;
+      if(a.asset!==ZERO&&(!royalty||![3,4].includes(n.royalty_reporting?.schema)))continue;
       if(a.available===false||a.raw===null||a.raw===undefined)continue;
       if(raw(a.raw)>0n)claims.push({token_id:n.token_id,asset:a.asset,royalty});
     }

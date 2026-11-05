@@ -30,8 +30,19 @@ export function nativeRewards(n,scope){
   return rows.reduce((s,a)=>s+raw(a.raw),0n).toString();
 }
 export const hasClaimableRewards=n=>positionClaimEntries(n).length>0;
+export function royaltyOpeningNote(n){
+  if(n.royalty_reporting?.schema!==4||n.position?.activated===false)return '';
+  const o=n.royalty_reporting.opening;
+  if(!o||typeof o.claims_open!=='boolean')return '<p class="small-note">Royalty window status unavailable.</p>';
+  if(o.claims_open)return '';
+  if(!o.configured)return '<p class="small-note">Royalty sale closing time is not configured. LP rewards are separate.</p>';
+  const t=o.claims_open_at;
+  if(!Number.isSafeInteger(t)||t<=0||t>8640000000000)return '<p class="small-note">Royalty opening time unavailable.</p>';
+  const date=new Date(t*1000).toISOString();
+  return '<p class="small-note">Royalty claims open <time datetime="'+e(date)+'">'+e(date.replace('T',' ').replace('.000Z',' UTC'))+'</time>. LP rewards remain separate.</p>';
+}
 export function claimCurrencyButtons(n,disabled=false){
-  if(n.royalty_reporting?.schema!==3)return '';
+  if(![3,4].includes(n.royalty_reporting?.schema))return '';
   const assets=[...new Set(positionClaimEntries(n).map(c=>c.asset))];
   if(assets.length<2)return '';
   return '<p class="small-note">You can review currencies separately if one payout fails.</p><div class="local-position-actions">'+assets.map(asset=>{
@@ -50,11 +61,11 @@ export function renderPositionAmounts(n){
   const lp=`<div class="position-attached-lp"><span>LP attached</span><strong>${e(usd(n.position.current_lp_value.raw))}</strong></div>`;
   if(!n.position.activated)return lp;
   const history=`<div class="position-earnings">${[['last_24h','24h'],['all_time','all time']].map(([key,label])=>`<div><span>Fees generated · ${label}</span><span class="earnings-value">${e(usd(rewardHistoryUSD(n,key)))}</span></div>`).join('')}</div>`;
-  const original=n.royalty_reporting?.schema===3;
+  const original=[3,4].includes(n.royalty_reporting?.schema);
   const amount=nativeRewards(n),pending=['lp',...(original?[]:['royalties'])].some(k=>n.claimable[k].some(a=>a.asset!==ZERO&&(a.raw===null||raw(a.raw)>0n)));
   const extra=original?n.claimable.royalties.filter(a=>a.asset!==ZERO&&(a.raw===null||a.available===false||raw(a.raw)>0n)).map(a=>(a.raw===null||a.available===false?'Unavailable':exactUnits(a.raw,a.decimals))+' '+a.symbol):[];
   const originalNote=extra.length?'<p class="small-note">Other royalties to claim: '+extra.map(x=>e(x)).join(' + ')+'. Paid in their original currency.</p>':'';
-  return lp+history+`<div class="position-reward-total"><span>Rewards to claim</span><strong>${amount===null?'Unavailable':e(units(amount))+' ETH'}</strong></div>`+originalNote+(pending?'<p class="small-note">Additional source-token rewards await conversion or verification.</p>':'');
+  return lp+history+`<div class="position-reward-total"><span>Rewards to claim</span><strong>${amount===null?'Unavailable':e(units(amount))+' ETH'}</strong></div>`+originalNote+royaltyOpeningNote(n)+(pending?'<p class="small-note">Additional source-token rewards await conversion or verification.</p>':'');
 }
 export function earnedUSD(report,period,collection=false){
   const totals=report?.[period+'_usd_at_current_price_18'];

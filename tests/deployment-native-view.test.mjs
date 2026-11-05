@@ -60,3 +60,14 @@ test('non-ETH-only royalties enable claiming and healthy currencies have separat
   assert.equal(hasClaimableRewards(n),true);n.claimable.royalties[0].raw='1';
   const html=claimCurrencyButtons(n);assert.match(html,/data-deployment-claim-asset/);assert.match(html,/Claim USDC/);assert.match(html,/Claim ETH/);
 });
+
+test('royalty opening is shown and locked currencies cannot enter claims while LP stays available',async()=>{
+  const {royaltyOpeningNote}=await import('../deployment-view.js');
+  const {positionClaimEntries}=await import('../deployment-api.js');
+  const n=rawRoyalties();n.royalty_reporting={schema:4,opening:{configured:true,claims_open:false,claims_open_at:4800}};
+  const html=royaltyOpeningNote(n);assert.match(html,/Royalty claims open/);assert.match(html,/LP rewards remain separate/);
+  assert.ok(positionClaimEntries(n).every(c=>!c.royalty));
+  n.royalty_reporting.opening.claims_open=true;
+  assert.equal(royaltyOpeningNote(n),'');assert.ok(positionClaimEntries(n).some(c=>c.royalty));
+  n.position.activated=false;n.royalty_reporting.opening.claims_open=false;assert.equal(royaltyOpeningNote(n),'');
+});
