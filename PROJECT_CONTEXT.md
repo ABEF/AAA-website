@@ -39,8 +39,8 @@ This does not implement fresh accounting6 integration or qualify marketplace/hos
 
 ## Current implementation and evidence
 
-Contract source checkpoint: [44f5fa7](https://github.com/ABEF/AAA/commit/44f5fa7db5d8472e4cd8f3e1af13a4b9dc27fa09).
-Fresh accounting6/portfolio2/custody5/Entry-routing3/canonical V6 and schema10
+Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [current audit](https://github.com/ABEF/AAA/blob/main/reports/last24h-audit-20261105/REVIEW.md).
+Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema13
 remain distinct from the served accounting3 integration and preserved Anvil
 profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
 terminal governance-only principal batches, entrant-only main growth and scoped
@@ -108,18 +108,18 @@ Contract-side WORK_HANDOFF.md records external backup/evidence locations.
 
 ## Original-currency royalty source boundary
 
-Fresh royalty settlement3 source uses original-currency claims, reporting schema4,
+Fresh royalty settlement4 source uses original-currency claims, reporting schema5,
 converter:null. The unsigned review includes admitted royalty currencies and
 verifies their exact reviewed symbols/decimals/amounts; LP rewards retain their
 separate ETH-conversion policy. No royalty swap or WETH unwrap occurs. Historical
 profiles remain ETH-focused; never relabel them. This source change is not a
 website/server rollout: public DEPLOYMENT stays null and browser signing stays
 Anvil-only. Shared browser-wallet.js, existing journals and demo overlays remain
-unchanged. See the contract repository's royalty-launch-window-20261105 evidence and
-operator guide for current settings/claims/16-currency admission limits.
+unchanged. See the contract repository's last24h-audit-20261105 evidence and
+operator guide for current settings/claims/initial16 / reviewed64-ERC20 currency capacity.
 
-Fresh royalty3 source uses reporting4: sale closing time plus a fixed1-hour
+Fresh royalty4 source uses reporting5: sale closing time plus a fixed1-hour
 activation window; original-currency claims stay locked until then. Source-only,
-no site/service/signer change. Schema3 remains historical royalty2.
+no site/service/signer change. Reporting3 remains historical royalty2; reporting4 remains historical royalty3.
 
 Do not display the royalty deadline on dormant NFT cards (user preference).

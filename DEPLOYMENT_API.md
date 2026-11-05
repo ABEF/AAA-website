@@ -62,3 +62,7 @@ block. The client checks the complete ordered inventory and every chunk before
 showing wallet-wide attached LP and claimable ETH. Account changes cancel old
 reads and reset pagination. Historical wallet earnings and source-token rewards
 are not substituted into that ETH total. See the [local runbook](https://github.com/ABEF/AAA/blob/main/docs/LOCAL_API_REHEARSAL.md).
+
+## Royalty opening and exact-unit source helpers
+
+Fresh reporting5/settlement4 uses original-currency whole units after final sale end plus1hour. Reporting4/settlement3 remains historical. The client verifies the opening configuration against its confirmed snapshot timestamp and rejects positive locked royalty claims; LP-only claims stay separate. Dormant cards show no deadline. These helpers do not authenticate a new native6 deployment by themselves: complete source8/schema13/canonicalV8 integration and reviewed runtime/configuration still remain open. Existing current3/native2 manifests and live sites are unchanged. Public signing remains disabled; the shared signer remains Anvil-only.

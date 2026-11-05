@@ -14,8 +14,8 @@ never demo holdings. Public signing remains disabled. See
 
 ## Contract source and served releases
 
-Contract source checkpoint: [44f5fa7](https://github.com/ABEF/AAA/commit/44f5fa7db5d8472e4cd8f3e1af13a4b9dc27fa09).
-Fresh accounting6/portfolio2/custody5/Entry-routing3/canonical V6 and schema10
+Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [current audit](https://github.com/ABEF/AAA/blob/main/reports/last24h-audit-20261105/REVIEW.md).
+Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema13
 remain distinct from the served accounting3 integration and preserved Anvil
 profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
 terminal governance-only principal batches, entrant-only main growth and scoped

@@ -13,12 +13,12 @@ const freeze=x=>{if(object(x)||Array.isArray(x)){Object.values(x).forEach(freeze
 export function positionClaimEntries(n){
   const claims=[];
   for(const [scope,royalty] of [['lp',false],['royalties',true]]){
-    if(royalty&&n.royalty_reporting?.schema===4){
+    if(royalty&&[4,5].includes(n.royalty_reporting?.schema)){
       if(typeof n.royalty_reporting.opening?.claims_open!=='boolean')fail('Royalty window status unavailable');
       if(!n.royalty_reporting.opening.claims_open)continue;
     }
     for(const a of n.claimable[scope]){
-      if(a.asset!==ZERO&&(!royalty||![3,4].includes(n.royalty_reporting?.schema)))continue;
+      if(a.asset!==ZERO&&(!royalty||![3,4,5].includes(n.royalty_reporting?.schema)))continue;
       if(a.available===false||a.raw===null||a.raw===undefined)continue;
       if(raw(a.raw)>0n)claims.push({token_id:n.token_id,asset:a.asset,royalty});
     }
@@ -151,6 +151,16 @@ export class DeploymentAPI {
         if(row.raw===null){if(row.available!==false)fail('Invalid unavailable balance');}else {if(row.available===false)fail('Unavailable balance contains an amount');raw(row.raw);}
       }
       if(this.native&&!seen.has(ZERO))fail('Native ledger omitted ETH; the combined balance is unavailable');
+    }
+    if([4,5].includes(n.royalty_reporting?.schema)){
+      const o=n.royalty_reporting.opening,t=n.provenance?.block_timestamp;
+      if(!object(o)||typeof o.configured!=='boolean'||typeof o.claims_open!=='boolean'||
+        o.activation_window_seconds!==3600||!integer(t,0,Number.MAX_SAFE_INTEGER)||
+        (o.configured?(!integer(o.mint_end,1,Number.MAX_SAFE_INTEGER-3600)||o.claims_open_at!==o.mint_end+3600||
+          o.claims_open!==(t>=o.claims_open_at)||o.status!==(o.claims_open?'open':'locked')):
+          (o.mint_end!==null||o.claims_open_at!==null||o.claims_open||o.status!=='unconfigured')))
+        fail('Royalty opening differs from its confirmed snapshot');
+      if(!o.claims_open&&n.claimable.royalties.some(a=>a.raw!==null&&raw(a.raw)!==0n))fail('Locked royalty balance cannot be claimable');
     }
     if(this.manifest.schema===3)validateCurrentNFT(n);
     return n;
