@@ -142,3 +142,31 @@ test('published default keeps the public demo and local signer boundaries',async
   const signer=await readFile(new URL('../browser-wallet.js',import.meta.url),'utf8');assert.match(signer,/chainId:'0x7a69'/);
   for(const file of ['deployment-api.js','deployment-view.js','deployment-session.js']){const source=await readFile(new URL('../'+file,import.meta.url),'utf8');assert.doesNotMatch(source,/eth_sendTransaction|eth_sendRawTransaction|personal_sign|eth_signTypedData/);}
 });
+
+function originalRoyaltyReview(s){
+  s.f.nft.royalty_reporting={schema:3};
+  const asset=address(21),entry=s.f.nft.claimable.royalties.find(a=>a.asset===asset);
+  s.f.draft.claim_operations.push({token_id:s.f.nft.token_id,asset,royalty:true,symbol:entry.symbol,decimals:entry.decimals,view_raw:entry.raw,simulated_raw:entry.raw});
+  const w=n=>BigInt(n).toString(16).padStart(64,'0');
+  s.f.draft.transaction.data='0xbbeaec93'+w(32)+w(s.f.draft.claim_operations.length)+s.f.draft.claim_operations.map(c=>w(c.token_id)+c.asset.slice(2).padStart(64,'0')+w(c.royalty?1:0)).join('');
+}
+test('original-currency claim review independently reconstructs ETH plus USDC with exact metadata',async()=>{
+  const s=setup('claim',originalRoyaltyReview),r=await s.api.prepare(s.intent);
+  assert.equal(r.transaction.data,s.f.draft.transaction.data);assert.equal(r.signing_enabled,false);
+  const op=r.claims.find(c=>c.asset===address(21));assert.equal(op.symbol,'USDC');assert.equal(op.decimals,6);assert.equal(op.simulated_raw,'25000001');
+  const body=JSON.parse(s.calls.find(c=>c.path?.endsWith('/prepare')).options.body);
+  assert.ok(body.claims.some(c=>c.royalty&&c.asset===address(21)));
+});
+test('original-currency review rejects forged token metadata and changed selection',async()=>{
+  for(const mutate of [s=>s.f.draft.claim_operations.at(-1).decimals=18,s=>s.f.draft.claim_operations.at(-1).symbol='ETH',s=>s.f.draft.claim_operations.at(-1).asset=address(20)]){
+    const s=setup('claim',s=>{originalRoyaltyReview(s);mutate(s);});await assert.rejects(s.api.prepare(s.intent));
+  }
+});
+
+test('owner can review healthy ETH separately from a failing royalty token',async()=>{
+  const s=setup('claim');s.f.nft.royalty_reporting={schema:3};s.intent.claim_assets=[ZERO];
+  const r=await s.api.prepare(s.intent);assert.ok(r.claims.every(c=>c.asset===ZERO));assert.equal(r.transaction.data,s.f.draft.transaction.data);
+  for(const invalid of [[],[ZERO,ZERO],[address(999)],'ETH']){
+    const s=setup('claim');s.intent.claim_assets=invalid;await assert.rejects(s.api.prepare(s.intent));
+  }
+});

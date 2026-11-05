@@ -28,6 +28,17 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 
 ## Product and interface rules
 
+Fresh royalty settlement2 source uses original-currency claims, reporting schema3,
+converter:null. The unsigned review includes admitted royalty currencies and
+verifies their exact reviewed symbols/decimals/amounts; LP rewards retain their
+separate ETH-conversion policy. No royalty swap or WETH unwrap occurs. Historical
+profiles remain ETH-focused; never relabel them. This source change is not a
+website/server rollout: public DEPLOYMENT stays null and browser signing stays
+Anvil-only. Shared browser-wallet.js, existing journals and demo overlays remain
+unchanged. See the contract repository's royalties-in-kind-20261105 evidence and
+operator guide for current settings/claims/16-currency admission limits.
+
+
 - Fresh production candidate accepts only native ETH or the fixed deployment ZZZ
   for activation/growth. Minimum$100activation/$5growth, stronger pool minima;
   2%contribution/1%conversion/3%maintenance defaults with governed10%ceilings,

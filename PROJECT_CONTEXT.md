@@ -105,3 +105,15 @@ not probe credentials or add privileged access without authorization.
 Main only. Website docs receipts after f23c559 do not deploy a new artifact;
 public site-identity.json remains the authority for the served source revision.
 Contract-side WORK_HANDOFF.md records external backup/evidence locations.
+
+## Original-currency royalty source boundary
+
+Fresh royalty settlement2 source uses original-currency claims, reporting schema3,
+converter:null. The unsigned review includes admitted royalty currencies and
+verifies their exact reviewed symbols/decimals/amounts; LP rewards retain their
+separate ETH-conversion policy. No royalty swap or WETH unwrap occurs. Historical
+profiles remain ETH-focused; never relabel them. This source change is not a
+website/server rollout: public DEPLOYMENT stays null and browser signing stays
+Anvil-only. Shared browser-wallet.js, existing journals and demo overlays remain
+unchanged. See the contract repository's royalties-in-kind-20261105 evidence and
+operator guide for current settings/claims/16-currency admission limits.

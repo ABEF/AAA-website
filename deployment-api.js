@@ -10,6 +10,17 @@ const integer=(x,min,max)=>Number.isSafeInteger(x)&&x>=min&&x<=max;
 const hex=x=>'0x'+x.toString(16),word=x=>x.toString(16).padStart(64,'0'),addr=x=>x.slice(2).padStart(64,'0');
 const clone=x=>JSON.parse(JSON.stringify(x));
 const freeze=x=>{if(object(x)||Array.isArray(x)){Object.values(x).forEach(freeze);Object.freeze(x);}return x;};
+export function positionClaimEntries(n){
+  const claims=[];
+  for(const [scope,royalty] of [['lp',false],['royalties',true]]){
+    for(const a of n.claimable[scope]){
+      if(a.asset!==ZERO&&(!royalty||n.royalty_reporting?.schema!==3))continue;
+      if(a.available===false||a.raw===null||a.raw===undefined)continue;
+      if(raw(a.raw)>0n)claims.push({token_id:n.token_id,asset:a.asset,royalty});
+    }
+  }
+  return claims;
+}
 export function raw(x){if(typeof x!=='string'||!/^(0|[1-9][0-9]{0,77})$/.test(x)||BigInt(x)>=2n**256n)fail('Invalid exact token amount');return BigInt(x);}
 const quantity=x=>{if(typeof x!=='string'||!/^0x(?:0|[1-9a-f][0-9a-f]{0,63})$/.test(x))fail('Invalid node quantity');return BigInt(x);};
 const code=x=>typeof x==='string'&&/^0x(?:[0-9a-f]{2})+$/.test(x)&&x.length<=100002;
@@ -316,8 +327,9 @@ export class DeploymentAPI {
       payload={action:'mint',wallet:owner};expected={from:owner,to:m.contracts.vault.address,data:'0x21bf772d',value:hex(50000000000000000n),chainId:hex(BigInt(m.chain_id))};
     }else if(intent.action==='claim'){
       if(!Array.isArray(intent.ids)||!intent.ids.length||intent.ids.length>8||new Set(intent.ids).size!==intent.ids.length)fail('Select one to eight NFTs to claim');
-      claims=[];for(const id of intent.ids){const n=await this.nft(id,owner);for(const [scope,royalty] of [['lp',false],['royalties',true]]){const a=n.claimable[scope].find(a=>a.asset===ZERO);if(a?.raw!==null&&a?.raw!==undefined&&raw(a.raw)>0n)claims.push({token_id:id,asset:ZERO,royalty});}}
-      if(!claims.length||claims.length>32)fail('No funded ETH rewards are available for these NFTs');
+      if(intent.claim_assets!==undefined&&(!Array.isArray(intent.claim_assets)||!intent.claim_assets.length||intent.claim_assets.length>17||new Set(intent.claim_assets).size!==intent.claim_assets.length||intent.claim_assets.some(a=>!m.reward_assets.some(x=>x.address===a))))fail('Select reviewed payout currencies');
+      claims=[];for(const id of intent.ids){const n=await this.nft(id,owner);claims.push(...positionClaimEntries(n).filter(c=>intent.claim_assets===undefined||intent.claim_assets.includes(c.asset)));}
+      if(!claims.length)fail('No funded rewards are available for these NFTs');if(claims.length>32)fail('Select fewer NFTs: a transaction supports at most 32 NFT/currency/reward entries');
       payload={action:'claim',wallet:owner,claims};expected={from:owner,to:m.contracts.claim_router.address,value:'0x0',chainId:hex(BigInt(m.chain_id)),data:'0xbbeaec93'+word(32n)+word(BigInt(claims.length))+claims.map(c=>word(raw(c.token_id))+addr(c.asset)+word(c.royalty?1n:0n)).join('')};
     }else{
       if(!protocol.lifecycle.new_economic_work_available_by_lifecycle)fail('New contributions are currently unavailable');
@@ -354,7 +366,7 @@ export class DeploymentAPI {
       }
     }else{
       if(draft.kind!=='unsigned_transaction_draft'||draft.simulation?.succeeded!==true||draft.simulation.balance_overrides!==false||draft.approvals_required!==false)fail('Unsigned simulation is incomplete');
-      if(claims){if(JSON.stringify(draft.claim_operations?.map(({token_id,asset,royalty})=>({token_id,asset,royalty})))!==JSON.stringify(claims))fail('Claim selection changed');for(const c of draft.claim_operations)if(c.symbol!=='ETH'||c.decimals!==18||raw(c.simulated_raw)===0n||raw(c.view_raw)===0n)fail('Claim simulation has no verified ETH payout');}
+      if(claims){if(JSON.stringify(draft.claim_operations?.map(({token_id,asset,royalty})=>({token_id,asset,royalty})))!==JSON.stringify(claims))fail('Claim selection changed');for(const c of draft.claim_operations){const a=m.reward_assets.find(a=>a.address===c.asset);if(!a||c.symbol!==a.symbol||c.decimals!==a.decimals||raw(c.simulated_raw)===0n||raw(c.view_raw)===0n)fail('Claim simulation has no verified currency payout');}}
       else if(draft.claim_operations?.length!==0)fail('Unexpected mint claim payload');
     }
     const tx=draft.transaction;if(!object(tx)||Object.keys(tx).sort().join()!==['from','to','data','value','chainId'].sort().join()||Object.keys(expected).some(k=>tx[k]!==expected[k]))fail('Returned calldata does not match the selected action');
