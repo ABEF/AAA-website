@@ -1,6 +1,6 @@
 # Website current project context
 
-Reviewed 2026-11-05 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
+Reviewed 2026-11-06 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
 [environment procedures](SITE_ENVIRONMENTS.md) and the contract repository's
 [sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) before making changes.
 This is durable repository context, not global personal memory.
@@ -39,14 +39,17 @@ This does not implement fresh accounting6 integration or qualify marketplace/hos
 
 ## Current implementation and evidence
 
-Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [current audit](https://github.com/ABEF/AAA/blob/main/reports/last24h-audit-20261105/REVIEW.md).
-Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema13
+Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [residual lifecycle audit](https://github.com/ABEF/AAA/blob/main/reports/residual-lifecycle-20261106/REVIEW.md).
+Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema14
 remain distinct from the served accounting3 integration and preserved Anvil
 profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
 terminal governance-only principal batches, entrant-only main growth and scoped
 readiness are contract-source capabilities, not features of the older site.
 See the contract [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md)
 and [audit supplement](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-audit-20261104/REVIEW.md).
+Fresh6 backend reads independently verify each LP leg's principal and exact
+portfolio fingerprints; governed pool movement/resume can recreate a residual
+under destination mode ON. These source changes do not update this served site.
 Matching fresh-source website/services and live qualification remain open.
 These documentation changes alter no configuration, signer, build or served site.
 
