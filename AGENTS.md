@@ -86,7 +86,7 @@ This does not implement fresh accounting6 integration or qualify marketplace/hos
 ## Documentation and verification
 
 Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [current audit](https://github.com/ABEF/AAA/blob/main/reports/last24h-audit-20261105/REVIEW.md).
-Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema13
+Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema15/reinvest1
 remain distinct from the served accounting3 integration and preserved Anvil
 profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
 terminal governance-only principal batches, entrant-only main growth and scoped
@@ -120,3 +120,5 @@ no site/service/signer change. Reporting3 remains historical royalty2; reporting
 Do not display the royalty deadline on dormant NFT cards (user preference).
 
 Fresh royalty4 allocates whole original units with GCD-normalized rotating rarity tickets. No scaled royalty fractions or swaps; LP conversion/fractions stay separate. Complete current native6 integration remains open: these read/unsigned helpers do not relabel current3 manifests. The default optional royalty sync ceiling is1m gas; actual capacity/gas qualification remains open. No dormant deadline notice.
+
+Fresh contract source now includes governance-only same-main residual consolidation; automatic keeper actions and the served website are unchanged. Use the contract operator guide; this documentation does not add a website transaction or rollout.
