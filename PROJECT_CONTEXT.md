@@ -1,6 +1,6 @@
 # Website current project context
 
-Reviewed 2026-11-06 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
+Reviewed 2026-11-09 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
 [environment procedures](SITE_ENVIRONMENTS.md) and the contract repository's
 [sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) before making changes.
 This is durable repository context, not global personal memory.
@@ -35,30 +35,42 @@ all2784SVG image hashes, manifest, effective demo accounting, signer and null
 public configurations are unchanged. Three focused metadata methods and syntax
 checks pass. No asset regeneration/build/deployment/service/Anvil action.
 See the contract [whole-project execution](https://github.com/ABEF/AAA/blob/main/reports/whole-project-execution-20261029/REVIEW.md).
-This does not implement fresh accounting6 integration or qualify marketplace/hosting.
+That metadata-only correction did not implement the separate accounting6 consumer
+or qualify marketplace/hosting.
 
 ## Current implementation and evidence
 
-Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [same-main management audit](https://github.com/ABEF/AAA/blob/main/reports/residual-main-consolidation-20261106/REVIEW.md).
-Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema15/reinvest1
-remain distinct from the served accounting3 integration and preserved Anvil
-profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
-terminal governance-only principal batches, entrant-only main growth and scoped
-readiness are contract-source capabilities, not features of the older site.
-See the contract [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md)
-and [audit supplement](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-audit-20261104/REVIEW.md).
-Fresh6 backend reads independently verify each LP leg's principal and exact
-portfolio fingerprints; governed pool movement/resume can recreate a residual
-under destination mode ON. These source changes do not update this served site.
-Matching fresh-source website/services and live qualification remain open.
-These documentation changes alter no configuration, signer, build or served site.
+Current contract source is [accounting7/LP-allocation1/custody5/V9](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md),
+with portfolio2/direct Entry3/review2/royalty4/reporting5 and schema16 release
+inventory. The local source9 website consumer uses its own schema4 manifest and
+29 browser runtime pins. It independently verifies canonical-block getters,
+parent/module bindings, exact LP identity and both physical legs, and reads
+governed contribution minima and cosmetic thresholds. Source9 is a consumer
+label; the contract accounting getter remains7.
+
+The source9 profile reads confirmed holdings, exact rewards and raw/checkpoint2
+earnings, and prepares unsigned Entry3 and claim reviews. Original-currency
+royalties, ZZZ LP rewards awaiting ETH conversion and terminal principal remain
+separate. Its transaction-policy selector explicitly matches backend policy1 or
+optional policy2; claim planning retains every entry and never creates a future
+queue. The profile cannot sign or submit, even on Anvil. Both public configuration
+exports remain null and the shared signer bytes are unchanged.
+
+The source9 fixture exporter supplies 35 actual handler DTOs across nine public
+methods against synthetic RPC/venue/authority/fee dependencies, including exact
+full-raw/checkpoint2 earnings comparisons. Entry3 draft tests are typed synthetic
+reviews, not an actual complete Entry3 execution-trace fixture. These scopes do
+not qualify providers, wallets, actual configuration or a service/site rollout.
+See the [source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md).
+Historical source8/accounting6/V8, served current3 and local Anvil profiles keep
+their original identities. No live environment follows from source support.
 
 Explicit website schema3 checks accounting3/governance2/fee1/pricing2/routing2/
 review1/localV4, twelve runtime/parent/module pins and fixed ZZZ admission. HTTP
 schema2 remains distinct. Existing schema1/native2 deployments, journals and
 the shared Anvil-only signer retain their meaning; no automatic profile upgrade.
 
-One final affected selection has451JS passes including46new methods. Six fixtures
+Historical current3 evidence records451JS passes including46new methods. Six fixtures
 come from actual Python API/projection/preparation code with synthetic dependency,
 RPC, price and venue state. Separate integration-shell checks have7passes and
 three headless browser cases. These are separate scopes, not a new full regression
@@ -67,7 +79,8 @@ harness attempts and original source identities. The contract report retains
 exact source pins, test outputs, serving checks and current limits.
 
 Current product:1,000 ERC721 NFTs,600Commun/300Rare/100Legendary. Native ETH and
-fixed ZZZ only for contribution; $100activation/$5growth, stronger pool minima.
+fixed ZZZ only for contribution; default $100activation/$5growth, governed future
+minima and stronger pool minima.
 Default loss budgets2/1/3%, governed maximum10%, gas separate and tighter caller/
 venue bounds retained. Dual sources agree within3%; actual providers/routes remain
 unqualified. Rarity weights1/2/3 affect actual received royalties only. Fixed
@@ -95,7 +108,7 @@ not implemented. Underlying economic rights are unchanged. Intended production
 minting is OpenSea (0.05ETH buyer gross, recipient net after platform fee), but
 the actual mint integration remains unfinished. The website mint is a demo.
 
-Actual current accounting6 contracts/API/feeds/routes/VRF/authorities/OpenSea, permanent
+Actual current accounting7 contracts/API/feeds/routes/VRF/authorities/OpenSea, permanent
 artwork hosting, complete history, target gas/operating qualification and
 independent audit/remediation remain open. Production NOT APPROVED.
 

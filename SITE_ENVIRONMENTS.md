@@ -1,6 +1,6 @@
 # Website environment boundaries
 
-Reviewed 2026-10-27. The contract repository's [environment map](https://github.com/ABEF/AAA/blob/main/docs/SITE_ENVIRONMENTS.md)
+Reviewed 2026-11-09. The contract repository's [environment map](https://github.com/ABEF/AAA/blob/main/docs/SITE_ENVIRONMENTS.md)
 owns the complete operating procedure and decisions.
 
 | Target | URL | Build | Server current root |
@@ -12,18 +12,37 @@ Keep popldemo live and unchanged. Poplint has independent releases, Nginx site,
 TLS certificate, identity metadata and configuration. Use only the integration
 installer for poplint; the old installer hardcodes the demo root.
 
-`integration-config.js` exports a null reviewed deployment until exact schema3
-contracts/runtime/API policies are available. Null or incompatible configuration
-must show unconfigured/error and must never import the demo application or invent
+`integration-config.js` keeps `INTEGRATION_DEPLOYMENT = null`;
+`deployment-config.js` keeps the demo's separate `DEPLOYMENT = null`. A future
+fresh integration needs reviewed schema4/source9 contracts/runtime/API policies.
+Null or incompatible configuration must show unconfigured/error and must never
+import the demo application or invent
 balances. Public signing remains disabled; no public transaction or new contract
 deployment follows from a static site publication. Never expose loopback Anvil,
 operator credentials or a disposable wallet to the internet.
 
-The manifest is schema3/accounting3/governance2/fee1/pricing2/routing2/review1/localV4.
-HTTP schema2 is a separate version. Current inputs are ETH/fixedZZZ only; older
-schema1/native2 manifests, fixtures and journals retain their actual identities.
-Code may read confirmed public holdings and prepare unsigned reviews; real wallet,
-API/feed/route, marketplace and operating qualification remains open.
+The served artifact uses schema3/accounting3/governance2/fee1/pricing2/routing2/
+review1/localV4. The new local source9 consumer uses schema4/accounting7/LP1/
+custody5/direct Entry3/review2/royalty4/reporting5/canonicalV9, with 29 browser
+runtime pins and independent confirmed-block getters. HTTP schema2 remains a
+separate version. Historical source8/accounting6/V8 and schema1/native2 manifests,
+fixtures and journals retain their actual identities; a hostname or version
+label never upgrades them.
+
+Source9 reads holdings, both physical LPs, exact earnings/checkpoint2 and terminal
+principal, and prepares unsigned contribution and claim reviews. Original-currency
+royalties and ZZZ LP rewards awaiting ETH conversion stay separate. Governed
+minima and cosmetic thresholds are authenticated current values. Optional
+transaction-policy2 and complete-entry claim planning do not enable signing,
+automatic queues or retries. Source9 remains unsigned even on local Anvil; the
+existing shared signer bytes and its historical profiles are unchanged.
+
+This is local source support only. The 35 actual handler DTOs across nine public
+methods use synthetic RPC/dependency fixtures; Entry3 review tests use typed
+synthetic drafts without a complete actual execution-trace fixture. Neither
+poplint's served current3 release nor popldemo changed. Actual wallet/API/feed/
+route, marketplace, configuration, operating acceptance and an authorized rollout
+remain open. See the [source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md).
 
 Use a new integration build output for each release, record source revision,
 verify `site-identity.json` and SHA256SUMS, and archive only public static files.

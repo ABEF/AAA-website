@@ -8,8 +8,12 @@ export const DEPLOYMENT = null;
 
 A non-null, independently reviewed configuration selects `read-and-prepare` mode.
 It is a build input, not a URL/localStorage/wallet-supplied setting. It enables
-confirmed reads and unsigned reviews for nonlocal deployments. A literal-loopback Anvil rehearsal can also submit through the unchanged local-only signer. It does not enable public signing or
-change the isolated `/app/` Anvil profile.
+confirmed reads and unsigned reviews. Historical schema1/native2/current3
+literal-loopback Anvil rehearsals retain their separate local-only submission
+path. The source9/schema4 profile is unsigned even on Anvil and never enters that
+signer. Neither profile enables public signing or changes the isolated `/app/`
+Anvil deployment or its journals. `integration-config.js` also keeps
+`INTEGRATION_DEPLOYMENT = null`.
 
 Read the authoritative [operator configuration and recovery guide](https://github.com/ABEF/AAA/blob/main/docs/DEPLOYMENT_WEBSITE.md)
 for exact fields, API proxy paths, CORS/CSP requirements, stop/restart and rollback.
@@ -19,6 +23,10 @@ Implementation boundaries:
 
 - `deployment-api.js`: typed GET/POST APIs; pinned chain/anchor/config/runtime,
   canonical age/depth checks; exact calldata, amounts, expiry and gas bounds.
+- `deployment-source9.js` / `deployment-source9-data.js`: explicit fresh7 runtime,
+  independent getter, physical LP, lifecycle and exact financial-data checks.
+- `deployment-source9-prepare.js`: direct Entry3/review2 and claim/planner
+  validation; returns unsigned reviews only, including on local Anvil.
 - `deployment-session.js`: address authorization and deployment-isolated tab
   restoration; explicit choice for multiple addresses. No transaction methods.
 - `deployment-view.js`: holdings, eight-card pagination, matching-block earnings,
@@ -27,11 +35,58 @@ Implementation boundaries:
 - `deployment-config.js`: default null; cannot enable public signing.
 - `browser-wallet.js` / `browser-client.js`: existing local-only signing; unchanged.
 
-Activation targets $100 with a minimal raw-unit round-up at the reviewed Oracle
-price. Growth requires at least $5. The review checks the 1% marginal execution
-loss bound and displays simulated LP addition and gas separately. An approval
-review is the exact contribution amount to Entry; it never changes LP/artwork.
-Only the local Anvil rehearsal can submit approval/Entry; the public profile cannot. Read the operator guide for the exact boundary and pending-transaction recovery.
+## Local source9 profile
+
+Website manifest schema4 explicitly selects `source_profile:9`, accounting7,
+LP-allocation1, custody5, protocol-policy1, direct Entry-routing3/review2,
+pricing2, portfolio2, royalty4/reporting5 and canonical
+`ZZZ_CANONICAL_SAME_CHAIN_EXACT_LP_V9`. The browser requires 29 distinct reviewed
+runtime roles and independently checks canonical-block versions, module/parent
+bindings, fixed Rewards canonical child and both physical LPs. Website manifest,
+release inventory and HTTP envelope versions are distinct: core read replies
+remain schema2 and earnings/chunk replies schema1. Source8/accounting6/V8 and
+served schema3/accounting3/V4 retain their own explicit identities.
+
+Contribution inputs are exactly native ETH and fixed deployment ZZZ. Direct
+Entry3 encodes the seven-field request plus reviewed maximum loss and scoped
+contribution-policy fingerprint; it has no Entry conversion route or output
+minimum. Governed minima default to $100 activation/$5 growth; current policy and
+stronger pool minima determine each review. Cosmetic thresholds also come from
+the authenticated current policy. The default contribution loss budget is2%,
+conversion1%, maintenance3%, with gas separate and stricter caller/venue floors
+retained. An exact-amount approval adds no LP; the complete Entry review must be
+prepared again after confirmation.
+
+Royalties remain claims in their original currencies after the fixed one-hour
+opening window. Exact LP rewards remain ETH/fixed-ZZZ: funded ZZZ awaiting ETH
+conversion is shown separately and never added to claimable ETH. Earned,
+claimable, claimed and converted amounts remain separate. Terminal ETH/ZZZ
+principal is read independently from rewards and earnings; the website does not
+prepare principal distribution. Missing history/pricing remains unavailable.
+
+The manifest explicitly selects `transaction_policy_schema:1` or optional2.
+Policy1 retains12M/schema1. Policy2 requires a matching backend configuration and
+schema2 draft/plan, an operator-reviewed 21,000–64,000,000 cap, the same confirmed
+block gas bound and complete20% headroom. This does not widen Entry3 activation's
+separate schema1/12M envelope. The claim planner preserves every selected entry,
+accepts at most32 entries with at most10 trials, validates the next exact batch
+and requires replanning after confirmation;
+there is no automatic queue or submission. Source9 has no signing path, even on
+Anvil, and does not enable direct mint or the unfinished OpenSea integration.
+
+`tests/fixtures/source9-api-v3.json` contains 35 actual Python handler DTOs across
+nine public methods against explicitly synthetic RPC/venue/authority/fee data.
+The exporter checks exact full-raw/checkpoint2 earnings agreement. Reproduce new
+bytes with the contract repository's
+`tests_python/export_source9_website_fixtures.py --output <new-json-path>`; output
+creation is exclusive and temporary history/configuration paths bind each
+generated artifact's identities. Entry3 tests use typed synthetic drafts; a
+complete actual Entry3 trace fixture remains absent. See the
+[source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
+for exact source scope and retained limits. These are local compatibility
+artifacts, not live/provider/wallet or operating acceptance.
+
+## Historical adapter evidence
 
 Focused checks, without rerunning unchanged suites:
 
@@ -51,7 +106,7 @@ Fixtures and headless browser checks do not prove live service or extension
 compatibility. [Evidence](https://github.com/ABEF/AAA/blob/main/reports/deployment-adapter/VERIFICATION.md)
 records 57 focused checks and eight isolated browser scenarios.
 
-The shared signer expansion was rejected by automatic approval review and was not
+The historical shared signer expansion was rejected by automatic approval review and was not
 applied. Public signing, speed-up/cancel handling, full collection aggregation,
 production configuration/services and independent release approval remain open.
 
@@ -65,4 +120,4 @@ are not substituted into that ETH total. See the [local runbook](https://github.
 
 ## Royalty opening and exact-unit source helpers
 
-Fresh reporting5/settlement4 uses original-currency whole units after final sale end plus1hour. Reporting4/settlement3 remains historical. The client verifies the opening configuration against its confirmed snapshot timestamp and rejects positive locked royalty claims; LP-only claims stay separate. Dormant cards show no deadline. These helpers do not authenticate a new native6 deployment by themselves: complete source8/schema13/canonicalV8 integration and reviewed runtime/configuration still remain open. Existing current3/native2 manifests and live sites are unchanged. Public signing remains disabled; the shared signer remains Anvil-only.
+Fresh reporting5/settlement4 uses original-currency whole units after final sale end plus1hour. Reporting4/settlement3 remains historical. The client verifies the opening configuration against its confirmed snapshot timestamp and rejects positive locked royalty claims; LP-only claims stay separate. Dormant cards show no deadline. Source9 adds the separate explicit accounting7/LP1/V9 consumer described above; it does not relabel historical source8/accounting6/V8 helpers or current3/native2 manifests. Actual runtime/configuration and live operating acceptance remain open. Existing live sites are unchanged. Public signing remains disabled; the shared signer remains Anvil-only.

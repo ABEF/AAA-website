@@ -1,6 +1,6 @@
 # AAA / ZZZ PoPL website instructions
 
-Reviewed 2026-11-05. Read PROJECT_CONTEXT.md and the contract repository's current
+Reviewed 2026-11-09. Read PROJECT_CONTEXT.md and the contract repository's current
 AGENTS.md/README/Todo/operator guide. This is current guidance, not an append-only
 history. Previous memory files are backed up outside Git in the contract-side
 documentation-cleanup evidence directory; Git retains every earlier revision.
@@ -26,6 +26,29 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 - Never print or commit keys, credentialed endpoints or passwords. Preserve
   unrelated work. Keep source/evidence/publication/deployment facts distinct.
 
+## Local source9 consumer
+
+Website manifest schema4 explicitly selects source9/accounting7/LP-allocation1/
+custody5/Entry3/review2/royalty4/reporting5/canonicalV9. Source9 is a consumer
+label, not ACCOUNTING_VERSION9. Verify all 29 reviewed browser runtime roles and
+independent canonical-block getters, including fixed Rewards canonical-child
+bindings and both physical LPs. Read governed minima and cosmetic thresholds;
+never substitute the historical defaults for authenticated current settings.
+
+This profile is unsigned even on Anvil. Keep `DEPLOYMENT` and
+`INTEGRATION_DEPLOYMENT` null, the shared signer byte-identical, existing journals
+untouched and served current3/popldemo releases unchanged. Source8/accounting6/V8
+and older profiles remain explicit historical consumers. Read the
+[source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
+before describing local compatibility as operating acceptance.
+
+Keep original-currency royalties, exact ETH/ZZZ LP rewards, pending ZZZ-to-ETH
+conversion, earned history, claims and terminal returned principal separate.
+Missing values stay unavailable. Transaction-policy selector1/2 must match the
+reviewed backend; policy2 never widens policy1 or Entry3 activation implicitly.
+Claim planning retains every selected entry and prepares at most the next batch;
+there is no automatic queue, submission or retry.
+
 ## Product and interface rules
 
 Fresh royalty settlement4 source uses original-currency claims, reporting schema5,
@@ -40,14 +63,15 @@ operator guide for current settings/claims/initial16 / reviewed64-ERC20 currency
 
 
 - Fresh production candidate accepts only native ETH or the fixed deployment ZZZ
-  for activation/growth. Minimum$100activation/$5growth, stronger pool minima;
+  for activation/growth. Default minima$100activation/$5growth, governed future
+  minima and stronger pool minima;
   2%contribution/1%conversion/3%maintenance defaults with governed10%ceilings,
   gas separate and caller minima retained. Actual independent prices/routes
   remain unqualified. Existing example source copy still requires alignment.
 - Mint adds no LP or reward eligibility. Intended primary mint is OpenSea,
   buyer0.05ETH gross/net recipient proceeds after actual platform fee; current
   direct mint is not that integration. Website mint is demonstrative.
-- Holders cannot redeem principal during normal operation. The fresh accounting6
+- Holders cannot redeem principal during normal operation. The fresh accounting7
   contract candidate permits a governance-triggered terminal ETH+ZZZ return to
   current holders, retaining NFT transfers/royalties/earned rewards. Do not label
   the older served current3 artifact as implementing that lifecycle.
@@ -81,20 +105,24 @@ all2784SVG image hashes, manifest, effective demo accounting, signer and null
 public configurations are unchanged. Three focused metadata methods and syntax
 checks pass. No asset regeneration/build/deployment/service/Anvil action.
 See the contract [whole-project execution](https://github.com/ABEF/AAA/blob/main/reports/whole-project-execution-20261029/REVIEW.md).
-This does not implement fresh accounting6 integration or qualify marketplace/hosting.
+That metadata-only correction did not implement the separate accounting6 consumer
+or qualify marketplace/hosting.
 
 ## Documentation and verification
 
-Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [current audit](https://github.com/ABEF/AAA/blob/main/reports/last24h-audit-20261105/REVIEW.md).
-Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema15/reinvest1
-remain distinct from the served accounting3 integration and preserved Anvil
-profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
-terminal governance-only principal batches, entrant-only main growth and scoped
-readiness are contract-source capabilities, not features of the older site.
-See the contract [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md)
-and [audit supplement](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-audit-20261104/REVIEW.md).
-Matching fresh-source website/services and live qualification remain open.
-These documentation changes alter no configuration, signer, build or served site.
+Current contract source is [accounting7/LP-allocation1/portfolio2/custody5/Entry3/royalty4/V9](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md),
+with schema16 release inventory. The local website source9 consumer is separate
+from the served accounting3 integration and preserved Anvil profiles. Historical
+source8/accounting6/V8 evidence remains source-scoped; it is not fresh7 acceptance.
+Actual reviewed configuration, services, providers, gas, wallets and rollout
+remain open. Local source changes alter no running environment.
+
+The source9 fixture exporter produced 35 actual handler DTOs across nine public
+methods using explicitly synthetic RPC/venue/authority/fee data, including exact
+raw/checkpoint2 earnings comparisons. This is consumer compatibility evidence,
+not live data or EVM execution. Entry3 review tests use typed synthetic drafts;
+no complete actual Entry3 trace fixture is claimed. Do not convert these DTO
+counts into a final test count or combine them with historical test stages.
 
 The contract repository's docs/project-todo.json generates its sole TODO.md.
 No website Todo page. Keep feature/operator/roadmap/release/context there current;
@@ -119,6 +147,6 @@ no site/service/signer change. Reporting3 remains historical royalty2; reporting
 
 Do not display the royalty deadline on dormant NFT cards (user preference).
 
-Fresh royalty4 allocates whole original units with GCD-normalized rotating rarity tickets. No scaled royalty fractions or swaps; LP conversion/fractions stay separate. Complete current native6 integration remains open: these read/unsigned helpers do not relabel current3 manifests. The default optional royalty sync ceiling is1m gas; actual capacity/gas qualification remains open. No dormant deadline notice.
+Fresh royalty4 allocates whole original units with GCD-normalized rotating rarity tickets. Fresh LP-allocation1 separately preserves exact whole-unit LP books and phase; historical accounting6 fractions retain their original meaning. No royalty swap or unwrap occurs. Source9 read/unsigned support does not relabel served current3 manifests or qualify a live integration. The default optional royalty sync ceiling is1m gas; actual capacity/gas qualification remains open. No dormant deadline notice.
 
 Fresh contract source now includes governance-only same-main residual consolidation; automatic keeper actions and the served website are unchanged. Use the contract operator guide; this documentation does not add a website transaction or rollout.

@@ -49,7 +49,7 @@ export async function buildIntegration({output='dist-poplint',revision=null}={})
   }));
   const identity={schema:1,environment:'poplint-integration',hosts:[...INTEGRATION_HOSTS],canonical_origin:'https://www.poplint.0xwave.com',demo_origin:'https://www.popldemo.0xwave.com',source_revision:revision,
     deployment_configured:policy.state==='configured',deployment_id:policy.manifest?.id??null,
-    public_signing:false,expected_contract_profile:{accounting_version:3,governance_version:2,fee_intake_version:1,pricing_version:2,routing_version:2,review_policy_version:1,canonical:'ZZZ_CANONICAL_SAME_CHAIN_NATIVE_LP_ONLY_V4'},
+    public_signing:false,expected_contract_profile:policy.manifest?.schema===3?{accounting_version:3,governance_version:2,fee_intake_version:1,pricing_version:2,routing_version:2,review_policy_version:1,canonical:'ZZZ_CANONICAL_SAME_CHAIN_NATIVE_LP_ONLY_V4'}:{website_schema:4,source_profile:9,accounting_version:7,lp_allocation_version:1,custody_version:5,royalty_reporting_schema:5,governance_version:2,fee_intake_version:1,pricing_version:2,routing_version:3,review_policy_version:2,canonical:'ZZZ_CANONICAL_SAME_CHAIN_EXACT_LP_V9'},
     configuration_status:policy.state,source_sha256:digest(JSON.stringify(sources)),asset_files:files.length};
   await mkdir(destination);
   await mapFiles(files,async name=>{await mkdir(dirname(resolve(destination,name)),{recursive:true});await copyFile(resolve(ROOT,name),resolve(destination,name));});

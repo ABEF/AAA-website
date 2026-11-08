@@ -51,7 +51,7 @@ test('integration artifact includes only reviewed public files with environment 
   const result=await buildIntegration({output:name,revision:'1'.repeat(40)});
   try{
     const identity=JSON.parse(await readFile(resolve(output,'site-identity.json'),'utf8'));
-    assert.equal(identity.environment,'poplint-integration');assert.equal(identity.source_revision,'1'.repeat(40));assert.equal(identity.public_signing,false);assert.equal(identity.deployment_configured,false);assert.equal(identity.expected_contract_profile.accounting_version,3);
+    assert.equal(identity.environment,'poplint-integration');assert.equal(identity.source_revision,'1'.repeat(40));assert.equal(identity.public_signing,false);assert.equal(identity.deployment_configured,false);assert.equal(identity.expected_contract_profile.accounting_version,7);
     const html=await readFile(resolve(output,'index.html'),'utf8');assert.match(html,/Deployment not configured/);assert.doesNotMatch(html,/\$425,000|PoPL #444|data-view="overview"|id="mint-submit"|src="\.\/app.js"/);
     for(const name of ['AGENTS.md','PROJECT_CONTEXT.md','.git','tests','app.js','domain.js','preview-store.js','deployment-config.js'])await assert.rejects(lstat(resolve(output,name)),{code:'ENOENT'});
     const lines=(await readFile(resolve(output,'SHA256SUMS'),'utf8')).trim().split('\n');assert.equal(lines.length,result.files);

@@ -7,6 +7,9 @@ import {COLORWAYS,PATTERNS,findArtwork,paletteTrait,preloadEvolutions} from './a
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const text=(s,v)=>{const n=$(s);if(n)n.textContent=v;};
 const short=a=>a.slice(0,6)+'…'+a.slice(-4);
+// Match NFTMetadata._stageFile(4): LP-exited is labelled explicitly while its
+// image uses the existing activated variant. No fifth artwork is invented.
+export const positionArtwork=n=>n.traits_ready&&n.position.evolution_value_available?findArtwork(`${COLORWAYS[n.traits.palette]?.id}-${PATTERNS[n.traits.pattern]?.id}-${n.traits.rarity.toLowerCase()}-${n.position.evolution==='lp_exited'?'activated':n.position.evolution}`):null;
 export function walletProgressLabel(stage){
   return ({checking:'Checking review…',wallet:'Confirm in your wallet',submitted:'Transaction submitted',confirming:'Checking confirmation…',confirmed:'Transaction confirmed',failed:'Transaction reverted',reconciling:'Refreshing confirmed balances…'})[stage]||'Checking transaction status…';
 }
@@ -58,6 +61,24 @@ export function reviewedClaimPayouts(review){
     '<div>NFT '+e(c.token_id)+' · '+(c.royalty?'Royalties':'LP rewards')+' · '+e(exactUnits(c.simulated_raw,c.decimals))+' '+e(c.symbol)+'</div>'
   ).join('')+'</div>';
 }
+export function reviewedClaimPlan(review){
+  const plan=review.claim_plan;if(!plan)return '';
+  return '<div class="small-note"><p>Claim batch review · every selected entry</p>'+plan.entries.map(row=>
+    '<div>NFT '+e(row.token_id)+' · '+(row.royalty?'Royalties':'LP rewards')+' · <span class="mono">'+e(row.asset)+'</span> · '+e(row.status)+'</div>'
+  ).join('')+'<p>'+plan.remaining_claims.length+' entries remain outside this batch. Refresh and prepare again after confirmation; nothing is queued or sent automatically.</p></div>';
+}
+export function pendingLPText(n){
+  if(n.provenance?.accounting_version!==7)return 'Additional source-token rewards await conversion or verification.';
+  const row=n.claimable.lp.find(a=>a.asset!==ZERO);
+  return row?.raw!==null&&row?.available!==false?'Pending LP conversion: '+exactUnits(row.raw,row.decimals)+' '+row.symbol+'. The conversion worker must credit ETH before the normal ETH reward claim.':'Pending LP conversion balance unavailable. No ETH amount is inferred.';
+}
+export function principalReturnNote(n){
+  const r=n.principal_return;if(!r||r.phase==='operating')return '';
+  if(!r.available)return '<p class="small-note">Principal return unavailable. This is separate from rewards.</p>';
+  return '<div class="small-note"><p>Collective LP exit · '+e(r.phase)+(r.paid?' · paid':'')+'</p>'+r.assets.map(a=>
+    '<div>Principal remaining · '+e(a.symbol)+': '+(a.remaining_raw===null?'Not allocated yet':e(exactUnits(a.remaining_raw,a.decimals)))+'</div>'
+  ).join('')+'<p>Principal is separate from rewards. Governance distributes it to the current NFT owner. Previously earned rewards and royalties remain separate.</p></div>';
+}
 export function renderPositionAmounts(n){
   const lp=`<div class="position-attached-lp"><span>LP attached</span><strong>${e(usd(n.position.current_lp_value.raw))}</strong></div>`;
   if(!n.position.activated)return lp;
@@ -66,7 +87,7 @@ export function renderPositionAmounts(n){
   const amount=nativeRewards(n),pending=['lp',...(original?[]:['royalties'])].some(k=>n.claimable[k].some(a=>a.asset!==ZERO&&(a.raw===null||raw(a.raw)>0n)));
   const extra=original?n.claimable.royalties.filter(a=>a.asset!==ZERO&&(a.raw===null||a.available===false||raw(a.raw)>0n)).map(a=>(a.raw===null||a.available===false?'Unavailable':exactUnits(a.raw,a.decimals))+' '+a.symbol):[];
   const originalNote=extra.length?'<p class="small-note">Other royalties to claim: '+extra.map(x=>e(x)).join(' + ')+'. Paid in their original currency.</p>':'';
-  return lp+history+`<div class="position-reward-total"><span>Rewards to claim</span><strong>${amount===null?'Unavailable':e(units(amount))+' ETH'}</strong></div>`+originalNote+royaltyOpeningNote(n)+(pending?'<p class="small-note">Additional source-token rewards await conversion or verification.</p>':'');
+  return lp+history+principalReturnNote(n)+`<div class="position-reward-total"><span>Rewards to claim</span><strong>${amount===null?'Unavailable':e(units(amount))+' ETH'}</strong></div>`+originalNote+royaltyOpeningNote(n)+(pending?'<p class="small-note">'+e(pendingLPText(n))+'</p>':'');
 }
 export function earnedUSD(report,period,collection=false){
   const totals=report?.[period+'_usd_at_current_price_18'];
@@ -88,7 +109,7 @@ export function createDeploymentView(config){
   let providers=[],snapshot=null,readiness=null,page=0,sequence=0,busy=false,preparing=false,error=null,quoteSequence=0;
   let store=null;try{store=sessionStorage;}catch{}
   let transactions=null,review=null,stage=null,reviewTimer=null;
-  const localSigning=m.environment==='rehearsal'&&m.chain_id===31337&&new URL(m.rpc_url).protocol==='http:'&&new URL(m.rpc_url).hostname==='127.0.0.1';
+  const localSigning=m.schema!==4&&m.environment==='rehearsal'&&m.chain_id===31337&&new URL(m.rpc_url).protocol==='http:'&&new URL(m.rpc_url).hostname==='127.0.0.1';
   const session=new DeploymentSession({storage:store,key:'popl-deployment-address:'+m.id,onChange:()=>{
     sequence++;quoteSequence++;page=0;totalController?.abort();totalController=null;totals=null;totalBusy=false;earnings=null;earningsBusy=false;renderMetrics();review=null;api.cancel();snapshot=null;busy=false;preparing=false;error=null;dialog.close();$('#nft-dialog').close();render();
     if(!session.busy&&session.account)void refresh();
@@ -131,7 +152,7 @@ export function createDeploymentView(config){
   }
   function renderMint(){
     const button=$('#mint-submit');if(!button)return;
-    if(m.environment==='production'){button.type='button';button.disabled=true;button.textContent='Mint on OpenSea';text('#mint-message','Minting is planned on OpenSea. This page demonstrates the NFT; the verified collection link will be added before launch.');return;}
+    if(m.schema===4||m.environment==='production'){button.type='button';button.disabled=true;button.textContent='Mint on OpenSea';text('#mint-message','Minting is planned on OpenSea. This page demonstrates the NFT; the verified collection link will be added before launch.');return;}
     button.type='button';button.disabled=busy||preparing||transactions?.busy||Boolean(pending())||session.busy||Boolean(readiness?.new_minting_stopped)||readiness?.minted>=1000;
     button.textContent=transactions?.busy?(review?.requested_action==='mint'?(stage==='wallet'?'Confirm mint in wallet…':'Checking mint confirmation…'):'Wallet operation in progress…'):preparing?'Preparing review…':busy?'Reading confirmed state…':session.account?(localSigning?'Review mint ↗':'Review unsigned mint ↗'):'Connect wallet ↗';
     text('#mint-message','0.05 ETH mint price. Network gas is separate. '+(localSigning?'Local Anvil only; confirm each send in your wallet.':'This profile does not submit transactions.'));
@@ -208,7 +229,7 @@ export function createDeploymentView(config){
       $('#nft-dialog').showModal();status('Current confirmed position loaded.');
     }catch{if(revision===collectionDetailSequence)status('Position changed or could not be verified. Refresh the collection.',true);}
   }
-  const artFor=n=>n.traits_ready&&n.position.evolution_value_available?findArtwork(`${COLORWAYS[n.traits.palette]?.id}-${PATTERNS[n.traits.pattern]?.id}-${n.traits.rarity.toLowerCase()}-${n.position.evolution}`):null;
+  const artFor=positionArtwork;
   function traits(n){const art=artFor(n);return n.traits_ready?`<strong>${e(n.traits.rarity)}</strong><span>${e(art?.colorStyle||'')}</span>${paletteTrait(COLORWAYS[n.traits.palette].colors)}${royaltyTrait(n)}`:'<span>Awaiting verified reveal</span>';}
   function renderPortfolio(){
     $('#portfolio-disconnected').hidden=Boolean(session.account);$('#portfolio-connected').hidden=!session.account;
@@ -216,7 +237,7 @@ export function createDeploymentView(config){
     text('.portfolio-account .small-note',snapshot?'Holdings at block '+snapshot.inventory.provenance.block_number:'Confirmed holdings unavailable');
     const items=snapshot?.nfts||[];
     text('#my-count',snapshot?`${snapshot.inventory.count} NFTs owned · showing ${items.length} on this page`:'');
-    $('#owned-nfts').innerHTML=items.map(n=>{const art=artFor(n);if(art)preloadEvolutions(art);return `<article class="nft-card"><div class="nft-card-art">${art?`<button class="art-image-button" data-deployment-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}"><img class="nft-artwork" src="${art.src}" alt="${e(art.colorLabel+' '+art.rarityLabel+' '+art.evolutionLabel)}" width="1024" height="1024" loading="lazy"></button>`:'<div class="local-art-unavailable">Artwork state unavailable</div>'}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span>${e(n.position.evolution_value_available?n.position.evolution:'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}<div class="local-position-actions">${n.position.activated?`<button class="button" data-deployment-claim="${n.token_id}" ${blocked()||!hasClaimableRewards(n)?'disabled':''}>Review claim</button>`:''}<button class="button button-secondary" data-deployment-id="${n.token_id}" data-deployment-grow ${blocked()||!n.traits_ready?'disabled':''}>${n.position.activated?'Grow attached LP':'Activate'}</button></div><p class="small-note">Confirmed block ${n.provenance.block_number}</p></div></article>`;}).join('')||`<p class="local-empty">${e(busy?'Reading your confirmed positions…':error||'No NFTs owned by this address.')}</p>`;
+    $('#owned-nfts').innerHTML=items.map(n=>{const art=artFor(n);if(art)preloadEvolutions(art);return `<article class="nft-card"><div class="nft-card-art">${art?`<button class="art-image-button" data-deployment-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}"><img class="nft-artwork" src="${art.src}" alt="${e(art.colorLabel+' '+art.rarityLabel+' '+art.evolutionLabel)}" width="1024" height="1024" loading="lazy"></button>`:'<div class="local-art-unavailable">Artwork state unavailable</div>'}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span>${e(n.position.evolution_value_available?n.position.evolution:'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}<div class="local-position-actions">${n.position.activated?`<button class="button" data-deployment-claim="${n.token_id}" ${blocked()||!hasClaimableRewards(n)?'disabled':''}>Review claim</button>`:''}<button class="button button-secondary" data-deployment-id="${n.token_id}" data-deployment-grow ${blocked()||!n.traits_ready||m.schema===4&&(!snapshot.protocol.lifecycle.new_economic_work_available_by_lifecycle||!['active','dormant'].includes(n.position.status))?'disabled':''}>${n.position.activated?'Grow attached LP':'Activate'}</button></div><p class="small-note">Confirmed block ${n.provenance.block_number}</p></div></article>`;}).join('')||`<p class="local-empty">${e(busy?'Reading your confirmed positions…':error||'No NFTs owned by this address.')}</p>`;
     $('#claim-all').disabled=blocked()||!items.some(n=>hasClaimableRewards(n));text('#claim-all','Review claims on this page ↗');
     pager.hidden=!snapshot||snapshot.inventory.count<=8;pager.querySelector('span').textContent=`Page ${page+1}`;
     pager.querySelector('[data-deployment-page="-1"]').disabled=busy||page===0;
@@ -226,7 +247,7 @@ export function createDeploymentView(config){
   async function refresh({keepDialog=false}={}){
     if(transactions?.busy)return;const current=++sequence,owner=session.account;api.cancel();totalController?.abort();totalController=null;totals=null;totalBusy=false;earnings=null;earningsBusy=false;renderMetrics();busy=true;error=null;if(!keepDialog){review=null;dialog.close();}render();
     try{
-      const ready=m.environment==='rehearsal'?await api.readiness():null;if(current!==sequence)return;readiness=ready;
+      const ready=m.schema!==4&&m.environment==='rehearsal'?await api.readiness():null;if(current!==sequence)return;readiness=ready;
       const data=owner?await api.portfolio(owner,page):(await api.protocol(),null);
       if(current!==sequence||owner!==session.account)return;// A refresh must not publish a pending contribution's new artwork before
       // its canonical Entry receipt and LP position have been reconciled.
@@ -245,25 +266,27 @@ export function createDeploymentView(config){
     const generation=++quoteSequence,current=sequence;form.elements.amount.value='';form.elements.consent.checked=false;form.querySelector('button[type=submit]').disabled=true;
     text('#nft-dialog [data-deployment-feedback]','Reading the reviewed activation price…');
     try{const result=await api.activationAmount(form.elements.asset.value);if(generation!==quoteSequence||current!==sequence||!form.isConnected||!$('#nft-dialog').open)return;
-      form.elements.amount.value=result.amount;form.querySelector('button[type=submit]').disabled=false;text('#nft-dialog [data-deployment-feedback]','$100 in value, rounded up only to the smallest token unit. Rechecked during preparation.');
+      form.elements.amount.value=result.amount;form.querySelector('button[type=submit]').disabled=false;text('#nft-dialog [data-deployment-feedback]',(result.minimum_activation_usd_18?'Reviewed activation target '+usd(result.minimum_activation_usd_18):'$100 in value')+', rounded up only to the smallest token unit. Rechecked during preparation.');
     }catch(err){if(generation===quoteSequence&&form.isConnected)text('#nft-dialog [data-deployment-feedback]',err.message);}
   }
   function details(id,grow=false){
     if(blocked())return void refresh();const n=snapshot.nfts.find(n=>n.token_id===id);if(!n)return;
+    if(grow&&m.schema===4&&(!snapshot.protocol.lifecycle.new_economic_work_available_by_lifecycle||!['active','dormant'].includes(n.position.status)))return;
     quoteSequence++;const action=n.position.activated?'increase':'activate',assets=m.input_assets.filter(a=>a.enabled);
     const balance=scope=>{const amount=nativeRewards(n,scope);return amount===null?'Unavailable':units(amount)+' ETH';};
-    $('#nft-dialog-content').innerHTML=`<h2 id="nft-details-title">PoPL #${n.mint_ordinal}</h2><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}${!grow&&n.position.activated?`<div class="breakdown-rows"><div>LP rewards <span>${e(balance('lp'))}</span></div><div>Royalties <span>${e(balance('royalties'))}</span></div></div>`:''}${!grow&&n.position.activated?claimCurrencyButtons(n,blocked()):''}${grow?`<form data-deployment-contribution="${id}" data-action="${action}" class="liquidity-form"><label class="input-label">Contribution asset<select name="asset">${assets.map(a=>`<option value="${a.symbol}">${a.symbol}</option>`).join('')}</select></label><label class="input-label">Token amount<input class="amount-input" name="amount" type="text" inputmode="decimal" autocomplete="off" required ${action==='activate'?'readonly':''}></label><p class="small-note">${action==='activate'?'Activate with $100 in value.':'Add at least $5 in value.'} ${e(contributionPolicyText(m))}</p><label class="checkbox-label"><input name="consent" type="checkbox" required><span>I understand this funds LP attached to the NFT and the principal cannot be redeemed.</span></label><button type="submit" class="button" ${assets.length?'':'disabled'}>${localSigning?'Review':'Prepare unsigned'} ${action==='activate'?'activation':'LP addition'} ↗</button><p class="form-message" data-deployment-feedback role="status"></p></form>`:''}`;
+    $('#nft-dialog-content').innerHTML=`<h2 id="nft-details-title">PoPL #${n.mint_ordinal}</h2><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}${!grow&&n.position.activated?`<div class="breakdown-rows"><div>LP rewards <span>${e(balance('lp'))}</span></div><div>Royalties <span>${e(balance('royalties'))}</span></div></div>`:''}${!grow&&n.position.activated?claimCurrencyButtons(n,blocked()):''}${grow?`<form data-deployment-contribution="${id}" data-action="${action}" class="liquidity-form"><label class="input-label">Contribution asset<select name="asset">${assets.map(a=>`<option value="${a.symbol}">${a.symbol}</option>`).join('')}</select></label><label class="input-label">Token amount<input class="amount-input" name="amount" type="text" inputmode="decimal" autocomplete="off" required ${action==='activate'?'readonly':''}></label><p class="small-note">${m.schema===4?'The current governed and pool minimums are checked in your review.':action==='activate'?'Activate with $100 in value.':'Add at least $5 in value.'} ${e(contributionPolicyText(m))}</p><label class="checkbox-label"><input name="consent" type="checkbox" required><span>I understand this funds LP attached to the NFT and the principal cannot be redeemed.</span></label><button type="submit" class="button" ${assets.length?'':'disabled'}>${localSigning?'Review':'Prepare unsigned'} ${action==='activate'?'activation':'LP addition'} ↗</button><p class="form-message" data-deployment-feedback role="status"></p></form>`:''}`;
     $('#nft-dialog').showModal();const form=$('[data-deployment-contribution]');if(grow&&action==='activate'&&assets.length)void quote(form);
   }
   async function prepare(intent,{afterApproval=false}={}){
     if(preparing||transactions?.busy)return;if(!session.account)return openWallet();if(pending())return void recover();if(stale()&&!afterApproval)return void refresh();
     preparing=true;updateWallet();const current=sequence;
     try{
-      const permission=await session.verify();const draft=transactions?await transactions.prepare({...intent,account:permission.account},{afterApproval}):await api.prepare({...intent,account:permission.account});await session.verify();
+      const permission=await session.verify();const draft=transactions?await transactions.prepare({...intent,account:permission.account},{afterApproval}):await api.prepare({...intent,account:permission.account,...(m.schema===4&&intent.action==='claim'?{plan:true}:{})});await session.verify();
       if(current!==sequence||permission.revision!==session.revision||permission.account!==session.account)return;
-      const labels={mint:'Mint',claim:'Claim ETH rewards',approve:'Approve exact contribution',activate:'Activate NFT',increase:'Grow attached LP'};
+      const labels={mint:'Mint',claim:'Claim rewards in original currencies',approve:'Approve exact contribution',activate:'Activate NFT',increase:'Grow attached LP'};
       review=draft;stage=null;const context=draft.liquidity_context;
-      dialog.innerHTML=`<h2>${e(labels[draft.action])}</h2><p class="eyebrow">${localSigning?'LOCAL WALLET REVIEW':'UNSIGNED REVIEW'} · ${e(m.chain_name)}</p><p>${localSigning?'Nothing is sent until you confirm in the selected wallet.':'This profile cannot send transactions. Nothing has been approved or transferred.'}</p><div class="nft-detail-rewards"><div>Account <b class="local-id">${e(permission.account)}</b></div><div>Destination <b class="local-id">${e(draft.transaction.to)}</b></div>${draft.source?`<div>Contribution <b>${e(exactUnits(draft.source.amount_raw,api.asset(intent.asset).decimals))} ${e(intent.asset)}</b></div>`:`<div>Native value <b>${e(exactUnits(BigInt(draft.transaction.value).toString(),18))} ETH</b></div>`}${reviewedContributionPolicy(draft)}${reviewedClaimPayouts(draft)}${draft.simulated_lp_added_usd_18?`<div>Simulated LP added <b>${e(usd(draft.simulated_lp_added_usd_18))}</b></div>`:''}<div>Network gas · separate review limit <b>${e(exactUnits(draft.network_gas.max_cost_wei,18))} ETH</b></div></div>${draft.action==='approve'?'<p>Approval alone adds no liquidity. After a confirmed approval, the complete Entry operation must be prepared again.</p>':''}${context?.in_range===false?'<p class="is-error">The LP is outside its active trading range. '+e(String(context.rebalance?.explanation||'Next eligible rebalance unavailable.').slice(0,600))+' Next keeper execution is not guaranteed.</p>':''}<p role="status" data-deployment-expiry>Review expires at ${e(new Date(draft.expires_at*1000).toLocaleTimeString())}.</p><details><summary>Exact unsigned calldata</summary><code>${e(draft.transaction.data)}</code></details><p role="status" data-deployment-progress></p>${draft.signing_enabled?'<button type="button" class="button" data-deployment-send>Confirm in your wallet</button>':''}<button type="button" class="button button-secondary" data-deployment-close>Close</button>`;
+      if(!draft.transaction){dialog.innerHTML='<h2>Claim review</h2>'+reviewedClaimPlan(draft)+'<p>No executable transaction was prepared. Nothing is sent.</p><button type="button" class="button button-secondary" data-deployment-close>Close</button>';dialog.showModal();status('Claim selection reviewed; no executable batch.');return;}
+      dialog.innerHTML=`<h2>${e(labels[draft.action])}</h2><p class="eyebrow">${localSigning?'LOCAL WALLET REVIEW':'UNSIGNED REVIEW'} · ${e(m.chain_name)}</p><p>${localSigning?'Nothing is sent until you confirm in the selected wallet.':'This profile cannot send transactions. Nothing has been approved or transferred.'}</p><div class="nft-detail-rewards"><div>Account <b class="local-id">${e(permission.account)}</b></div><div>Destination <b class="local-id">${e(draft.transaction.to)}</b></div>${draft.source?`<div>Contribution <b>${e(exactUnits(draft.source.amount_raw,api.asset(intent.asset).decimals))} ${e(intent.asset)}</b></div>`:`<div>Native value <b>${e(exactUnits(BigInt(draft.transaction.value).toString(),18))} ETH</b></div>`}${reviewedContributionPolicy(draft)}${reviewedClaimPayouts(draft)}${reviewedClaimPlan(draft)}${draft.simulated_lp_added_usd_18?`<div>Simulated LP added <b>${e(usd(draft.simulated_lp_added_usd_18))}</b></div>`:''}<div>Network gas · separate review limit <b>${e(exactUnits(draft.network_gas.max_cost_wei,18))} ETH</b></div></div>${draft.action==='approve'?'<p>Approval alone adds no liquidity. After a confirmed approval, the complete Entry operation must be prepared again.</p>':''}${context?.in_range===false?'<p class="is-error">The LP is outside its active trading range. '+e(String(context.rebalance?.explanation||'Next eligible rebalance unavailable.').slice(0,600))+' Next keeper execution is not guaranteed.</p>':''}<p role="status" data-deployment-expiry>Review expires at ${e(new Date(draft.expires_at*1000).toLocaleTimeString())}.</p><details><summary>Exact unsigned calldata</summary><code>${e(draft.transaction.data)}</code></details><p role="status" data-deployment-progress></p>${draft.signing_enabled?'<button type="button" class="button" data-deployment-send>Confirm in your wallet</button>':''}<button type="button" class="button button-secondary" data-deployment-close>Close</button>`;
       clearTimeout(reviewTimer);dialog.showModal();const timer=setTimeout(()=>{if(dialog.open&&!transactions?.busy){text('[data-deployment-expiry]','This review has expired. Prepare again using current confirmed state.');const send=dialog.querySelector('[data-deployment-send]');if(send)send.disabled=true;}},Math.max(0,draft.expires_at*1000-Date.now()));reviewTimer=timer;dialog.addEventListener('close',()=>clearTimeout(timer),{once:true});
       status(localSigning?'Review ready. Confirm in your wallet to send the local transaction.':'Unsigned review prepared. Signing remains disabled.');
     }catch(err){if(current===sequence){status(err.message,true);text('#nft-dialog [data-deployment-feedback]',err.message);}}

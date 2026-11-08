@@ -24,7 +24,7 @@ for(const art of ARTWORKS){
   if(variants.get(art.id)?.image_sha256!==digest) throw new Error('Artwork hash mismatch: '+art.id);
   const metadata=JSON.parse(await readFile(new URL(art.metadata,import.meta.url),'utf8'));
   const expected=metadataAttributes({paletteId:art.paletteId,colorIds:art.colors,colorStyle:art.colorStyle,pattern:art.pattern,rarity:art.rarity},art.evolution);
-  if(metadata.image!==`../${art.id}.svg` || JSON.stringify(metadata.attributes.slice(0,-1))!==JSON.stringify(expected) || metadata.attributes.at(-1)?.value!==art.royaltyWeight) throw new Error('Incorrect artwork metadata: '+art.id);
+  if(metadata.image!==`../${art.id}.svg` || JSON.stringify(metadata.attributes.slice(0,-1))!==JSON.stringify(expected) || metadata.attributes.at(-1)?.trait_type!=='Royalty Weight' || metadata.attributes.at(-1)?.value!==art.royaltyMultiplier) throw new Error('Incorrect artwork metadata: '+art.id);
 }
 if(hashes.size!==ARTWORKS.length) throw new Error('Rendered artwork files must have unique content.');
 const inventory=JSON.parse(await readFile(new URL('./assets/nfts/inventory.json',import.meta.url),'utf8'));

@@ -1,4 +1,4 @@
-Current wallet integration: [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The shared signer remains restricted to chain 31337 by user decision; nonlocal API profiles are read/unsigned-review only. Public mode remains simulated.
+The historical [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The new source9 profile reads and prepares unsigned reviews even on Anvil; the shared signer remains unchanged. Public demo mode remains simulated.
 
 # ZZZ PoPL website
 
@@ -14,19 +14,22 @@ never demo holdings. Public signing remains disabled. See
 
 ## Contract source and served releases
 
-Contract source: [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md) and [same-main management audit](https://github.com/ABEF/AAA/blob/main/reports/residual-main-consolidation-20261106/REVIEW.md).
-Fresh accounting6/portfolio2/custody5/Entry-routing3/royalty4/canonicalV8 and schema15/reinvest1
-remain distinct from the served accounting3 integration and preserved Anvil
-profiles. Source8 is an integration label, not ACCOUNTING_VERSION8. Both LP legs,
-terminal governance-only principal batches, entrant-only main growth and scoped
-readiness are contract-source capabilities, not features of the older site.
-See the contract [current profile](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V6.md)
-and [audit supplement](https://github.com/ABEF/AAA/blob/main/reports/comprehensive-audit-20261104/REVIEW.md).
-Fresh6 backend reads independently verify each LP leg's principal and exact
-portfolio fingerprints; governed pool movement/resume can recreate a residual
-under destination mode ON. These source changes do not update this served site.
-Matching fresh-source website/services and live qualification remain open.
-These documentation changes alter no configuration, signer, build or served site.
+Current contract source is [accounting7/exact LP1/custody5/canonicalV9](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md).
+The local source9 consumer uses website manifest schema4, direct Entry3/review2,
+royalty4/reporting5 and 29 browser runtime pins with independent canonical-block
+getter checks. It reads both physical LP legs, governed contribution minima and
+cosmetic thresholds, exact whole-unit rewards and terminal principal separately.
+Original-currency royalties stay separate from fixed-ZZZ LP rewards awaiting ETH
+conversion. Optional transaction policy2 and bounded claim planning remain unsigned.
+
+This source profile has no submission path, including on Anvil. Both public
+configuration exports remain null, and the shared signer is unchanged. The served
+poplint artifact remains historical current3 and unconfigured; popldemo remains
+the existing simulation. Source8/accounting6/V8 and earlier manifests, runtimes
+and journals retain their own identities. Actual services, Entry3 execution
+traces, providers, wallets and rollout remain unqualified. See the
+[source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
+and [API profile](DEPLOYMENT_API.md).
 
 ## Published demo
 
