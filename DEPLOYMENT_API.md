@@ -45,16 +45,20 @@ runtime roles and independently checks canonical-block versions, module/parent
 bindings, fixed Rewards canonical child and both physical LPs. Website manifest,
 release inventory and HTTP envelope versions are distinct: core read replies
 remain schema2 and earnings/chunk replies schema1. Source8/accounting6/V8 and
-served schema3/accounting3/V4 retain their own explicit identities.
+served schema3/accounting3/V4 retain their own explicit identities. The newer
+[SeaDrop mint2/canonicalV10/schema17 contract candidate](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md)
+is not admitted by this source9 manifest; it needs a matching website consumer.
 
 Contribution inputs are exactly native ETH and fixed deployment ZZZ. Direct
 Entry3 encodes the seven-field request plus reviewed maximum loss and scoped
 contribution-policy fingerprint; it has no Entry conversion route or output
 minimum. Governed minima default to $100 activation/$5 growth; current policy and
 stronger pool minima determine each review. Cosmetic thresholds also come from
-the authenticated current policy. The default contribution loss budget is2%,
-conversion1%, maintenance3%, with gas separate and stricter caller/venue floors
-retained. An exact-amount approval adds no LP; the complete Entry review must be
+the authenticated current policy. Original source9 evidence used a2% contribution
+budget; the fresh contract default is now3%, conversion1%, maintenance3%. The
+manifest's independently reviewed `maximum_contribution_loss_bps` is not widened
+by that source change: a200bps ceiling rejects a300bps on-chain cap until separately
+re-reviewed. Gas and stricter caller/venue floors remain separate. An exact-amount approval adds no LP; the complete Entry review must be
 prepared again after confirmation.
 
 Royalties remain claims in their original currencies after the fixed one-hour
@@ -83,7 +87,9 @@ claim policy1 beyond12M, and transaction policy2 does not select activation2.
 The claim planner preserves every selected entry, accepts at most32 entries with
 at most10 trials, validates the next exact batch and requires replanning after confirmation;
 there is no automatic queue or submission. Source9 has no signing path, even on
-Anvil, and does not enable direct mint or the unfinished OpenSea integration.
+Anvil, and does not enable direct mint or the separately implemented SeaDrop
+mint2/V10 integration. Actual OpenSea onboarding/fee/operating qualification and
+matching V10 website adoption remain open.
 
 `tests/fixtures/source9-api-v3.json` contains 35 actual Python handler DTOs across
 nine public methods against explicitly synthetic RPC/venue/authority/fee data.

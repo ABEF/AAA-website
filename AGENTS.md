@@ -69,12 +69,15 @@ operator guide for current settings/claims/initial16 / reviewed64-ERC20 currency
 - Fresh production candidate accepts only native ETH or the fixed deployment ZZZ
   for activation/growth. Default minima$100activation/$5growth, governed future
   minima and stronger pool minima;
-  2%contribution/1%conversion/3%maintenance defaults with governed10%ceilings,
+  3%contribution/1%conversion/3%maintenance fresh defaults with governed10%ceilings,
+  without widening independently reviewed200bps client ceilings or old fixtures,
   gas separate and caller minima retained. Actual independent prices/routes
   remain unqualified. Existing example source copy still requires alignment.
 - Mint adds no LP or reward eligibility. Intended primary mint is OpenSea,
   buyer0.05ETH gross/net recipient proceeds after actual platform fee; current
-  direct mint is not that integration. Website mint is demonstrative.
+  direct mint is not that integration. SeaDrop mint2/V10 is implemented in contract
+  source; actual onboarding/fee/operating qualification and a matching website
+  consumer remain open. Website mint is demonstrative.
 - Holders cannot redeem principal during normal operation. The fresh accounting7
   contract candidate permits a governance-triggered terminal ETH+ZZZ return to
   current holders, retaining NFT transfers/royalties/earned rewards. Do not label
@@ -114,9 +117,11 @@ or qualify marketplace/hosting.
 
 ## Documentation and verification
 
-Current contract source is [accounting7/LP-allocation1/portfolio2/custody5/Entry3/royalty4/V9](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md),
-with schema16 release inventory. The local website source9 consumer is separate
-from the served accounting3 integration and preserved Anvil profiles. Historical
+Current contract source is [accounting7/LP-allocation1/portfolio2/custody5/Entry3/royalty4](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md)
+with [mint2/canonicalV10/schema17](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md).
+The local source9 consumer retains V9/schema16; do not relabel its schema4 manifest,
+29 browser pins or fixtures as V10. Matching V10 website adoption remains open.
+Both are separate from the served accounting3 integration and preserved Anvil profiles. Historical
 source8/accounting6/V8 evidence remains source-scoped; it is not fresh7 acceptance.
 Actual reviewed configuration, services, providers, gas, wallets and rollout
 remain open. Local source changes alter no running environment.

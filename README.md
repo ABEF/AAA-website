@@ -14,8 +14,10 @@ never demo holdings. Public signing remains disabled. See
 
 ## Contract source and served releases
 
-Current contract source is [accounting7/exact LP1/custody5/canonicalV9](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md).
-The local source9 consumer uses website manifest schema4, direct Entry3/review2,
+Current contract source is [accounting7/exact LP1/custody5](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md)
+with [SeaDrop mint2/canonicalV10/schema17](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md).
+The local source9 consumer retains the prior canonicalV9/schema16 contract profile;
+it does not implement V10 website adoption. It uses website manifest schema4, direct Entry3/review2,
 royalty4/reporting5 and 29 browser runtime pins with independent canonical-block
 getter checks. It reads both physical LP legs, governed contribution minima and
 cosmetic thresholds, exact whole-unit rewards and terminal principal separately.
@@ -132,7 +134,7 @@ accounts; production extension-wallet signing and public deployment remain open.
 
 No public PoPL deployment is configured. In the default static/demo mode, every NFT, LP valuation, fee history, portfolio assignment, mint, activation and claim in this website is illustrative. Browser-wallet connection retrieves a public address and chain identifier only. The default static mode never requests token approvals, signatures, payments or blockchain transactions. The separate local mode explicitly confirms disposable test transactions.
 
-Connecting a real wallet does not fetch its actual NFTs: it displays the same explicitly labeled example portfolio. The accepted contract configuration is a 0.05 ETH dormant mint, default minimum $100 activation/$5 growth with at least 98% deployed as marginal LP at the default2% contribution cap and gas separate, an 80/10/5/5 revenue split with equal collective shares across active NFTs, and the capped rarity/royalty rules described below. The aligned Solidity update is under verification and remains undeployed; the default simulation does not call it. The local mode uses its compiled core with mock venue/feed/randomness dependencies. Actual pricing/routes/VRF, authorities, OpenSea, current services/site, operating qualification and independent audit remain release gates. The fresh architecture has no integrated bridge or external custody-address exit.
+Connecting a real wallet does not fetch its actual NFTs: it displays the same explicitly labeled example portfolio. The accepted contract configuration is a 0.05 ETH dormant mint, default minimum $100 activation/$5 growth with at least 97% deployed as marginal LP at the fresh default3% contribution cap and gas separate, an 80/10/5/5 revenue split with equal collective shares across active NFTs, and the capped rarity/royalty rules described below. The aligned fresh Solidity candidate has source-scoped verification; production remains unapproved and the default simulation does not call it. Independently reviewed source9/client200bps ceilings remain2% and reject a300bps on-chain cap until separately re-reviewed. The local mode uses its compiled core with mock venue/feed/randomness dependencies. Actual pricing/routes/VRF, authorities, OpenSea, current services/site, operating qualification and independent audit remain release gates. The fresh architecture has no integrated bridge or external custody-address exit.
 
 Some historical demo contribution forms use a USD-equivalent example; fresh ETH/ZZZ execution requires actual token units and reviewed prices. No ZZZ exchange rate or token-quantity quote is simulated. Contributions fund permanent LP attributed to the same NFT; holders claim funded rewards and cannot redeem principal during normal operation. Fresh contracts also support governance-triggered terminal ETH/ZZZ return; the older served build does not implement that lifecycle. Transfers carry the attached LP allocation and fee rights, including unclaimed funded rewards. NFT rarity, color style, palette and circuit pattern remain fixed, and new contributions receive no retroactive fees.
 
@@ -242,8 +244,9 @@ the public simulation into live wallet transactions. Scoped checks: 90 JS passes
 
 ## Current payout and contribution boundary
 
-Fresh source implements native ETH settlement for funded LP rewards and royalties.
-Unconverted source balances remain separate and must never be relabelled ETH.
+Fresh source supports native ETH settlement for funded LP rewards; funded ZZZ
+LP rewards awaiting conversion remain separate and must never be relabelled ETH.
+Royalty4 instead pays original admitted currencies, without conversion or unwrap.
 Older TEST-1/TEST-2 fixtures retain their actual currencies and explicit runtime
 profiles. Fresh contributions accept native ETH/fixed ZZZ only; some preserved
 demo/legacy selectors still show USDG/USDC. Source documentation does not change
@@ -276,8 +279,9 @@ DEPLOYMENT remains null. Actual extension and production qualification remain op
 
 Production minting is intended for OpenSea. This website's Mint page is a
 demonstration; direct local minting remains an integration test tool. The reviewed
-production profile refuses direct mint preparation. The separately tracked OpenSea
-integration and collection URL must be qualified before launch. Activation, growth, positions and claims
+production profile refuses direct mint preparation. The SeaDrop mint2 contract
+implementation exists in the separate V10 source profile; actual OpenSea onboarding,
+fee terms, collection URL and matching consumers must be qualified before launch. Activation, growth, positions and claims
 remain website responsibilities. Public signing is still disabled.
 
 The opt-in API profile displays 24h/all-time earnings for every currently held

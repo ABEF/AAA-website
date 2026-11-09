@@ -40,9 +40,11 @@ or qualify marketplace/hosting.
 
 ## Current implementation and evidence
 
-Current contract source is [accounting7/LP-allocation1/custody5/V9](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md),
-with portfolio2/direct Entry3/review2/royalty4/reporting5 and schema16 release
-inventory. The local source9 website consumer uses its own schema4 manifest and
+Current contract source is [accounting7/LP-allocation1/custody5](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md),
+with portfolio2/direct Entry3/review2/royalty4/reporting5 and
+[SeaDrop mint2/canonicalV10/schema17](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md).
+The local source9 consumer retains the prior V9/schema16 profile; matching V10
+website adoption remains open. Source9 uses its own schema4 manifest and
 29 browser runtime pins. It independently verifies canonical-block getters,
 parent/module bindings, exact LP identity and both physical legs, and reads
 governed contribution minima and cosmetic thresholds. Source9 is a consumer
@@ -88,8 +90,10 @@ exact source pins, test outputs, serving checks and current limits.
 Current product:1,000 ERC721 NFTs,600Commun/300Rare/100Legendary. Native ETH and
 fixed ZZZ only for contribution; default $100activation/$5growth, governed future
 minima and stronger pool minima.
-Default loss budgets2/1/3%, governed maximum10%, gas separate and tighter caller/
-venue bounds retained. Dual sources agree within3%; actual providers/routes remain
+Fresh default loss budgets3/1/3%, governed maximum10%, gas separate and tighter
+caller/venue bounds retained. Independently reviewed200bps client ceilings stay2%
+and reject a300bps on-chain cap until separately re-reviewed; historical fixtures
+and runtimes keep their original settings. Dual sources agree within3%; actual providers/routes remain
 unqualified. Rarity weights1/2/3 affect actual received royalties only. Fixed
 LP allocation80/10/5/5; NFT income is individual+equal collective+royalties,
 excluding reserves and duplicate claims/conversions/imports. Current owner holds
@@ -116,7 +120,9 @@ service restart or public transaction was requested.
 The user declined extra sale-rights UI; the stable Todo task is Not planned,
 not implemented. Underlying economic rights are unchanged. Intended production
 minting is OpenSea (0.05ETH buyer gross, recipient net after platform fee), but
-the actual mint integration remains unfinished. The website mint is a demo.
+the SeaDrop mint2 contract implementation now exists. Actual OpenSea onboarding,
+fee terms, matching deployment/consumers and operating qualification remain open.
+The website mint is a demo.
 
 Production qualification of current accounting7 contracts/API/feeds/routes/VRF/
 authorities/OpenSea, permanent artwork hosting, complete history, target gas and

@@ -14,7 +14,9 @@ installer for poplint; the old installer hardcodes the demo root.
 
 `integration-config.js` keeps `INTEGRATION_DEPLOYMENT = null`;
 `deployment-config.js` keeps the demo's separate `DEPLOYMENT = null`. A future
-fresh integration needs reviewed schema4/source9 contracts/runtime/API policies.
+source9 integration needs reviewed schema4/V9 contracts/runtime/API policies.
+The newer contract mint2/V10/schema17 candidate requires a separately matching
+website consumer; changing this manifest's version cannot adopt it.
 Null or incompatible configuration must show unconfigured/error and must never
 import the demo application or invent
 balances. Public signing remains disabled; no public transaction or new contract

@@ -2,6 +2,14 @@ The NFT detail view omits the Previously claimed frame at the user's request.
 Keep 24h/all-time earnings and current Rewards to claim. Lifetime claim accounting
 remains intact; earnings include claimed and unclaimed rewards, not only payouts.
 
+**Historical notes:** the dated sections below retain their original local/demo
+runtimes, assets, payout policy and evidence. They are not current contract or
+source9 configuration instructions. Current source uses ETH/fixed-ZZZ inputs,
+original-currency royalty4 and a3% fresh contribution default; reviewed client
+ceilings remain independent. Use [current context](PROJECT_CONTEXT.md),
+[API profiles](DEPLOYMENT_API.md) and the contract repository's
+[operator manual](https://github.com/ABEF/AAA/blob/main/docs/OPERATOR_MANUAL.md).
+
 ## Palette lettering and payout audit - 2026-10-19
 
 Each palette name is rendered in its own catalogue color, without a background
