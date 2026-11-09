@@ -1,5 +1,7 @@
-// Source9 owner reviews only. No nonce, wallet, signer or submission capability.
+// Exact accounting7 owner reviews only. No nonce, signer or submission capability.
 import {raw,ZERO,parseAmount,exactUnits} from './deployment-api.js';
+import {FRESH_CANONICAL_SCHEMA} from './deployment-source9.js';
+import {SOURCE10_CANONICAL_SCHEMA} from './deployment-source10.js';
 
 const ADDRESS=/^0x[0-9a-f]{40}$/,HASH=/^0x[0-9a-f]{64}$/;
 const fail=message=>{throw Error(message);};
@@ -19,7 +21,9 @@ const sameObject=(a,b)=>object(a)&&object(b)&&Object.keys(a).sort().join()===Obj
 
 function profile(api){
   const m=api.manifest;
-  if(m.schema!==4||m.source_profile!==9||m.accounting_version!==7||m.routing_version!==3||m.review_policy_version!==2||m.pricing_version!==2||m.custody_version!==5||!api.native)fail('This review requires the explicit fresh source9 deployment');
+  const source9=m.schema===4&&m.source_profile===9&&m.canonical_schema===FRESH_CANONICAL_SCHEMA&&!Object.hasOwn(m,'mint_integration_version');
+  const source10=m.schema===5&&m.source_profile===10&&m.canonical_schema===SOURCE10_CANONICAL_SCHEMA&&m.mint_integration_version===2;
+  if(!(source9||source10)||m.accounting_version!==7||m.routing_version!==3||m.review_policy_version!==2||m.pricing_version!==2||m.custody_version!==5||!api.native)fail('This review requires an explicit source9/V9 or source10/mint2/V10 deployment');
   if(![1,2].includes(m.transaction_policy_schema))fail('Select an explicit reviewed transaction policy');
   if(m.activation_policy_schema!==undefined&&![1,2].includes(m.activation_policy_schema))fail('Select a supported explicit activation policy');
   return m;
@@ -32,7 +36,7 @@ function requireFresh(api,draft,action,{activation=false}={}){
 
 async function poolMinimum(api,block){
   const m=api.manifest;
-  // The fourteen-word accounting PoolConfig is authenticated by FreshProfile.
+  // The selected exact profile authenticates the fourteen-word PoolConfig.
   const answer=await api.reader.request({method:'eth_call',params:[{to:m.contracts.pools.address,data:'0xb95559a1'+m.pool_id.slice(2)},block]});
   const values=words(answer,14);
   if(values[0]!==0n||!values[1]||values[5]!==1n||values[6]!==1n||!values[13]||values[13]<values[12])fail('Contribution pool is unavailable or its limits are inconsistent');

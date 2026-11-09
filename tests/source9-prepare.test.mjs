@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {prepareFresh,activationAmountFresh,source9ClaimEntries} from '../deployment-source9-prepare.js';
-import {freshSelector,FreshProfile} from '../deployment-source9.js';
+import {freshSelector,FreshProfile,FRESH_CANONICAL_SCHEMA} from '../deployment-source9.js';
 import {createChainReader} from '../browser-wallet.js';
 import {ZERO,DeploymentAPI} from '../deployment-api.js';
 import {source9Setup} from './helpers/source9-profile-fixture.mjs';
@@ -22,7 +22,7 @@ const claimOutput=claims=>'0x'+word(32)+word(claims.length)+claims.map(c=>word(c
 function setup(policy=1){
   const f=structuredClone(fixture.cases['claim_policy'+policy]),draft=f.outputs.draft,plan=f.outputs.plan;
   const assets=f.read_configuration.assets.map(a=>({...a,enabled:true,runtime_code:a.address===ZERO?undefined:f.codes[a.address]}));
-  const m={schema:4,...f.profile,transaction_policy_schema:policy,chain_id:31337,max_age_seconds:120,pool_id:hash('8'),input_assets:assets.filter(a=>['ETH','ZZZ'].includes(a.symbol)),reward_assets:assets,contracts:Object.fromEntries(Object.entries(f.pins).map(([role,a])=>[role,{address:a,runtime_code:f.codes[a]}])),limits:{gas:policy===2?40000000:12000000,gas_price_wei:'100000000000',network_fee_wei:U.toString(),native_value_wei:(1000n*U).toString(),contribution_usd_18:(1000n*U).toString(),maximum_contribution_loss_bps:200},transaction_fee_review:hash('9'),activation_fee_review:hash('9')};
+  const m={schema:4,...f.profile,canonical_schema:FRESH_CANONICAL_SCHEMA,transaction_policy_schema:policy,chain_id:31337,max_age_seconds:120,pool_id:hash('8'),input_assets:assets.filter(a=>['ETH','ZZZ'].includes(a.symbol)),reward_assets:assets,contracts:Object.fromEntries(Object.entries(f.pins).map(([role,a])=>[role,{address:a,runtime_code:f.codes[a]}])),limits:{gas:policy===2?40000000:12000000,gas_price_wei:'100000000000',network_fee_wei:U.toString(),native_value_wei:(1000n*U).toString(),contribution_usd_18:(1000n*U).toString(),maximum_contribution_loss_bps:200},transaction_fee_review:hash('9'),activation_fee_review:hash('9')};
   m.contracts.entry={address:address(113),runtime_code:'0x6001'};m.contracts.protocol_policy={address:address(114),runtime_code:'0x6002'};
   const s={f,m,draft,plan,now:4000000,calls:[],requests:[],identityCalls:0,headers:0,estimate:100000n,price:1000000000n,balance:1000n*U,simulations:new Map([[draft.transaction.data,claimOutput(draft.claim_operations)]])};
   s.nft=structuredClone(f.outputs.nft);s.protocol=structuredClone(f.outputs.protocol);

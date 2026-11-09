@@ -1,4 +1,4 @@
-The historical [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The new source9 profile reads and prepares unsigned reviews even on Anvil; the shared signer remains unchanged. Public demo mode remains simulated.
+The historical [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The source9 and source10 profiles read and prepare unsigned reviews even on Anvil; the shared signer remains unchanged. Public demo mode remains simulated.
 
 # ZZZ PoPL website
 
@@ -16,10 +16,13 @@ never demo holdings. Public signing remains disabled. See
 
 Current contract source is [accounting7/exact LP1/custody5](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md)
 with [SeaDrop mint2/canonicalV10/schema17](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md).
-The local source9 consumer retains the prior canonicalV9/schema16 contract profile;
-it does not implement V10 website adoption. It uses website manifest schema4, direct Entry3/review2,
-royalty4/reporting5 and 29 browser runtime pins with independent canonical-block
-getter checks. It reads both physical LP legs, governed contribution minima and
+The local [source10 consumer](https://github.com/ABEF/AAA/blob/main/docs/SOURCE10_WEBSITE_PROFILE.md) now explicitly supports
+website manifest schema5/source_profile10/mint2/canonicalV10 while accounting stays7.
+Its33 browser runtime pins include SeaDrop, the mint helper, predeployed metadata
+renderer and fixed NFT canonical companion, with independent canonical-block
+getter checks. Direct Entry3/review2 and royalty4/reporting5 remain unchanged.
+The prior source9 consumer retains manifest schema4/canonicalV9/schema16 and29pins;
+its fixtures and saved reviews are not relabeled. See [scope and evidence](https://github.com/ABEF/AAA/blob/main/reports/v10-website-20261109/REVIEW.md). Both profiles read physical LP legs, governed contribution minima and
 cosmetic thresholds, exact whole-unit rewards and terminal principal separately.
 Original-currency royalties stay separate from fixed-ZZZ LP rewards awaiting ETH
 conversion. Optional transaction policy2 and bounded claim planning remain unsigned.
@@ -28,7 +31,7 @@ budget. Explicit policy2 requires a matching backend schema2 configuration,
 confirmed-block gas bound and full20% headroom. Claim policy1 keeps its12M cap,
 even when an explicitly reviewed activation ceiling is higher.
 
-This source profile has no submission path, including on Anvil. Both public
+Neither source profile has a submission path, including on Anvil. Both public
 configuration exports remain null, and the shared signer is unchanged. The served
 poplint artifact remains historical current3 and unconfigured; popldemo remains
 the existing simulation. Source8/accounting6/V8 and earlier manifests, runtimes
@@ -281,7 +284,9 @@ Production minting is intended for OpenSea. This website's Mint page is a
 demonstration; direct local minting remains an integration test tool. The reviewed
 production profile refuses direct mint preparation. The SeaDrop mint2 contract
 implementation exists in the separate V10 source profile; actual OpenSea onboarding,
-fee terms, collection URL and matching consumers must be qualified before launch. Activation, growth, positions and claims
+fee terms, collection URL, matching deployment/configuration and operating
+acceptance must be qualified before launch. The local source10 read/unsigned
+consumer does not prepare SeaDrop mint transactions or establish buyer eligibility. Activation, growth, positions and claims
 remain website responsibilities. Public signing is still disabled.
 
 The opt-in API profile displays 24h/all-time earnings for every currently held

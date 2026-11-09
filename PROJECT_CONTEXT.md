@@ -43,22 +43,27 @@ or qualify marketplace/hosting.
 Current contract source is [accounting7/LP-allocation1/custody5](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md),
 with portfolio2/direct Entry3/review2/royalty4/reporting5 and
 [SeaDrop mint2/canonicalV10/schema17](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md).
-The local source9 consumer retains the prior V9/schema16 profile; matching V10
-website adoption remains open. Source9 uses its own schema4 manifest and
-29 browser runtime pins. It independently verifies canonical-block getters,
-parent/module bindings, exact LP identity and both physical legs, and reads
-governed contribution minima and cosmetic thresholds. Source9 is a consumer
-label; the contract accounting getter remains7.
+The local [source10 consumer](https://github.com/ABEF/AAA/blob/main/docs/SOURCE10_WEBSITE_PROFILE.md) implements website schema5,
+source_profile10, mint_integration_version2 and canonicalV10 with33 browser runtime
+pins. It authenticates the pinned SeaDrop/helper, predeployed renderer, fixed NFT
+canonical companion and existing LP/reward graph at one canonical block. Mutable
+sale eligibility remains unverified and cannot gate healthy LP/reward reads.
 
-The source9 profile reads confirmed holdings, exact rewards and raw/checkpoint2
-earnings, and prepares unsigned Entry3 and claim reviews. Original-currency
+Source9 keeps its own schema4/V9/schema16 profile and29pins. Both verify parent/
+module bindings, exact LP identity and both physical legs, and read governed
+contribution minima and cosmetic thresholds. Source9/10 are consumer labels;
+the contract accounting getter remains7. [Local scope](https://github.com/ABEF/AAA/blob/main/reports/v10-website-20261109/REVIEW.md) does
+not qualify a live service, deployment, wallet, provider or marketplace.
+
+The source9 and source10 profiles read confirmed holdings, exact rewards and raw/checkpoint2
+earnings, and prepare unsigned Entry3 and claim reviews. Original-currency
 royalties, ZZZ LP rewards awaiting ETH conversion and terminal principal remain
-separate. Its transaction-policy selector explicitly matches backend policy1 or
+separate. Their transaction-policy selectors explicitly match backend policy1 or
 optional policy2; claim planning retains every entry and never creates a future
 queue. Independently, optional `activation_policy_schema` defaults to1/12M.
 Explicit2 requires matching backend schema2, the reviewed operator/confirmed-block
 cap and full20% headroom. Claim policy1 stays12M when activation explicitly uses
-a higher ceiling. The profile cannot sign or submit, even on Anvil. Both public
+a higher ceiling. Neither profile can sign or submit, even on Anvil. Both public
 configuration exports remain null and the shared signer bytes are unchanged.
 
 The source9 fixture exporter supplies 35 actual handler DTOs across nine public
@@ -121,7 +126,9 @@ The user declined extra sale-rights UI; the stable Todo task is Not planned,
 not implemented. Underlying economic rights are unchanged. Intended production
 minting is OpenSea (0.05ETH buyer gross, recipient net after platform fee), but
 the SeaDrop mint2 contract implementation now exists. Actual OpenSea onboarding,
-fee terms, matching deployment/consumers and operating qualification remain open.
+fee terms, matching reviewed deployment/configuration and operating qualification
+remain open. Local source10 read/unsigned integration exists; it does not prepare
+SeaDrop minting or establish wallet eligibility.
 The website mint is a demo.
 
 Production qualification of current accounting7 contracts/API/feeds/routes/VRF/

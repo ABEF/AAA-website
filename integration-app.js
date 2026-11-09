@@ -8,7 +8,7 @@ export function integrationPolicy(value,origin){
   const local=LOCAL_HOSTS.has(page.hostname);
   if(!local&&(!INTEGRATION_HOSTS.includes(page.hostname)||page.protocol!=='https:'))throw Error('This build is reserved for the PoPL integration site.');
   if(value===null)return Object.freeze({state:'unconfigured',manifest:null});
-  if(!((value?.schema===3&&value.accounting_version===3)||(value?.schema===4&&value.source_profile===9&&value.accounting_version===7)))throw Error('Poplint requires an explicitly reviewed accounting3 or source9/accounting7 deployment.');
+  if(!((value?.schema===3&&value.accounting_version===3)||(value?.schema===4&&value.source_profile===9&&value.accounting_version===7)||(value?.schema===5&&value.source_profile===10&&value.accounting_version===7&&value.mint_integration_version===2)))throw Error('Poplint requires an explicitly reviewed current3, source9/V9 or source10/V10 deployment.');
   const manifest=validateDeployment(value,origin);
   if(!local&&manifest.environment!=='production')throw Error('A local rehearsal cannot be published as an integration deployment.');
   return Object.freeze({state:'configured',manifest});

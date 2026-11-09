@@ -10,8 +10,8 @@ A non-null, independently reviewed configuration selects `read-and-prepare` mode
 It is a build input, not a URL/localStorage/wallet-supplied setting. It enables
 confirmed reads and unsigned reviews. Historical schema1/native2/current3
 literal-loopback Anvil rehearsals retain their separate local-only submission
-path. The source9/schema4 profile is unsigned even on Anvil and never enters that
-signer. Neither profile enables public signing or changes the isolated `/app/`
+path. Source9/schema4 and source10/schema5 are unsigned even on Anvil and never
+enter that signer. No profile enables public signing or changes the isolated `/app/`
 Anvil deployment or its journals. `integration-config.js` also keeps
 `INTEGRATION_DEPLOYMENT = null`.
 
@@ -23,10 +23,13 @@ Implementation boundaries:
 
 - `deployment-api.js`: typed GET/POST APIs; pinned chain/anchor/config/runtime,
   canonical age/depth checks; exact calldata, amounts, expiry and gas bounds.
-- `deployment-source9.js` / `deployment-source9-data.js`: explicit fresh7 runtime,
-  independent getter, physical LP, lifecycle and exact financial-data checks.
-- `deployment-source9-prepare.js`: direct Entry3/review2 and claim/planner
-  validation; returns unsigned reviews only, including on local Anvil.
+- `deployment-source9.js`: explicit prior V9/schema4/29-pin authentication.
+- `deployment-source10.js`: explicit mint2/V10/schema5/33-pin authentication,
+  including the immutable mint/helper/renderer/NFT canonical bindings.
+- `deployment-source9-data.js`: shared accounting7 physical LP, lifecycle and
+  exact financial-data checks; mint profiles are not inferred from DTO shape.
+- `deployment-source9-prepare.js`: shared Entry3/review2 and claim/planner
+  validation behind exact closed V9/V10 profiles; unsigned even on local Anvil.
 - `deployment-session.js`: address authorization and deployment-isolated tab
   restoration; explicit choice for multiple addresses. No transaction methods.
 - `deployment-view.js`: holdings, eight-card pagination, matching-block earnings,
@@ -35,7 +38,34 @@ Implementation boundaries:
 - `deployment-config.js`: default null; cannot enable public signing.
 - `browser-wallet.js` / `browser-client.js`: existing local-only signing; unchanged.
 
-## Local source9 profile
+## Local source10 mint2/V10 profile
+
+Website schema5 explicitly selects `source_profile:10`,
+`mint_integration_version:2` and accounting7/LP-allocation1/custody5, with canonical
+`ZZZ_CANONICAL_SAME_CHAIN_EXACT_LP_SEADROP_V10`. Its33 distinct browser pins are
+the prior29 roles plus `seadrop_mint`, `seadrop`, `metadata_renderer` and
+`nft_canonical`. Runtime/getter proofs bind NFT.seaDropMint(), helper access/NFT/
+SeaDrop/runtime hash, NFT.metadataRenderer(), renderer access(), and the fixed
+NFT canonical companion/controller/coordinator slot. Helper capability is1;
+the manifest/backend mint profile is2. These are independent version domains.
+
+Holdings, both LP legs, exact rewards/earnings, terminal principal, contribution
+quotes, exact approvals and typed unsigned Entry3/claim reviews are supported
+locally. Direct mint fails before API or simulation. Protocol mint channel is
+OpenSea; actual phase/proof/payer eligibility remains unverified, not false or an
+invented available sale. Immutable mint identity failures reject the profile;
+mutable sale-price/phase changes do not block healthy LP/reward actions.
+
+The same scoped USD bounds, marginal deployed-LP proof, net/share requirements,
+caller limits, expiry and independent final simulation remain. Current LP ETH/ZZZ
+and up to65 admitted royalty currencies form at most66 distinct descriptors;
+this is separate from the router's32-entry claim count. A reviewed300bps
+contribution ceiling permits the new3% default; an independently reviewed200bps
+ceiling still rejects300. Gas-policy1/2 selectors remain independent and neither
+enables signing. [Profile procedure](https://github.com/ABEF/AAA/blob/main/docs/SOURCE10_WEBSITE_PROFILE.md) and [source evidence](https://github.com/ABEF/AAA/blob/main/reports/v10-website-20261109/REVIEW.md)
+do not qualify actual dependencies, browser signing or a public rollout.
+
+## Preserved source9/V9 profile
 
 Website manifest schema4 explicitly selects `source_profile:9`, accounting7,
 LP-allocation1, custody5, protocol-policy1, direct Entry-routing3/review2,
@@ -47,7 +77,8 @@ release inventory and HTTP envelope versions are distinct: core read replies
 remain schema2 and earnings/chunk replies schema1. Source8/accounting6/V8 and
 served schema3/accounting3/V4 retain their own explicit identities. The newer
 [SeaDrop mint2/canonicalV10/schema17 contract candidate](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md)
-is not admitted by this source9 manifest; it needs a matching website consumer.
+is not admitted by this source9 manifest. The separate source10/schema5 consumer
+supports it locally; old manifests, fixtures and journals are not upgraded.
 
 Contribution inputs are exactly native ETH and fixed deployment ZZZ. Direct
 Entry3 encodes the seven-field request plus reviewed maximum loss and scoped
@@ -88,8 +119,9 @@ The claim planner preserves every selected entry, accepts at most32 entries with
 at most10 trials, validates the next exact batch and requires replanning after confirmation;
 there is no automatic queue or submission. Source9 has no signing path, even on
 Anvil, and does not enable direct mint or the separately implemented SeaDrop
-mint2/V10 integration. Actual OpenSea onboarding/fee/operating qualification and
-matching V10 website adoption remain open.
+mint2/V10 mint transaction path. Source10 adds V10 read/unsigned support, while
+actual OpenSea onboarding/fees, reviewed configuration and operating acceptance
+remain open.
 
 `tests/fixtures/source9-api-v3.json` contains 35 actual Python handler DTOs across
 nine public methods against explicitly synthetic RPC/venue/authority/fee data.
@@ -147,4 +179,4 @@ are not substituted into that ETH total. See the [local runbook](https://github.
 
 ## Royalty opening and exact-unit source helpers
 
-Fresh reporting5/settlement4 uses original-currency whole units after final sale end plus1hour. Reporting4/settlement3 remains historical. The client verifies the opening configuration against its confirmed snapshot timestamp and rejects positive locked royalty claims; LP-only claims stay separate. Dormant cards show no deadline. Source9 adds the separate explicit accounting7/LP1/V9 consumer described above; it does not relabel historical source8/accounting6/V8 helpers or current3/native2 manifests. Actual runtime/configuration and live operating acceptance remain open. Existing live sites are unchanged. Public signing remains disabled; the shared signer remains Anvil-only.
+Fresh reporting5/settlement4 uses original-currency whole units after final sale end plus1hour. Reporting4/settlement3 remains historical. The client verifies the opening configuration against its confirmed snapshot timestamp and rejects positive locked royalty claims; LP-only claims stay separate. Dormant cards show no deadline. Source9 retains the explicit accounting7/LP1/V9 consumer and source10 separately supports mint2/V10 as described above; it does not relabel historical source8/accounting6/V8 helpers or current3/native2 manifests. Actual runtime/configuration and live operating acceptance remain open. Existing live sites are unchanged. Public signing remains disabled; the shared signer remains Anvil-only.

@@ -1,7 +1,8 @@
 // Production API integration for reads and unsigned preparation only.
 // This module has no wallet submission, signer, private key or broadcast path.
 import {createChainReader} from './browser-wallet.js';
-import {FreshProfile,FRESH_ROLES,FRESH_VERSIONS,validateFreshManifest} from './deployment-source9.js';
+import {FreshProfile,FRESH_ROLES,FRESH_VERSIONS,FRESH_CANONICAL_SCHEMA,validateFreshManifest} from './deployment-source9.js';
+import {Source10Profile,SOURCE10_ROLES,MINT_VERSIONS,SOURCE10_CANONICAL_SCHEMA,validateSource10Manifest} from './deployment-source10.js';
 import {validateFreshNFT,validateFreshCollectionPosition} from './deployment-source9-data.js';
 import {prepareFresh,activationAmountFresh} from './deployment-source9-prepare.js';
 import {NativeProfile,CurrentNativeProfile,NATIVE_ROLES,NATIVE_VERSIONS,CURRENT_ROLES,CURRENT_VERSIONS,validateNativeManifest,validateCurrentManifest} from './deployment-native.js';
@@ -10,6 +11,8 @@ const ADDRESS=/^0x[0-9a-f]{40}$/, HASH=/^0x[0-9a-f]{64}$/, DIGEST=/^[0-9a-f]{64}
 const fail=message=>{throw new Error(message||'Deployment response failed validation. Nothing was submitted.');};
 const object=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const integer=(x,min,max)=>Number.isSafeInteger(x)&&x>=min&&x<=max;
+// Exact profile families only; a new schema never inherits a signing capability.
+export function isAccounting7Profile(m){return object(m)&&m.accounting_version===7&&((m.schema===4&&m.source_profile===9&&m.mint_integration_version===undefined&&m.canonical_schema===FRESH_CANONICAL_SCHEMA)||(m.schema===5&&m.source_profile===10&&m.mint_integration_version===2&&m.canonical_schema===SOURCE10_CANONICAL_SCHEMA));}
 const hex=x=>'0x'+x.toString(16),word=x=>x.toString(16).padStart(64,'0'),addr=x=>x.slice(2).padStart(64,'0');
 const clone=x=>JSON.parse(JSON.stringify(x));
 const freeze=x=>{if(object(x)||Array.isArray(x)){Object.values(x).forEach(freeze);Object.freeze(x);}return x;};
@@ -46,18 +49,18 @@ function endpoint(value,rehearsal){
 }
 export function validateDeployment(value,origin=globalThis.location?.origin){
   const m=clone(value);
-  if(!object(m)||![1,2,3,4].includes(m.schema)||m.mode!=='read-and-prepare'||!['production','rehearsal'].includes(m.environment)||!DIGEST.test(m.id)||
+  if(!object(m)||![1,2,3,4,5].includes(m.schema)||m.mode!=='read-and-prepare'||!['production','rehearsal'].includes(m.environment)||!DIGEST.test(m.id)||
     !integer(m.chain_id,1,Number.MAX_SAFE_INTEGER)||!HASH.test(m.genesis_hash)||!integer(m.deployment_block,0,Number.MAX_SAFE_INTEGER)||
     !HASH.test(m.deployment_block_hash)||!integer(m.confirmations,1,128)||!integer(m.max_age_seconds,1,120)||
     !/^[A-Za-z0-9 ._-]{1,50}$/.test(m.chain_name)||!/^\/[a-z0-9][a-z0-9/_-]{0,80}$/.test(m.api_prefix)||m.api_prefix.includes('//')||m.api_prefix.endsWith('/'))fail('Invalid reviewed deployment configuration');
-  if(Object.keys(m).some(k=>!['schema','mode','environment','id','chain_id','genesis_hash','deployment_block','deployment_block_hash','confirmations','max_age_seconds','chain_name','api_prefix','rpc_url','projection_sha256','transaction_sha256','activation_sha256','transaction_fee_review','activation_fee_review','contracts','pool_id','input_assets','reward_assets','limits',...(m.schema===4?FRESH_VERSIONS:m.schema===3?CURRENT_VERSIONS:m.schema===2?NATIVE_VERSIONS:[])].includes(k)))fail('Unexpected deployment setting');
+  if(Object.keys(m).some(k=>!['schema','mode','environment','id','chain_id','genesis_hash','deployment_block','deployment_block_hash','confirmations','max_age_seconds','chain_name','api_prefix','rpc_url','projection_sha256','transaction_sha256','activation_sha256','transaction_fee_review','activation_fee_review','contracts','pool_id','input_assets','reward_assets','limits',...(m.schema===5?MINT_VERSIONS:m.schema===4?FRESH_VERSIONS:m.schema===3?CURRENT_VERSIONS:m.schema===2?NATIVE_VERSIONS:[])].includes(k)))fail('Unexpected deployment setting');
   const page=new URL(origin),rehearsal=m.environment==='rehearsal';
   if(rehearsal?(page.protocol!=='http:'||page.hostname!=='127.0.0.1'):(page.protocol!=='https:'||m.chain_id===31337))fail('Deployment profile is not permitted on this origin');
   m.rpc_url=endpoint(m.rpc_url,rehearsal);
   for(const name of ['projection_sha256','transaction_sha256','activation_sha256'])if(!DIGEST.test(m[name]))fail('Missing reviewed API configuration identity');
   for(const name of ['transaction_fee_review','activation_fee_review'])if(!HASH.test(m[name]))fail('Missing reviewed fee policy');
   if(!object(m.contracts))fail();const targets=new Set();
-  for(const role of m.schema===4?FRESH_ROLES:m.schema===3?CURRENT_ROLES:m.schema===2?NATIVE_ROLES:['access','nft','vault','entry','claim_router','oracle']){
+  for(const role of m.schema===5?SOURCE10_ROLES:m.schema===4?FRESH_ROLES:m.schema===3?CURRENT_ROLES:m.schema===2?NATIVE_ROLES:['access','nft','vault','entry','claim_router','oracle']){
     const c=m.contracts[role];if(!ADDRESS.test(c?.address)||c.address===ZERO||targets.has(c.address)||!code(c.runtime_code))fail('Invalid reviewed contract identity');targets.add(c.address);
   }
   if(!Array.isArray(m.input_assets)||!m.input_assets.length||m.input_assets.length>4||!HASH.test(m.pool_id)||m.pool_id===ZERO_HASH)fail('Invalid contribution inventory');
@@ -70,12 +73,12 @@ export function validateDeployment(value,origin=globalThis.location?.origin){
       (a.address!==ZERO&&a.valuation_asset!==a.address)||(a.address===ZERO&&(a.decimals!==18||a.route_id!==ZERO_HASH)))fail('Invalid activation asset or route');
     symbols.add(a.symbol);assets.add(a.address);
   }
-  if(!Array.isArray(m.reward_assets)||!m.reward_assets.length||m.reward_assets.length>(m.schema===4?97:m.schema>=2?49:32))fail('Invalid reward inventory');
-  const rewards=new Set();for(const a of m.reward_assets){if(!ADDRESS.test(a.address)||rewards.has(a.address)||!integer(a.decimals,0,36)||!(m.schema===4?/^[A-Za-z0-9._-]{1,16}$/:/^(ETH|WETH|ZZZ|USDG|USDC)$/).test(a.symbol)||(a.address===ZERO&&(a.symbol!=='ETH'||a.decimals!==18)))fail('Invalid reward currency');rewards.add(a.address);}
+  if(!Array.isArray(m.reward_assets)||!m.reward_assets.length||m.reward_assets.length>(m.schema===5?66:isAccounting7Profile(m)?97:m.schema>=2?49:32))fail('Invalid reward inventory');
+  const rewards=new Set();for(const a of m.reward_assets){if(!ADDRESS.test(a.address)||rewards.has(a.address)||!integer(a.decimals,0,36)||!(isAccounting7Profile(m)?/^[A-Za-z0-9._-]{1,16}$/:/^(ETH|WETH|ZZZ|USDG|USDC)$/).test(a.symbol)||(a.address===ZERO&&(a.symbol!=='ETH'||a.decimals!==18)))fail('Invalid reward currency');rewards.add(a.address);}
   if(m.schema>=2&&!rewards.has(ZERO))fail('Native reward inventory must include ETH');
-  if(!object(m.limits)||!integer(m.limits.gas,21000,m.schema===4&&(m.transaction_policy_schema===2||m.activation_policy_schema===2)?64000000:12000000))fail('Invalid gas limit');
+  if(!object(m.limits)||!integer(m.limits.gas,21000,isAccounting7Profile(m)&&(m.transaction_policy_schema===2||m.activation_policy_schema===2)?64000000:12000000))fail('Invalid gas limit');
   for(const name of ['gas_price_wei','network_fee_wei','native_value_wei','contribution_usd_18'])if(raw(m.limits[name])===0n)fail('Missing bounded spending policy');
-  if(m.schema===4)validateFreshManifest(m);else if(m.schema===3)validateCurrentManifest(m);else if(m.schema===2)validateNativeManifest(m);
+  if(m.schema===5)validateSource10Manifest(m);else if(m.schema===4)validateFreshManifest(m);else if(m.schema===3)validateCurrentManifest(m);else if(m.schema===2)validateNativeManifest(m);
   return freeze(m);
 }
 export async function jsonRequest(fetcher,url,body,{signal,timeout=30000,maxBytes=2097152}={}){
@@ -98,7 +101,7 @@ export async function jsonRequest(fetcher,url,body,{signal,timeout=30000,maxByte
 export class DeploymentAPI {
   constructor(manifest,{origin=globalThis.location?.origin,fetcher=globalThis.fetch,reader,clock=()=>Date.now()}={}){
     this.manifest=validateDeployment(manifest,origin);this.origin=origin;this.fetcher=fetcher;this.clock=clock;
-    this.reader=reader||createChainReader(this.manifest.rpc_url,{fetcher});this.native=this.manifest.schema===4?new FreshProfile(this.manifest,this.reader):this.manifest.schema===3?new CurrentNativeProfile(this.manifest,this.reader):this.manifest.schema===2?new NativeProfile(this.manifest,this.reader):null;this.revision=0;this.active=null;
+    this.reader=reader||createChainReader(this.manifest.rpc_url,{fetcher});this.native=this.manifest.schema===5?new Source10Profile(this.manifest,this.reader):this.manifest.schema===4?new FreshProfile(this.manifest,this.reader):this.manifest.schema===3?new CurrentNativeProfile(this.manifest,this.reader):this.manifest.schema===2?new NativeProfile(this.manifest,this.reader):null;this.revision=0;this.active=null;
   }
   request(path,body,signal){if(!/^\/v1\/[a-z0-9/_-]+$/.test(path))fail('Unsupported API path');return jsonRequest(this.fetcher,this.origin+this.manifest.api_prefix+path,body,{signal});}
   cancel(){this.revision++;this.active?.abort();this.active=null;}
@@ -133,22 +136,23 @@ export class DeploymentAPI {
   async protocol(signal){
     await this.identity();const p=await this.snapshot(await this.request('/v1/protocol',undefined,signal));
     if(this.native&&p.provenance.accounting_version!==this.manifest.accounting_version)fail('Protocol omitted its native accounting profile');
-    for(const role of ['access','nft','vault','claim_router'])if(p.contracts?.[role]!==this.manifest.contracts[role].address)fail('Protocol contract binding changed');
+    for(const role of ['access','nft','vault','claim_router',...(this.manifest.schema===5?['seadrop_mint','seadrop']:[])])if(p.contracts?.[role]!==this.manifest.contracts[role].address)fail('Protocol contract binding changed');
     if(!object(p.lifecycle)||typeof p.lifecycle.new_economic_work_available_by_lifecycle!=='boolean'||typeof p.minting?.available_by_controls!=='boolean')fail('Missing canonical lifecycle');
+    if(this.manifest.schema===5&&(p.minting.channel!=='opensea'||p.minting.direct_transaction_preparation_supported!==false||p.minting.available!==null||p.minting.stage_eligibility!=='unverified'||typeof p.minting.paused!=='boolean'||p.minting.available_by_controls!==(!p.minting.paused&&p.lifecycle.new_economic_work_available_by_lifecycle)))fail('OpenSea mint channel or eligibility observation differs');
     return p;
   }
-  async readiness(signal){const r=await this.snapshot(await this.request('/v1/mint-readiness',undefined,signal));if(r.nft!==this.manifest.contracts.nft.address||!integer(r.minted,0,1000)||typeof r.new_minting_stopped!=='boolean')fail('Invalid mint readiness');return r;}
+  async readiness(signal){if(this.manifest.schema===5)fail('Use OpenSea; direct mint readiness is unavailable for this profile');const r=await this.snapshot(await this.request('/v1/mint-readiness',undefined,signal));if(r.nft!==this.manifest.contracts.nft.address||!integer(r.minted,0,1000)||typeof r.new_minting_stopped!=='boolean')fail('Invalid mint readiness');return r;}
   validateNFT(n,id,owner){
     if(this.native&&n.provenance?.accounting_version!==this.manifest.accounting_version)fail('NFT omitted its native accounting profile');
     if(n.token_id!==id||n.owner!==owner||!integer(n.mint_ordinal,1,1000)||typeof n.traits_ready!=='boolean'||
-      typeof n.position?.activated!=='boolean'||(this.manifest.schema!==4&&n.position.principal_redeemable!==false)||!object(n.claimable)||
+      typeof n.position?.activated!=='boolean'||(!isAccounting7Profile(this.manifest)&&n.position.principal_redeemable!==false)||!object(n.claimable)||
       typeof n.position.current_lp_value?.available!=='boolean'||n.position.current_lp_value.decimals!==18||n.position.current_lp_value.unit!=='USD')fail('NFT ownership or position changed; refresh your holdings');
     if(n.traits_ready&&(!['Commun','Rare','Legendary'].includes(n.traits?.rarity)||!integer(n.traits.palette,0,57)||!integer(n.traits.pattern,0,3)))fail('Invalid revealed NFT traits');
     if(n.position.current_lp_value.available)raw(n.position.current_lp_value.raw);else if(n.position.current_lp_value.raw!==null)fail('Unavailable LP must not contain an amount');
-    if(n.position.evolution_value_available!==n.position.current_lp_value.available||!(this.manifest.schema===4?['dormant','activated','enhanced','singularity','lp_exited']:['dormant','activated','enhanced','singularity']).includes(n.position.evolution))fail('Invalid NFT evolution');
-    for(const role of ['access','nft','vault','claim_router'])if(n.contracts?.[role]!==this.manifest.contracts[role].address)fail('NFT deployment binding differs');
+    if(n.position.evolution_value_available!==n.position.current_lp_value.available||!(isAccounting7Profile(this.manifest)?['dormant','activated','enhanced','singularity','lp_exited']:['dormant','activated','enhanced','singularity']).includes(n.position.evolution))fail('Invalid NFT evolution');
+    for(const role of ['access','nft','vault','claim_router',...(this.manifest.schema===5?['seadrop_mint','seadrop']:[])])if(n.contracts?.[role]!==this.manifest.contracts[role].address)fail('NFT deployment binding differs');
     for(const scope of ['lp','royalties']){
-      const rows=n.claimable[scope];if(!Array.isArray(rows)||rows.length>(this.manifest.schema===4?(scope==='lp'?2:65):this.native?(scope==='lp'?33:17):32))fail('Invalid reward balances');const seen=new Set();
+      const rows=n.claimable[scope];if(!Array.isArray(rows)||rows.length>(isAccounting7Profile(this.manifest)?(scope==='lp'?2:65):this.native?(scope==='lp'?33:17):32))fail('Invalid reward balances');const seen=new Set();
       for(const row of rows){const a=this.manifest.reward_assets.find(a=>a.address===row.asset);
         if(!a||seen.has(row.asset)||a.symbol!==row.symbol||a.decimals!==row.decimals)fail('Unreviewed reward currency');seen.add(row.asset);
         if(row.raw===null){if(row.available!==false)fail('Invalid unavailable balance');}else {if(row.available===false)fail('Unavailable balance contains an amount');raw(row.raw);}
@@ -168,7 +172,7 @@ export class DeploymentAPI {
     if(this.manifest.schema===3)validateCurrentNFT(n);
     return n;
   }
-  async nft(id,owner,signal){if(raw(id)===0n||!ADDRESS.test(owner)||owner===ZERO)fail('Invalid NFT request');const n=await this.snapshot(await this.request('/v1/nfts/'+id,undefined,signal));this.validateNFT(n,id,owner);if(this.manifest.schema===4)validateFreshNFT(n,this.manifest,await this.native.metadataPolicy({blockHash:n.provenance.block_hash,requireCanonical:true}));return n;}
+  async nft(id,owner,signal){if(raw(id)===0n||!ADDRESS.test(owner)||owner===ZERO)fail('Invalid NFT request');const n=await this.snapshot(await this.request('/v1/nfts/'+id,undefined,signal));this.validateNFT(n,id,owner);if(isAccounting7Profile(this.manifest))validateFreshNFT(n,this.manifest,await this.native.metadataPolicy({blockHash:n.provenance.block_hash,requireCanonical:true}));return n;}
   async portfolio(owner,page=0){
     if(!ADDRESS.test(owner)||owner===ZERO||!integer(page,0,124))fail('Invalid wallet request');this.cancel();const revision=this.revision,controller=new AbortController();this.active=controller;
     try{
@@ -243,7 +247,7 @@ export class DeploymentAPI {
   }
   async collectionPositions({signal,onProgress}={}){
     const protocol=await this.protocol(signal),anchor=protocol.provenance;
-    const metadata=this.manifest.schema===4?await this.native.metadataPolicy({blockHash:anchor.block_hash,requireCanonical:true}):null;
+    const metadata=isAccounting7Profile(this.manifest)?await this.native.metadataPolicy({blockHash:anchor.block_hash,requireCanonical:true}):null;
     let offset=0,inventory=null,digest=null,count=null,positions=[],ordinals=new Set(),lp=0n,available=true,activated=0;
     do{
       if(signal?.aborted)fail('Collection read cancelled');
@@ -260,7 +264,7 @@ export class DeploymentAPI {
       let chunkLP=0n,chunkAvailable=true,chunkActive=0;
       for(const [index,n] of part.positions.entries()){
         const v=n.position?.current_lp_value,w=n.position?.royalty_weight,active=n.position?.activated;
-        if(this.manifest.schema===4){
+        if(isAccounting7Profile(this.manifest)){
           if(n.token_id!==expected[index]||!integer(n.mint_ordinal,1,count)||ordinals.has(n.mint_ordinal))fail('Invalid collection identity');
           validateFreshCollectionPosition(n,this.manifest,metadata,protocol.lifecycle);ordinals.add(n.mint_ordinal);
           const amount=v.available?raw(v.raw):null;if(amount===null)chunkAvailable=false;else chunkLP+=amount;if(active)chunkActive++;continue;
@@ -335,14 +339,14 @@ export class DeploymentAPI {
     if(value<=0n||value>10n**36n)fail('Oracle price is outside the supported range');return value;
   }
   async activationAmount(symbol){
-    if(this.manifest.schema===4)return activationAmountFresh(this,symbol);
+    if(isAccounting7Profile(this.manifest))return activationAmountFresh(this,symbol);
     const a=this.asset(symbol),protocol=await this.protocol(),price=await this.price(a,protocol.provenance);
     const amount=(100n*10n**18n*10n**BigInt(a.decimals)+price-1n)/price;
     if(amount===0n||amount>=2n**128n)fail('Activation amount is outside supported bounds');
     return {asset:symbol,amount:exactUnits(amount.toString(),a.decimals),raw:amount.toString(),value_usd_18:(amount*price/10n**BigInt(a.decimals)).toString(),provenance:protocol.provenance};
   }
   async prepare(intent){
-    if(this.manifest.schema===4)return prepareFresh(this,intent);
+    if(isAccounting7Profile(this.manifest))return prepareFresh(this,intent);
     const m=this.manifest,owner=intent?.account;
     if(!ADDRESS.test(owner)||owner===ZERO||!['mint','activate','increase','claim'].includes(intent.action))fail('Invalid selected action');
     if(intent.action==='mint'&&m.environment!=='rehearsal')fail('Production minting is planned on OpenSea. This website mint page is a demonstration.');

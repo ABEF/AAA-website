@@ -5,7 +5,7 @@ import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {createHash} from 'node:crypto';
 import {integrationPolicy,startIntegration,INTEGRATION_HOSTS} from '../integration-app.js';
-import {integrationOutput,buildIntegration} from '../build-integration.mjs';
+import {integrationOutput,buildIntegration,integrationProfileIdentity} from '../build-integration.mjs';
 import {INTEGRATION_DEPLOYMENT} from '../integration-config.js';
 import {DEPLOYMENT} from '../deployment-config.js';
 import {currentSetup} from './helpers/deployment-current-fixture.mjs';
@@ -24,8 +24,8 @@ test('current deployment is validated without relabeling legacy manifests or cha
   const {m}=currentSetup();
   assert.equal(integrationPolicy(m,'http://127.0.0.1:4190').manifest.accounting_version,3);
   assert.equal(integrationPolicy(m,'http://127.0.0.1:4190').manifest.limits.maximum_contribution_loss_bps,200);
-  for(const schema of [1,2,4])assert.throws(()=>integrationPolicy({...m,schema},'http://127.0.0.1:4190'),/accounting3/);
-  assert.throws(()=>integrationPolicy({...m,accounting_version:2},'http://127.0.0.1:4190'),/accounting3/);
+  for(const schema of [1,2,4,5])assert.throws(()=>integrationPolicy({...m,schema},'http://127.0.0.1:4190'));
+  assert.throws(()=>integrationPolicy({...m,accounting_version:2},'http://127.0.0.1:4190'));
   assert.throws(()=>integrationPolicy(m,'https://www.poplint.0xwave.com'),/origin/);
 });
 test('null or malformed configuration never loads a wallet/view or discovers API configuration',async()=>{
@@ -51,7 +51,7 @@ test('integration artifact includes only reviewed public files with environment 
   const result=await buildIntegration({output:name,revision:'1'.repeat(40)});
   try{
     const identity=JSON.parse(await readFile(resolve(output,'site-identity.json'),'utf8'));
-    assert.equal(identity.environment,'poplint-integration');assert.equal(identity.source_revision,'1'.repeat(40));assert.equal(identity.public_signing,false);assert.equal(identity.deployment_configured,false);assert.equal(identity.expected_contract_profile.accounting_version,7);
+    assert.equal(identity.environment,'poplint-integration');assert.equal(identity.source_revision,'1'.repeat(40));assert.equal(identity.public_signing,false);assert.equal(identity.deployment_configured,false);assert.equal(identity.expected_contract_profile,null);assert.deepEqual(identity.supported_website_schemas,[3,4,5]);
     const html=await readFile(resolve(output,'index.html'),'utf8');assert.match(html,/Deployment not configured/);assert.doesNotMatch(html,/\$425,000|PoPL #444|data-view="overview"|id="mint-submit"|src="\.\/app.js"/);
     for(const name of ['AGENTS.md','PROJECT_CONTEXT.md','.git','tests','app.js','domain.js','preview-store.js','deployment-config.js'])await assert.rejects(lstat(resolve(output,name)),{code:'ENOENT'});
     const lines=(await readFile(resolve(output,'SHA256SUMS'),'utf8')).trim().split('\n');assert.equal(lines.length,result.files);

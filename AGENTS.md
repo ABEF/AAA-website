@@ -26,16 +26,26 @@ documentation-cleanup evidence directory; Git retains every earlier revision.
 - Never print or commit keys, credentialed endpoints or passwords. Preserve
   unrelated work. Keep source/evidence/publication/deployment facts distinct.
 
-## Local source9 consumer
+## Local read and unsigned consumers
 
-Website manifest schema4 explicitly selects source9/accounting7/LP-allocation1/
-custody5/Entry3/review2/royalty4/reporting5/canonicalV9. Source9 is a consumer
-label, not ACCOUNTING_VERSION9. Verify all 29 reviewed browser runtime roles and
-independent canonical-block getters, including fixed Rewards canonical-child
-bindings and both physical LPs. Read governed minima and cosmetic thresholds;
-never substitute the historical defaults for authenticated current settings.
+The [source10 profile](https://github.com/ABEF/AAA/blob/main/docs/SOURCE10_WEBSITE_PROFILE.md) explicitly selects website schema5,
+source_profile10, mint_integration_version2 and canonicalV10; accounting remains7,
+with LP-allocation1/custody5/Entry3/review2/royalty4/reporting5. Verify all33 reviewed
+browser runtime roles and independent canonical-block getters, including SeaDrop's
+exact runtime, the collection's fixed mint helper, renderer and NFT canonical
+companion, Rewards canonical child and both physical LPs. The mint helper's
+MINT_INTEGRATION_VERSION getter is1; the backend/manifest mint profile is2.
 
-This profile is unsigned even on Anvil. Keep `DEPLOYMENT` and
+Source9 retains website schema4/canonicalV9/schema16 and29 browser pins. Never
+relabel it, its original fixtures or a saved review as source10/V10. Source labels
+are consumer versions, not ACCOUNTING_VERSION9/10. Both read governed minima and
+cosmetic thresholds; never substitute historical defaults for authenticated values.
+
+Both profiles are unsigned even on Anvil. Their immutable graph proof does not
+qualify mutable OpenSea phase/proof/payer/fee eligibility; direct mint preparation
+is disabled before API/simulation. Mutable sale settings must not block healthy
+LP/reward reads. The ordinary shared signer remains restricted to the explicitly
+admitted legacy local Anvil profiles. Keep `DEPLOYMENT` and
 `INTEGRATION_DEPLOYMENT` null, the shared signer byte-identical, existing journals
 untouched and served current3/popldemo releases unchanged. Source8/accounting6/V8
 and older profiles remain explicit historical consumers. Read the
@@ -76,8 +86,8 @@ operator guide for current settings/claims/initial16 / reviewed64-ERC20 currency
 - Mint adds no LP or reward eligibility. Intended primary mint is OpenSea,
   buyer0.05ETH gross/net recipient proceeds after actual platform fee; current
   direct mint is not that integration. SeaDrop mint2/V10 is implemented in contract
-  source; actual onboarding/fee/operating qualification and a matching website
-  consumer remain open. Website mint is demonstrative.
+  source; local source10 read/unsigned support is implemented. Actual onboarding,
+  fees, reviewed deployment/configuration and operating acceptance remain open. Website mint is demonstrative.
 - Holders cannot redeem principal during normal operation. The fresh accounting7
   contract candidate permits a governance-triggered terminal ETH+ZZZ return to
   current holders, retaining NFT transfers/royalties/earned rewards. Do not label
@@ -120,7 +130,8 @@ or qualify marketplace/hosting.
 Current contract source is [accounting7/LP-allocation1/portfolio2/custody5/Entry3/royalty4](https://github.com/ABEF/AAA/blob/main/docs/POSITION_V7.md)
 with [mint2/canonicalV10/schema17](https://github.com/ABEF/AAA/blob/main/docs/OPENSEA_MINT.md).
 The local source9 consumer retains V9/schema16; do not relabel its schema4 manifest,
-29 browser pins or fixtures as V10. Matching V10 website adoption remains open.
+29 browser pins or fixtures as V10. Source10/schema5 adds its separate33-pin V10
+consumer locally; [current source evidence](https://github.com/ABEF/AAA/blob/main/reports/v10-website-20261109/REVIEW.md) is not deployment or qualification.
 Both are separate from the served accounting3 integration and preserved Anvil profiles. Historical
 source8/accounting6/V8 evidence remains source-scoped; it is not fresh7 acceptance.
 Actual reviewed configuration, services, providers, gas, wallets and rollout
@@ -160,6 +171,6 @@ no site/service/signer change. Reporting3 remains historical royalty2; reporting
 
 Do not display the royalty deadline on dormant NFT cards (user preference).
 
-Fresh royalty4 allocates whole original units with GCD-normalized rotating rarity tickets. Fresh LP-allocation1 separately preserves exact whole-unit LP books and phase; historical accounting6 fractions retain their original meaning. No royalty swap or unwrap occurs. Source9 read/unsigned support does not relabel served current3 manifests or qualify a live integration. The default optional royalty sync ceiling is1m gas; actual capacity/gas qualification remains open. No dormant deadline notice.
+Fresh royalty4 allocates whole original units with GCD-normalized rotating rarity tickets. Fresh LP-allocation1 separately preserves exact whole-unit LP books and phase; historical accounting6 fractions retain their original meaning. No royalty swap or unwrap occurs. Source9/source10 read/unsigned support does not relabel served current3 manifests or qualify a live integration. The default optional royalty sync ceiling is1m gas; actual capacity/gas qualification remains open. No dormant deadline notice.
 
 Fresh contract source now includes governance-only same-main residual consolidation; automatic keeper actions and the served website are unchanged. Use the contract operator guide; this documentation does not add a website transaction or rollout.

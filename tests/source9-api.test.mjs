@@ -32,7 +32,7 @@ test('fresh original currencies are bounded reviewed metadata, not a fixed symbo
 test('source9 retains exact published signer and disabled build inputs',async()=>{
   const signer=await readFile(new URL('../browser-wallet.js',import.meta.url));
   const {createHash}=await import('node:crypto');assert.equal(createHash('sha256').update(signer).digest('hex'),'c8d9b9a96fb815be497e914e7f3054f3cd39bade73870396e36199495f07b106');
-  const view=await readFile(new URL('../deployment-view.js',import.meta.url),'utf8');assert.match(view,/const localSigning=m\.schema!==4&&/);assert.match(view,/const ready=m\.schema!==4&&m\.environment==='rehearsal'/);
+  const view=await readFile(new URL('../deployment-view.js',import.meta.url),'utf8');assert.match(view,/const localSigning=supportsLocalSigning\(m\)/);assert.match(view,/const ready=\[1,2,3\]\.includes\(m\.schema\)&&m\.environment==='rehearsal'/);
   const {DEPLOYMENT}=await import('../deployment-config.js'),{INTEGRATION_DEPLOYMENT}=await import('../integration-config.js');assert.equal(DEPLOYMENT,null);assert.equal(INTEGRATION_DEPLOYMENT,null);
 });
 test('terminal artwork matches on-chain activated fallback while the custody label remains exited',()=>{

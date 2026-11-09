@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {ARTWORKS} from './artworks.js';
 import {INTEGRATION_DEPLOYMENT} from './integration-config.js';
 import {integrationPolicy,INTEGRATION_HOSTS} from './integration-app.js';
+import {isAccounting7Profile} from './deployment-api.js';
 
 const ROOT=fileURLToPath(new URL('./',import.meta.url));
 const digest=data=>createHash('sha256').update(data).digest('hex');
@@ -19,6 +20,12 @@ export function integrationOutput(root,name){
   const output=resolve(root,name);
   if(dirname(output)!==resolve(root)||basename(output)!==name)throw Error('Integration output escaped the source root.');
   return output;
+}
+export function integrationProfileIdentity(manifest){
+  if(manifest===null)return null;
+  if(manifest.schema===3&&manifest.accounting_version===3)return {website_schema:3,accounting_version:3,governance_version:2,fee_intake_version:1,pricing_version:2,routing_version:2,review_policy_version:1,canonical:'ZZZ_CANONICAL_SAME_CHAIN_NATIVE_LP_ONLY_V4'};
+  if(!isAccounting7Profile(manifest))throw Error('Unsupported integration profile.');
+  return {website_schema:manifest.schema,source_profile:manifest.source_profile,accounting_version:7,lp_allocation_version:1,custody_version:5,royalty_reporting_schema:5,governance_version:2,fee_intake_version:1,pricing_version:2,routing_version:3,review_policy_version:2,...(manifest.schema===5?{mint_integration_version:2}:{}),canonical:manifest.schema===5?'ZZZ_CANONICAL_SAME_CHAIN_EXACT_LP_SEADROP_V10':'ZZZ_CANONICAL_SAME_CHAIN_EXACT_LP_V9'};
 }
 async function modules(entry,seen=new Set()){
   if(seen.has(entry))return seen;
@@ -49,7 +56,7 @@ export async function buildIntegration({output='dist-poplint',revision=null}={})
   }));
   const identity={schema:1,environment:'poplint-integration',hosts:[...INTEGRATION_HOSTS],canonical_origin:'https://www.poplint.0xwave.com',demo_origin:'https://www.popldemo.0xwave.com',source_revision:revision,
     deployment_configured:policy.state==='configured',deployment_id:policy.manifest?.id??null,
-    public_signing:false,expected_contract_profile:policy.manifest?.schema===3?{accounting_version:3,governance_version:2,fee_intake_version:1,pricing_version:2,routing_version:2,review_policy_version:1,canonical:'ZZZ_CANONICAL_SAME_CHAIN_NATIVE_LP_ONLY_V4'}:{website_schema:4,source_profile:9,accounting_version:7,lp_allocation_version:1,custody_version:5,royalty_reporting_schema:5,governance_version:2,fee_intake_version:1,pricing_version:2,routing_version:3,review_policy_version:2,canonical:'ZZZ_CANONICAL_SAME_CHAIN_EXACT_LP_V9'},
+    public_signing:false,supported_website_schemas:[3,4,5],expected_contract_profile:integrationProfileIdentity(policy.manifest),
     configuration_status:policy.state,source_sha256:digest(JSON.stringify(sources)),asset_files:files.length};
   await mkdir(destination);
   await mapFiles(files,async name=>{await mkdir(dirname(resolve(destination,name)),{recursive:true});await copyFile(resolve(ROOT,name),resolve(destination,name));});

@@ -1,4 +1,4 @@
-import {DeploymentAPI,ZERO,raw,exactUnits,positionClaimEntries} from './deployment-api.js';
+import {DeploymentAPI,isAccounting7Profile,ZERO,raw,exactUnits,positionClaimEntries} from './deployment-api.js';
 import {DeploymentSession} from './deployment-session.js';
 import {DeploymentTransactions} from './deployment-transactions.js';
 import {escape as e,usd,units} from './local-client.js';
@@ -12,6 +12,11 @@ const short=a=>a.slice(0,6)+'…'+a.slice(-4);
 export const positionArtwork=n=>n.traits_ready&&n.position.evolution_value_available?findArtwork(`${COLORWAYS[n.traits.palette]?.id}-${PATTERNS[n.traits.pattern]?.id}-${n.traits.rarity.toLowerCase()}-${n.position.evolution==='lp_exited'?'activated':n.position.evolution}`):null;
 export function walletProgressLabel(stage){
   return ({checking:'Checking review…',wallet:'Confirm in your wallet',submitted:'Transaction submitted',confirming:'Checking confirmation…',confirmed:'Transaction confirmed',failed:'Transaction reverted',reconciling:'Refreshing confirmed balances…'})[stage]||'Checking transaction status…';
+}
+// Only the original explicitly reviewed local profiles may construct the signer.
+// Future read profiles do not inherit that capability by being non-production.
+export function supportsLocalSigning(m){
+  return [1,2,3].includes(m?.schema)&&m.environment==='rehearsal'&&m.chain_id===31337&&new URL(m.rpc_url).protocol==='http:'&&new URL(m.rpc_url).hostname==='127.0.0.1';
 }
 // A manifest is an approved ceiling; the captured on-chain cap is shown in review.
 export function contributionPolicyText(manifest){
@@ -109,7 +114,7 @@ export function createDeploymentView(config){
   let providers=[],snapshot=null,readiness=null,page=0,sequence=0,busy=false,preparing=false,error=null,quoteSequence=0;
   let store=null;try{store=sessionStorage;}catch{}
   let transactions=null,review=null,stage=null,reviewTimer=null;
-  const localSigning=m.schema!==4&&m.environment==='rehearsal'&&m.chain_id===31337&&new URL(m.rpc_url).protocol==='http:'&&new URL(m.rpc_url).hostname==='127.0.0.1';
+  const localSigning=supportsLocalSigning(m);
   const session=new DeploymentSession({storage:store,key:'popl-deployment-address:'+m.id,onChange:()=>{
     sequence++;quoteSequence++;page=0;totalController?.abort();totalController=null;totals=null;totalBusy=false;earnings=null;earningsBusy=false;renderMetrics();review=null;api.cancel();snapshot=null;busy=false;preparing=false;error=null;dialog.close();$('#nft-dialog').close();render();
     if(!session.busy&&session.account)void refresh();
@@ -152,7 +157,7 @@ export function createDeploymentView(config){
   }
   function renderMint(){
     const button=$('#mint-submit');if(!button)return;
-    if(m.schema===4||m.environment==='production'){button.type='button';button.disabled=true;button.textContent='Mint on OpenSea';text('#mint-message','Minting is planned on OpenSea. This page demonstrates the NFT; the verified collection link will be added before launch.');return;}
+    if(isAccounting7Profile(m)||m.environment==='production'){button.type='button';button.disabled=true;button.textContent='Mint on OpenSea';text('#mint-message','Minting takes place on OpenSea. Collection eligibility and the verified mint link are not configured here.');return;}
     button.type='button';button.disabled=busy||preparing||transactions?.busy||Boolean(pending())||session.busy||Boolean(readiness?.new_minting_stopped)||readiness?.minted>=1000;
     button.textContent=transactions?.busy?(review?.requested_action==='mint'?(stage==='wallet'?'Confirm mint in wallet…':'Checking mint confirmation…'):'Wallet operation in progress…'):preparing?'Preparing review…':busy?'Reading confirmed state…':session.account?(localSigning?'Review mint ↗':'Review unsigned mint ↗'):'Connect wallet ↗';
     text('#mint-message','0.05 ETH mint price. Network gas is separate. '+(localSigning?'Local Anvil only; confirm each send in your wallet.':'This profile does not submit transactions.'));
@@ -237,7 +242,7 @@ export function createDeploymentView(config){
     text('.portfolio-account .small-note',snapshot?'Holdings at block '+snapshot.inventory.provenance.block_number:'Confirmed holdings unavailable');
     const items=snapshot?.nfts||[];
     text('#my-count',snapshot?`${snapshot.inventory.count} NFTs owned · showing ${items.length} on this page`:'');
-    $('#owned-nfts').innerHTML=items.map(n=>{const art=artFor(n);if(art)preloadEvolutions(art);return `<article class="nft-card"><div class="nft-card-art">${art?`<button class="art-image-button" data-deployment-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}"><img class="nft-artwork" src="${art.src}" alt="${e(art.colorLabel+' '+art.rarityLabel+' '+art.evolutionLabel)}" width="1024" height="1024" loading="lazy"></button>`:'<div class="local-art-unavailable">Artwork state unavailable</div>'}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span>${e(n.position.evolution_value_available?n.position.evolution:'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}<div class="local-position-actions">${n.position.activated?`<button class="button" data-deployment-claim="${n.token_id}" ${blocked()||!hasClaimableRewards(n)?'disabled':''}>Review claim</button>`:''}<button class="button button-secondary" data-deployment-id="${n.token_id}" data-deployment-grow ${blocked()||!n.traits_ready||m.schema===4&&(!snapshot.protocol.lifecycle.new_economic_work_available_by_lifecycle||!['active','dormant'].includes(n.position.status))?'disabled':''}>${n.position.activated?'Grow attached LP':'Activate'}</button></div><p class="small-note">Confirmed block ${n.provenance.block_number}</p></div></article>`;}).join('')||`<p class="local-empty">${e(busy?'Reading your confirmed positions…':error||'No NFTs owned by this address.')}</p>`;
+    $('#owned-nfts').innerHTML=items.map(n=>{const art=artFor(n);if(art)preloadEvolutions(art);return `<article class="nft-card"><div class="nft-card-art">${art?`<button class="art-image-button" data-deployment-id="${n.token_id}" aria-label="View PoPL #${n.mint_ordinal}"><img class="nft-artwork" src="${art.src}" alt="${e(art.colorLabel+' '+art.rarityLabel+' '+art.evolutionLabel)}" width="1024" height="1024" loading="lazy"></button>`:'<div class="local-art-unavailable">Artwork state unavailable</div>'}</div><div class="nft-card-body"><div class="nft-card-title"><h3>PoPL #${n.mint_ordinal}</h3><span>${e(n.position.evolution_value_available?n.position.evolution:'Unavailable')}</span></div><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}<div class="local-position-actions">${n.position.activated?`<button class="button" data-deployment-claim="${n.token_id}" ${blocked()||!hasClaimableRewards(n)?'disabled':''}>Review claim</button>`:''}<button class="button button-secondary" data-deployment-id="${n.token_id}" data-deployment-grow ${blocked()||!n.traits_ready||isAccounting7Profile(m)&&(!snapshot.protocol.lifecycle.new_economic_work_available_by_lifecycle||!['active','dormant'].includes(n.position.status))?'disabled':''}>${n.position.activated?'Grow attached LP':'Activate'}</button></div><p class="small-note">Confirmed block ${n.provenance.block_number}</p></div></article>`;}).join('')||`<p class="local-empty">${e(busy?'Reading your confirmed positions…':error||'No NFTs owned by this address.')}</p>`;
     $('#claim-all').disabled=blocked()||!items.some(n=>hasClaimableRewards(n));text('#claim-all','Review claims on this page ↗');
     pager.hidden=!snapshot||snapshot.inventory.count<=8;pager.querySelector('span').textContent=`Page ${page+1}`;
     pager.querySelector('[data-deployment-page="-1"]').disabled=busy||page===0;
@@ -247,7 +252,7 @@ export function createDeploymentView(config){
   async function refresh({keepDialog=false}={}){
     if(transactions?.busy)return;const current=++sequence,owner=session.account;api.cancel();totalController?.abort();totalController=null;totals=null;totalBusy=false;earnings=null;earningsBusy=false;renderMetrics();busy=true;error=null;if(!keepDialog){review=null;dialog.close();}render();
     try{
-      const ready=m.schema!==4&&m.environment==='rehearsal'?await api.readiness():null;if(current!==sequence)return;readiness=ready;
+      const ready=[1,2,3].includes(m.schema)&&m.environment==='rehearsal'?await api.readiness():null;if(current!==sequence)return;readiness=ready;
       const data=owner?await api.portfolio(owner,page):(await api.protocol(),null);
       if(current!==sequence||owner!==session.account)return;// A refresh must not publish a pending contribution's new artwork before
       // its canonical Entry receipt and LP position have been reconciled.
@@ -271,17 +276,17 @@ export function createDeploymentView(config){
   }
   function details(id,grow=false){
     if(blocked())return void refresh();const n=snapshot.nfts.find(n=>n.token_id===id);if(!n)return;
-    if(grow&&m.schema===4&&(!snapshot.protocol.lifecycle.new_economic_work_available_by_lifecycle||!['active','dormant'].includes(n.position.status)))return;
+    if(grow&&isAccounting7Profile(m)&&(!snapshot.protocol.lifecycle.new_economic_work_available_by_lifecycle||!['active','dormant'].includes(n.position.status)))return;
     quoteSequence++;const action=n.position.activated?'increase':'activate',assets=m.input_assets.filter(a=>a.enabled);
     const balance=scope=>{const amount=nativeRewards(n,scope);return amount===null?'Unavailable':units(amount)+' ETH';};
-    $('#nft-dialog-content').innerHTML=`<h2 id="nft-details-title">PoPL #${n.mint_ordinal}</h2><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}${!grow&&n.position.activated?`<div class="breakdown-rows"><div>LP rewards <span>${e(balance('lp'))}</span></div><div>Royalties <span>${e(balance('royalties'))}</span></div></div>`:''}${!grow&&n.position.activated?claimCurrencyButtons(n,blocked()):''}${grow?`<form data-deployment-contribution="${id}" data-action="${action}" class="liquidity-form"><label class="input-label">Contribution asset<select name="asset">${assets.map(a=>`<option value="${a.symbol}">${a.symbol}</option>`).join('')}</select></label><label class="input-label">Token amount<input class="amount-input" name="amount" type="text" inputmode="decimal" autocomplete="off" required ${action==='activate'?'readonly':''}></label><p class="small-note">${m.schema===4?'The current governed and pool minimums are checked in your review.':action==='activate'?'Activate with $100 in value.':'Add at least $5 in value.'} ${e(contributionPolicyText(m))}</p><label class="checkbox-label"><input name="consent" type="checkbox" required><span>I understand this funds LP attached to the NFT and the principal cannot be redeemed.</span></label><button type="submit" class="button" ${assets.length?'':'disabled'}>${localSigning?'Review':'Prepare unsigned'} ${action==='activate'?'activation':'LP addition'} ↗</button><p class="form-message" data-deployment-feedback role="status"></p></form>`:''}`;
+    $('#nft-dialog-content').innerHTML=`<h2 id="nft-details-title">PoPL #${n.mint_ordinal}</h2><div class="nft-card-traits">${traits(n)}</div>${renderPositionAmounts(n)}${!grow&&n.position.activated?`<div class="breakdown-rows"><div>LP rewards <span>${e(balance('lp'))}</span></div><div>Royalties <span>${e(balance('royalties'))}</span></div></div>`:''}${!grow&&n.position.activated?claimCurrencyButtons(n,blocked()):''}${grow?`<form data-deployment-contribution="${id}" data-action="${action}" class="liquidity-form"><label class="input-label">Contribution asset<select name="asset">${assets.map(a=>`<option value="${a.symbol}">${a.symbol}</option>`).join('')}</select></label><label class="input-label">Token amount<input class="amount-input" name="amount" type="text" inputmode="decimal" autocomplete="off" required ${action==='activate'?'readonly':''}></label><p class="small-note">${isAccounting7Profile(m)?'The current governed and pool minimums are checked in your review.':action==='activate'?'Activate with $100 in value.':'Add at least $5 in value.'} ${e(contributionPolicyText(m))}</p><label class="checkbox-label"><input name="consent" type="checkbox" required><span>I understand this funds LP attached to the NFT and the principal cannot be redeemed.</span></label><button type="submit" class="button" ${assets.length?'':'disabled'}>${localSigning?'Review':'Prepare unsigned'} ${action==='activate'?'activation':'LP addition'} ↗</button><p class="form-message" data-deployment-feedback role="status"></p></form>`:''}`;
     $('#nft-dialog').showModal();const form=$('[data-deployment-contribution]');if(grow&&action==='activate'&&assets.length)void quote(form);
   }
   async function prepare(intent,{afterApproval=false}={}){
     if(preparing||transactions?.busy)return;if(!session.account)return openWallet();if(pending())return void recover();if(stale()&&!afterApproval)return void refresh();
     preparing=true;updateWallet();const current=sequence;
     try{
-      const permission=await session.verify();const draft=transactions?await transactions.prepare({...intent,account:permission.account},{afterApproval}):await api.prepare({...intent,account:permission.account,...(m.schema===4&&intent.action==='claim'?{plan:true}:{})});await session.verify();
+      const permission=await session.verify();const draft=transactions?await transactions.prepare({...intent,account:permission.account},{afterApproval}):await api.prepare({...intent,account:permission.account,...(isAccounting7Profile(m)&&intent.action==='claim'?{plan:true}:{})});await session.verify();
       if(current!==sequence||permission.revision!==session.revision||permission.account!==session.account)return;
       const labels={mint:'Mint',claim:'Claim rewards in original currencies',approve:'Approve exact contribution',activate:'Activate NFT',increase:'Grow attached LP'};
       review=draft;stage=null;const context=draft.liquidity_context;
