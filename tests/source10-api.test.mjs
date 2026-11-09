@@ -17,11 +17,12 @@ for(const name of ['active_single','active_residual','price_unavailable','dorman
   if(name==='dormant')assert.doesNotMatch(renderPositionAmounts(n),/Rewards to claim/);
 });
 
-test('current DTOs preserve funded LP and three original royalty currencies without adding ZZZ to ETH',async()=>{
+test('current DTOs preserve funded LP and original ETH/USDC royalties without adding ZZZ to ETH',async()=>{
   const s=setup('claim_policy1'),n=await s.api.nft(s.f.outputs.nft.token_id,s.f.outputs.nft.owner);
   assert.ok(n.claimable.lp.some(r=>r.asset===ZERO&&BigInt(r.raw)>0n));
   assert.ok(n.claimable.lp.some(r=>r.asset!==ZERO&&BigInt(r.raw)>0n));
   assert.ok(n.claimable.royalties.some(r=>r.asset!==ZERO&&BigInt(r.raw)>0n));
+  assert.deepEqual(n.claimable.royalties.map(r=>r.symbol),['ETH','USDC']);
   assert.match(renderPositionAmounts(n),/Pending LP conversion/);assert.match(renderPositionAmounts(n),/original currency/);
 });
 
