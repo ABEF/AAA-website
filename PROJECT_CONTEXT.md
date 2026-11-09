@@ -53,15 +53,22 @@ earnings, and prepares unsigned Entry3 and claim reviews. Original-currency
 royalties, ZZZ LP rewards awaiting ETH conversion and terminal principal remain
 separate. Its transaction-policy selector explicitly matches backend policy1 or
 optional policy2; claim planning retains every entry and never creates a future
-queue. The profile cannot sign or submit, even on Anvil. Both public configuration
-exports remain null and the shared signer bytes are unchanged.
+queue. Independently, optional `activation_policy_schema` defaults to1/12M.
+Explicit2 requires matching backend schema2, the reviewed operator/confirmed-block
+cap and full20% headroom. Claim policy1 stays12M when activation explicitly uses
+a higher ceiling. The profile cannot sign or submit, even on Anvil. Both public
+configuration exports remain null and the shared signer bytes are unchanged.
 
 The source9 fixture exporter supplies 35 actual handler DTOs across nine public
 methods against synthetic RPC/venue/authority/fee dependencies, including exact
-full-raw/checkpoint2 earnings comparisons. Entry3 draft tests are typed synthetic
-reviews, not an actual complete Entry3 execution-trace fixture. These scopes do
-not qualify providers, wallets, actual configuration or a service/site rollout.
-See the [source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md).
+full-raw/checkpoint2 earnings comparisons. Those original Entry3 unit fixtures
+remain typed synthetic reviews at their original source scope. The separate
+[actual Entry3 rehearsal](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+records confirmed ETH/ZZZ activations and actual unsigned HTTP/RPC composition on
+an owned fork, with separately seeded external depth and controlled USD feeds/VRF.
+That depth and those dependencies are not production market/feed qualification;
+no browser extension signing, operating service or site rollout is approved.
+Retain the [original source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md).
 Historical source8/accounting6/V8, served current3 and local Anvil profiles keep
 their original identities. No live environment follows from source support.
 
@@ -97,7 +104,10 @@ pending state, rarity/color/card rules and ACTI/EV timing from AGENTS.md.
 Historical initial current3 integration/fork checkpoint:
 [8be0f89](https://github.com/ABEF/AAA/commit/8be0f89fd982253ddae7bef2ebfc36b497d836b1).
 Website operating checkpoint77501ce is separate from served poplint artifact
-f23c559 and demo9be6d1. Follow the contract WORK_HANDOFF.md next session; do not
+f23c559 and demo9be6d1. Continue from the
+[actual Entry3 handoff](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+and contract WORK_HANDOFF.md. Match the explicit activation gas policy, retain
+original depth/gas failures and refresh reviews after confirmed approvals. Do not
 rerun unchanged checks or change the demo merely to continue current integration.
 Actual reviewed contracts/API/feeds/routes must be supplied before replacing
 the unconfigured state; public signing remains disabled. No overnight monitor,
@@ -108,9 +118,10 @@ not implemented. Underlying economic rights are unchanged. Intended production
 minting is OpenSea (0.05ETH buyer gross, recipient net after platform fee), but
 the actual mint integration remains unfinished. The website mint is a demo.
 
-Actual current accounting7 contracts/API/feeds/routes/VRF/authorities/OpenSea, permanent
-artwork hosting, complete history, target gas/operating qualification and
-independent audit/remediation remain open. Production NOT APPROVED.
+Production qualification of current accounting7 contracts/API/feeds/routes/VRF/
+authorities/OpenSea, permanent artwork hosting, complete history, target gas and
+operating conditions, plus independent audit/remediation, remain open.
+Production NOT APPROVED.
 
 Preserve local Anvil/NFTs/LP/balances/journals/port8902/dist overlay. No reset,
 keeper restart, public signing or public financial transaction occurred. The

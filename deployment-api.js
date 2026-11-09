@@ -73,7 +73,7 @@ export function validateDeployment(value,origin=globalThis.location?.origin){
   if(!Array.isArray(m.reward_assets)||!m.reward_assets.length||m.reward_assets.length>(m.schema===4?97:m.schema>=2?49:32))fail('Invalid reward inventory');
   const rewards=new Set();for(const a of m.reward_assets){if(!ADDRESS.test(a.address)||rewards.has(a.address)||!integer(a.decimals,0,36)||!(m.schema===4?/^[A-Za-z0-9._-]{1,16}$/:/^(ETH|WETH|ZZZ|USDG|USDC)$/).test(a.symbol)||(a.address===ZERO&&(a.symbol!=='ETH'||a.decimals!==18)))fail('Invalid reward currency');rewards.add(a.address);}
   if(m.schema>=2&&!rewards.has(ZERO))fail('Native reward inventory must include ETH');
-  if(!object(m.limits)||!integer(m.limits.gas,21000,m.schema===4&&m.transaction_policy_schema===2?64000000:12000000))fail('Invalid gas limit');
+  if(!object(m.limits)||!integer(m.limits.gas,21000,m.schema===4&&(m.transaction_policy_schema===2||m.activation_policy_schema===2)?64000000:12000000))fail('Invalid gas limit');
   for(const name of ['gas_price_wei','network_fee_wei','native_value_wei','contribution_usd_18'])if(raw(m.limits[name])===0n)fail('Missing bounded spending policy');
   if(m.schema===4)validateFreshManifest(m);else if(m.schema===3)validateCurrentManifest(m);else if(m.schema===2)validateNativeManifest(m);
   return freeze(m);

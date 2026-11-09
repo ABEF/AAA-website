@@ -34,15 +34,22 @@ principal, and prepares unsigned contribution and claim reviews. Original-curren
 royalties and ZZZ LP rewards awaiting ETH conversion stay separate. Governed
 minima and cosmetic thresholds are authenticated current values. Optional
 transaction-policy2 and complete-entry claim planning do not enable signing,
-automatic queues or retries. Source9 remains unsigned even on local Anvil; the
-existing shared signer bytes and its historical profiles are unchanged.
+automatic queues or retries. Independent `activation_policy_schema` is optional:
+omission retains1/12M; explicit2 binds a matching backend schema2, reviewed
+operator/confirmed-block cap and full20% headroom. Claim policy1 remains12M even
+with a higher activation ceiling. Source9 remains unsigned even on local Anvil;
+the existing shared signer bytes and its historical profiles are unchanged.
 
-This is local source support only. The 35 actual handler DTOs across nine public
-methods use synthetic RPC/dependency fixtures; Entry3 review tests use typed
-synthetic drafts without a complete actual execution-trace fixture. Neither
-poplint's served current3 release nor popldemo changed. Actual wallet/API/feed/
-route, marketplace, configuration, operating acceptance and an authorized rollout
-remain open. See the [source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md).
+The original35 handler DTOs across nine public methods and Entry3 unit drafts
+retain their synthetic RPC/dependency scope in the
+[source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md).
+Separate [actual Entry3 evidence](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+records confirmed ETH/ZZZ activation and unsigned HTTP/RPC composition on an
+owned fork with separately seeded external depth and controlled USD feeds/VRF.
+It does not qualify public market depth, independent feeds, extension signing or
+production operation. Neither poplint's served current3 release nor popldemo
+changed. Actual wallet/API/feed/route, marketplace, configuration, operating
+acceptance and a separately authorized rollout remain open.
 
 Use a new integration build output for each release, record source revision,
 verify `site-identity.json` and SHA256SUMS, and archive only public static files.

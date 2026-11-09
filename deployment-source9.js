@@ -47,9 +47,9 @@ export const FRESH_ROLES=Object.freeze(['access','nft','vault','rewards','royalt
 const VERSIONS=Object.freeze({source_profile:9,accounting_version:7,lp_allocation_version:1,custody_version:5,protocol_policy_version:1,royalty_settlement_version:4,royalty_reporting_schema:5,
   pricing_version:2,routing_version:3,review_policy_version:2,governance_version:2,fee_intake_version:1,portfolio_version:2,maintenance_policy_version:3,rebalance_confirmation_version:3,
   idle_compounding_version:4,lp_routing_version:2,execution_quality_version:1,residual_exit_version:1,residual_reinvest_version:1});
-export const FRESH_VERSIONS=Object.freeze([...Object.keys(VERSIONS),'canonical_schema','transaction_policy_schema']);
+export const FRESH_VERSIONS=Object.freeze([...Object.keys(VERSIONS),'canonical_schema','transaction_policy_schema','activation_policy_schema']);
 export function validateFreshManifest(m){
-  if(m.schema!==4||Object.entries(VERSIONS).some(([key,value])=>m[key]!==value)||![1,2].includes(m.transaction_policy_schema)||m.canonical_schema!==FRESH_CANONICAL_SCHEMA||!keys(m.contracts,FRESH_ROLES))fail('Explicit source9/accounting7 exact-LP deployment profile is required');
+  if(m.schema!==4||Object.entries(VERSIONS).some(([key,value])=>m[key]!==value)||![1,2].includes(m.transaction_policy_schema)||(m.activation_policy_schema!==undefined&&![1,2].includes(m.activation_policy_schema))||m.canonical_schema!==FRESH_CANONICAL_SCHEMA||!keys(m.contracts,FRESH_ROLES))fail('Explicit source9/accounting7 exact-LP deployment profile is required');
   const used=new Set();for(const role of FRESH_ROLES){const c=m.contracts[role];if(!keys(c,['address','runtime_code'])||!ADDRESS.test(c.address)||c.address===ZERO||used.has(c.address)||!code(c.runtime_code))fail('Invalid source9 contract runtime pin');used.add(c.address);}
   if(!integer(m.limits?.maximum_contribution_loss_bps,0,1000)||!Array.isArray(m.input_assets)||m.input_assets.length!==2)fail('Source9 requires reviewed ETH and fixed ZZZ contribution policy');
   const symbols=new Set(),assets=new Set();

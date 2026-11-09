@@ -21,11 +21,12 @@ function profile(api){
   const m=api.manifest;
   if(m.schema!==4||m.source_profile!==9||m.accounting_version!==7||m.routing_version!==3||m.review_policy_version!==2||m.pricing_version!==2||m.custody_version!==5||!api.native)fail('This review requires the explicit fresh source9 deployment');
   if(![1,2].includes(m.transaction_policy_schema))fail('Select an explicit reviewed transaction policy');
+  if(m.activation_policy_schema!==undefined&&![1,2].includes(m.activation_policy_schema))fail('Select a supported explicit activation policy');
   return m;
 }
 
 function requireFresh(api,draft,action,{activation=false}={}){
-  const now=Math.floor(api.clock()/1000),schema=activation?1:api.manifest.transaction_policy_schema;
+  const now=Math.floor(api.clock()/1000),schema=activation?(api.manifest.activation_policy_schema??1):api.manifest.transaction_policy_schema;
   if(draft.schema!==schema||draft.action!==action||!integer(draft.prepared_at,now-120,now+30)||!integer(draft.expires_at,now+1,now+60)||draft.expires_at<=draft.prepared_at||draft.expires_at>draft.provenance.block_timestamp+api.manifest.max_age_seconds||draft.wallet_revalidation_required!==true)fail('Unsigned review expired or differs from the selected action');
 }
 
@@ -96,7 +97,7 @@ function claimDraft(m,draft,claims){
 }
 
 async function gasPolicy(api,draft,source,block){
-  const m=api.manifest,fee=draft.network_gas,policy=source?1:m.transaction_policy_schema;
+  const m=api.manifest,fee=draft.network_gas,policy=source?(m.activation_policy_schema??1):m.transaction_policy_schema;
   if(!object(fee)||fee.includes_all_network_components!==true||fee.currency!=='native'||fee.wallet_must_refresh!==true||source&&fee.included_in_execution_loss!==false||fee.fee_policy_review_hash!==(source?m.activation_fee_review:m.transaction_fee_review))fail('Network fee policy is not reviewed');
   const gas=raw(fee.suggested_limit),estimate=raw(fee.estimated_units),price=raw(fee.price_wei),cost=gas*price;
   let cap=12000000n;

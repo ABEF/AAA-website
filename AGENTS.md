@@ -45,7 +45,11 @@ before describing local compatibility as operating acceptance.
 Keep original-currency royalties, exact ETH/ZZZ LP rewards, pending ZZZ-to-ETH
 conversion, earned history, claims and terminal returned principal separate.
 Missing values stay unavailable. Transaction-policy selector1/2 must match the
-reviewed backend; policy2 never widens policy1 or Entry3 activation implicitly.
+reviewed backend. Independent optional `activation_policy_schema` defaults to1
+and unchanged12M; explicit2 requires backend schema2, a reviewed21k–64M operator
+ceiling, confirmed-block bound and full20% headroom. Claim policy1 remains12M;
+selecting either policy2 never selects or widens the other policy implicitly.
+These engineering limits are not production gas qualification.
 Claim planning retains every selected entry and prepares at most the next batch;
 there is no automatic queue, submission or retry.
 
@@ -120,9 +124,13 @@ remain open. Local source changes alter no running environment.
 The source9 fixture exporter produced 35 actual handler DTOs across nine public
 methods using explicitly synthetic RPC/venue/authority/fee data, including exact
 raw/checkpoint2 earnings comparisons. This is consumer compatibility evidence,
-not live data or EVM execution. Entry3 review tests use typed synthetic drafts;
-no complete actual Entry3 trace fixture is claimed. Do not convert these DTO
-counts into a final test count or combine them with historical test stages.
+not live data or EVM execution. Their original Entry3 unit drafts remain synthetic.
+Separate [actual Entry3 evidence](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+uses an owned fork, separately seeded external depth and controlled USD feeds/VRF
+for confirmed ETH/ZZZ activation and real unsigned HTTP/RPC composition. Do not
+call that seeded depth public market qualification or infer extension signing,
+production providers, operating acceptance or a site rollout. Preserve original
+failed attempts and source scopes; do not add overlapping test stages.
 
 The contract repository's docs/project-todo.json generates its sole TODO.md.
 No website Todo page. Keep feature/operator/roadmap/release/context there current;

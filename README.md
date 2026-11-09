@@ -21,15 +21,23 @@ getter checks. It reads both physical LP legs, governed contribution minima and
 cosmetic thresholds, exact whole-unit rewards and terminal principal separately.
 Original-currency royalties stay separate from fixed-ZZZ LP rewards awaiting ETH
 conversion. Optional transaction policy2 and bounded claim planning remain unsigned.
+The independent `activation_policy_schema` defaults to1 and the unchanged12M
+budget. Explicit policy2 requires a matching backend schema2 configuration,
+confirmed-block gas bound and full20% headroom. Claim policy1 keeps its12M cap,
+even when an explicitly reviewed activation ceiling is higher.
 
 This source profile has no submission path, including on Anvil. Both public
 configuration exports remain null, and the shared signer is unchanged. The served
 poplint artifact remains historical current3 and unconfigured; popldemo remains
 the existing simulation. Source8/accounting6/V8 and earlier manifests, runtimes
-and journals retain their own identities. Actual services, Entry3 execution
-traces, providers, wallets and rollout remain unqualified. See the
-[source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
-and [API profile](DEPLOYMENT_API.md).
+and journals retain their own identities. The separate
+[controlled Entry3 rehearsal](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+records actual ETH/ZZZ activation and unsigned HTTP/RPC reviews on an owned fork.
+It uses separately seeded external liquidity and controlled USD feeds/VRF;
+it does not qualify public market depth, independent feeds, extension signing or
+production operation. Actual services, wallets and rollout remain open. Keep the
+[original source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
+and [API profile](DEPLOYMENT_API.md) at their own evidence scopes.
 
 ## Published demo
 

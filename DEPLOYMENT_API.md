@@ -67,10 +67,21 @@ prepare principal distribution. Missing history/pricing remains unavailable.
 The manifest explicitly selects `transaction_policy_schema:1` or optional2.
 Policy1 retains12M/schema1. Policy2 requires a matching backend configuration and
 schema2 draft/plan, an operator-reviewed 21,000–64,000,000 cap, the same confirmed
-block gas bound and complete20% headroom. This does not widen Entry3 activation's
-separate schema1/12M envelope. The claim planner preserves every selected entry,
-accepts at most32 entries with at most10 trials, validates the next exact batch
-and requires replanning after confirmation;
+block gas bound and complete20% headroom.
+
+Activation/growth independently use optional `activation_policy_schema:1|2`.
+Omission retains schema1 and the unchanged12M budget. Explicit2 requires a
+matching activation schema2/configuration identity and fee review. Its network
+envelope binds `configured_gas_limit`, `confirmed_block_gas_limit`,
+`effective_gas_limit` and `full_twenty_percent_headroom:true`; the effective cap
+is the lower of reviewed `limits.gas` and the exact confirmed block limit.
+The full rounded-up20% estimate headroom and separate network-fee ceiling must
+fit. The controlled fork rehearsal explicitly selected16M; that is not a default
+increase or target-chain gas approval. A higher activation ceiling does not widen
+claim policy1 beyond12M, and transaction policy2 does not select activation2.
+
+The claim planner preserves every selected entry, accepts at most32 entries with
+at most10 trials, validates the next exact batch and requires replanning after confirmation;
 there is no automatic queue or submission. Source9 has no signing path, even on
 Anvil, and does not enable direct mint or the unfinished OpenSea integration.
 
@@ -80,11 +91,21 @@ The exporter checks exact full-raw/checkpoint2 earnings agreement. Reproduce new
 bytes with the contract repository's
 `tests_python/export_source9_website_fixtures.py --output <new-json-path>`; output
 creation is exclusive and temporary history/configuration paths bind each
-generated artifact's identities. Entry3 tests use typed synthetic drafts; a
-complete actual Entry3 trace fixture remains absent. See the
-[source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
-for exact source scope and retained limits. These are local compatibility
-artifacts, not live/provider/wallet or operating acceptance.
+generated artifact's identities. That historical JSON file and its Entry3 unit
+drafts retain their synthetic scope. See the
+[original source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
+for its exact source bindings and retained limits.
+
+The separate [actual Entry3 rehearsal and handoff](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+records confirmed ETH/ZZZ activation and real backend/website unsigned reviews on
+an owned fork. External depth was separately seeded; USD feeds and VRF were
+controlled dependencies. Preserve the original depth/gas failures and the exact
+reviewed source/configuration pins. This does not qualify public market depth,
+independent feeds, extension signing, production providers or operating rollout.
+Approval and unsigned review do not change LP or artwork: require the confirmed
+Entry receipt and fresh authenticated LP/metadata state. Prepare again after
+approval, price/policy changes or expiry; never rewrite or resubmit saved calldata
+automatically. The source9 browser remains unsigned throughout.
 
 ## Historical adapter evidence
 

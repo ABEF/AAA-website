@@ -52,3 +52,13 @@ test('actual checkpoint2 earnings preserve complete current-currency history and
   assert.deepEqual(report.last_24h,s.f.outputs.full_raw_earnings.last_24h);
   const wallet=await s.api.walletEarnings(s.f.outputs.inventory,{});assert.equal(wallet.available,true);
 });
+
+
+test('activation gas2 requires explicit source9 opt-in while omitted policy remains gas1',()=>{
+  const {m}=setup('active_single'),origin='http://127.0.0.1:4190';
+  assert.equal(validateDeployment(m,origin).activation_policy_schema,undefined);
+  for(const selected of [1,2]){const n=structuredClone(m);n.activation_policy_schema=selected;n.limits.gas=selected===2?16000000:12000000;assert.equal(validateDeployment(n,origin).activation_policy_schema,selected);}
+  for(const value of [null,0,3,'2',true]){const n=structuredClone(m);n.activation_policy_schema=value;assert.throws(()=>validateDeployment(n,origin));}
+  for(const value of [undefined,1]){const n=structuredClone(m);if(value!==undefined)n.activation_policy_schema=value;n.limits.gas=16000000;assert.throws(()=>validateDeployment(n,origin));}
+  const oversized=structuredClone(m);oversized.activation_policy_schema=2;oversized.limits.gas=64000001;assert.throws(()=>validateDeployment(oversized,origin));
+});

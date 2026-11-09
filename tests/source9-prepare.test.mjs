@@ -218,3 +218,35 @@ test('final expiry discards the review and source9 mint stays blocked on every e
   const s=setup();s.identityHook=()=>{if(s.identityCalls===2)s.now=4060000;};await assert.rejects(prepareFresh(s.api,s.intent),/expired/);
   for(const environment of ['production','rehearsal']){const t=setup();t.m.environment=environment;await assert.rejects(prepareFresh(t.api,{action:'mint',account:t.intent.account}),/OpenSea/);assert.equal(t.requests.length,0);}
 });
+
+
+// Explicit activation policy2 typed DTOs; actual runtime qualification is separate.
+function entryGasPolicy2(options={}){
+  const s=entrySetup(options);s.m.activation_policy_schema=2;s.m.limits.gas=16000000;
+  s.draft.schema=2;s.blockLimit=18000000;s.estimate=11000000n;
+  Object.assign(s.draft.network_gas,{estimated_units:'11000000',suggested_limit:'13200000',estimated_fee_wei:(11000000n*s.price).toString(),suggested_limit_cost_wei:(13200000n*s.price).toString(),policy_schema:2,configured_gas_limit:'16000000',confirmed_block_gas_limit:'18000000',effective_gas_limit:'16000000',full_twenty_percent_headroom:true});
+  return s;
+}
+
+for(const options of [{asset:'ETH'},{asset:'ZZZ'},{asset:'ETH',action:'increase'},{asset:'ZZZ',action:'increase'},{asset:'ZZZ',approval:true}])test('activation gas2 exact unsigned '+JSON.stringify(options)+' retains full headroom above12M',async()=>{
+  const s=entryGasPolicy2(options),r=await prepareFresh(s.api,s.intent);
+  assert.equal(r.signing_enabled,false);assert.equal(r.network_gas.gas_limit,'13200000');assert.deepEqual(r.transaction,s.draft.transaction);
+  assert.equal(s.calls.filter(c=>c.method==='eth_getBlockByNumber').length,2);
+  for(const c of s.calls.filter(c=>['eth_call','eth_estimateGas'].includes(c.method)&&c.params[0].from))assert.equal(c.params[0].gas,hex(16000000));
+});
+
+for(const [name,change] of [
+  ['missing explicit selector',s=>delete s.m.activation_policy_schema],['old draft schema',s=>s.draft.schema=1],
+  ['wrong gas policy schema',s=>s.draft.network_gas.policy_schema=1],['different configured cap',s=>s.draft.network_gas.configured_gas_limit='12000000'],
+  ['different confirmed cap',s=>s.blockLimit=17000000],['different effective cap',s=>s.draft.network_gas.effective_gas_limit='15000000'],
+  ['missing full headroom',s=>s.draft.network_gas.full_twenty_percent_headroom=false],['late estimate headroom grew',s=>s.estimate=11000001n],
+  ['configured cap below padded gas',s=>s.m.limits.gas=12000000],['fee budget exhausted',s=>s.m.limits.network_fee_wei='1'],
+])test('activation gas2 rejects '+name,async()=>{const s=entryGasPolicy2();change(s);await assert.rejects(prepareFresh(s.api,s.intent));});
+
+test('activation policy2 does not widen unsigned claim policy1 beyond12M',async()=>{
+  const s=setup();s.m.activation_policy_schema=2;s.m.limits.gas=16000000;
+  const r=await prepareFresh(s.api,s.intent);assert.equal(r.signing_enabled,false);
+  for(const c of s.calls.filter(c=>['eth_call','eth_estimateGas'].includes(c.method)&&c.params[0].from))assert.equal(c.params[0].gas,hex(12000000));
+  const over=setup();over.m.activation_policy_schema=2;over.m.limits.gas=16000000;over.draft.network_gas.estimated_units='11000000';over.draft.network_gas.suggested_limit='13200000';
+  await assert.rejects(prepareFresh(over.api,over.intent));
+});
