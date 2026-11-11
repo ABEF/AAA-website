@@ -1,5 +1,12 @@
 # AAA / ZZZ PoPL website instructions
 
+The [daily audit and historical reconciliation](https://github.com/ABEF/AAA/blob/main/reports/daily-reconciliation-audit-20261111/REVIEW.md)
+corrects current guidance and preserves original evidence. The backend-only
+claim-planner change saves12RPC reads in one measured request-local plan;
+website behavior, both null public configurations, shared signer, served sites
+and existing chains/journals remain unchanged. No new browser run or live
+qualification is claimed for this documentation-only follow-up.
+
 Optional source10 execution-price1 now requires explicit LP-routing3 and the
 same33 exact runtime roles, seven execution capabilities and fixed Math binding.
 Financial unsigned reviews authenticate inactive scope/source revision; healthy

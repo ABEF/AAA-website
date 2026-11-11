@@ -1,3 +1,10 @@
+The [daily audit and historical reconciliation](https://github.com/ABEF/AAA/blob/main/reports/daily-reconciliation-audit-20261111/REVIEW.md)
+corrects current guidance and preserves original evidence. The backend-only
+claim-planner change saves12RPC reads in one measured request-local plan;
+website behavior, both null public configurations, shared signer, served sites
+and existing chains/journals remain unchanged. No new browser run or live
+qualification is claimed for this documentation-only follow-up.
+
 The historical [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The source9 and source10 profiles read and prepare unsigned reviews even on Anvil; the shared signer remains unchanged. Public demo mode remains simulated.
 
 Optional source10 execution-price1 now requires explicit LP-routing3 and the
