@@ -1,11 +1,12 @@
 # AAA / ZZZ PoPL website instructions
 
-The [daily audit and historical reconciliation](https://github.com/ABEF/AAA/blob/main/reports/daily-reconciliation-audit-20261111/REVIEW.md)
-corrects current guidance and preserves original evidence. The backend-only
-claim-planner change saves12RPC reads in one measured request-local plan;
-website behavior, both null public configurations, shared signer, served sites
-and existing chains/journals remain unchanged. No new browser run or live
-qualification is claimed for this documentation-only follow-up.
+The [complete remaining-findings review](https://github.com/ABEF/AAA/blob/main/reports/remaining-271-20261111/REVIEW.md)
+individually checks all271remaining records (plus39previously reviewed).
+Backend fixes bound initial keeper simulations and isolate each predecessor's
+execution profile; strict offline catalogue admission preserves all existing
+artwork/library bytes. This website receives documentation updates only.
+Signing, both null public configurations, served sites, chains and journals
+remain unchanged; no browser or deployment acceptance is implied.
 
 Optional source10 execution-price1 now requires explicit LP-routing3 and the
 same33 exact runtime roles, seven execution capabilities and fixed Math binding.
