@@ -27,9 +27,11 @@ export const SOURCE10_ROLES=Object.freeze(['access','nft','vault','rewards','roy
 const VERSIONS=Object.freeze({source_profile:10,mint_integration_version:2,accounting_version:7,lp_allocation_version:1,custody_version:5,protocol_policy_version:1,royalty_settlement_version:4,royalty_reporting_schema:5,
   pricing_version:2,routing_version:3,review_policy_version:2,governance_version:2,fee_intake_version:1,portfolio_version:2,maintenance_policy_version:3,rebalance_confirmation_version:3,
   idle_compounding_version:4,lp_routing_version:2,execution_quality_version:1,residual_exit_version:1,residual_reinvest_version:1});
-export const MINT_VERSIONS=Object.freeze([...Object.keys(VERSIONS),'canonical_schema','transaction_policy_schema','activation_policy_schema']);
+export const MINT_VERSIONS=Object.freeze([...Object.keys(VERSIONS),'canonical_schema','transaction_policy_schema','activation_policy_schema','execution_price_version']);
 export function validateSource10Manifest(m){
-  if(m.schema!==5||Object.entries(VERSIONS).some(([key,value])=>m[key]!==value)||![1,2].includes(m.transaction_policy_schema)||(m.activation_policy_schema!==undefined&&![1,2].includes(m.activation_policy_schema))||m.canonical_schema!==SOURCE10_CANONICAL_SCHEMA||!keys(m.contracts,SOURCE10_ROLES))fail('Explicit source10/accounting7 exact-LP deployment profile is required');
+  const execution=m.execution_price_version??0;
+  if(!Number.isSafeInteger(execution)||![0,1].includes(execution))fail('Unsupported explicit source10 execution-price version');
+  if(m.schema!==5||Object.entries(VERSIONS).some(([key,value])=>m[key]!==((key==='lp_routing_version'&&execution===1)?3:value))||![1,2].includes(m.transaction_policy_schema)||(m.activation_policy_schema!==undefined&&![1,2].includes(m.activation_policy_schema))||m.canonical_schema!==SOURCE10_CANONICAL_SCHEMA||!keys(m.contracts,SOURCE10_ROLES))fail('Explicit source10/accounting7 exact-LP deployment profile is required');
   const used=new Set();for(const role of SOURCE10_ROLES){const c=m.contracts[role];if(!keys(c,['address','runtime_code'])||!ADDRESS.test(c.address)||c.address===ZERO||used.has(c.address)||!code(c.runtime_code))fail('Invalid source10 contract runtime pin');used.add(c.address);}
   if(!integer(m.limits?.maximum_contribution_loss_bps,0,1000)||!Array.isArray(m.input_assets)||m.input_assets.length!==2)fail('Source10 requires reviewed ETH and fixed ZZZ contribution policy');
   const symbols=new Set(),assets=new Set();
@@ -86,7 +88,8 @@ export class Source10Profile {
     const bind=async(role,method,target,arg='')=>{if((await this.call(role,method,arg,block))[0]!==addr(m.contracts[target].address))fail('Source10 parent/module binding differs: '+role+'.'+method);};
     await proofs([...ACCESS_ROLES.map(role=>()=>bind(role,'access()','access')),...BINDINGS.map(([role,method,target])=>()=>bind(role,method,target)),
       ...Object.entries(MODULES).map(([role,label])=>()=>bind('access','module(bytes32)',role,labelHash(label).slice(2))),
-      ...CAPABILITIES.map(([role,method,wanted])=>async()=>{if(BigInt('0x'+(await this.call(role,method,'',block))[0])!==BigInt(wanted))fail('Source10 capability differs: '+role+'.'+method);}),
+      ...CAPABILITIES.map(([role,method,wanted])=>async()=>{const expected=(m.execution_price_version===1&&method==='LP_ROUTING_VERSION()')?3:wanted;if(BigInt('0x'+(await this.call(role,method,'',block))[0])!==BigInt(expected))fail('Source10 capability differs: '+role+'.'+method);}),
+      ...(m.execution_price_version===1?[...['oracle','contribution_pricing','liquidity','balancing_router','lp_position_executor','strategy','lp_balance_math'].map(role=>async()=>{if(BigInt('0x'+(await this.call(role,'EXECUTION_PRICE_VERSION()','',block))[0])!==1n)fail('Source10 execution-price capability differs: '+role);}),()=>bind('liquidity','executionStrategy()','lp_balance_math')]:[]),
       ()=>bind('handoff','moduleAt(uint8)','rewards_canonical',word(3)),
       ()=>bind('handoff','moduleAt(uint8)','nft_canonical',word(0)),
       async()=>{const pinned='0x'+(await this.call('seadrop_mint','seaDropCodeHash()','',block))[0];if(pinned!==freshKeccak(m.contracts.seadrop.runtime_code))fail('Source10 SeaDrop runtime hash binding differs');},
@@ -94,6 +97,15 @@ export class Source10Profile {
         if(BigInt('0x'+(await this.call('vault','canonicalChainId()','',block))[0])!==BigInt(m.chain_id))fail('Source10 canonical chain differs');
         const governor=(await this.call('access','governance()','',block))[0];if(!/^0{24}[0-9a-f]{40}$/.test(governor)||governor==='0'.repeat(64)||governor===addr(m.contracts.access.address))fail('Invalid source10 governance identity');
         const zzz=m.input_assets.find(a=>a.symbol==='ZZZ').address;if((await this.call('activation_assets','zzz()','',block))[0]!==addr(zzz))fail('Source10 fixed ZZZ identity differs');}]);
+  }
+  async executionPolicy(block){
+    block=canonicalBlock(block);await this.verify(block);
+    if(this.m.execution_price_version!==1)fail('Execution context requires explicit source10 capability1');
+    // Mutable financial controls do not gate holdings, claims or liveness.
+    const [active,revision]=await Promise.all([this.call('oracle','executionActive()','',block),this.call('oracle','executionSourceRevision()','',block)]);
+    const sourceRevision=BigInt('0x'+revision[0]);
+    if(BigInt('0x'+active[0])!==0n||sourceRevision>=1n<<64n)fail('Source10 execution context is active or its source revision is invalid');
+    return {source_revision:sourceRevision,context_active:false};
   }
   async cap(block){block=canonicalBlock(block);await this.verify(block);const cap=BigInt('0x'+(await this.call('budget','contributionLossBps()','',block))[0]);if(cap>1000n||cap>BigInt(this.m.limits.maximum_contribution_loss_bps))fail('Contribution loss policy exceeds the source10 reviewed ceiling');return Number(cap);}
   async price(asset,block){

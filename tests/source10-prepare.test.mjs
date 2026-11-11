@@ -13,7 +13,7 @@ const word=testWord,claimData=claims=>'0xbbeaec93'+word(32)+word(claims.length)+
 const claimOutput=claims=>'0x'+word(32)+word(claims.length)+claims.map(c=>word(c.simulated_raw)).join('');
 const jsonPolicy=p=>Object.fromEntries(Object.entries(p).map(([k,v])=>[k,typeof v==='bigint'||typeof v==='number'?String(v):v]));
 
-function fixture({policy=1,ceiling=300}={}){
+function fixture({policy=1,ceiling=300,execution=0}={}){
   const g=source10ProfileFixture(),m=g.manifest,owner=testAddress(900),usdc=testAddress(901);
   Object.assign(m,{max_age_seconds:120,pool_id:hash('8'),transaction_policy_schema:policy,transaction_fee_review:hash('9'),activation_fee_review:hash('9')});
   Object.assign(m.limits,{maximum_contribution_loss_bps:ceiling,gas:policy===2?40000000:12000000,gas_price_wei:'100000000000',network_fee_wei:U.toString(),native_value_wei:(1000n*U).toString(),contribution_usd_18:(1000n*U).toString()});
@@ -27,6 +27,14 @@ function fixture({policy=1,ceiling=300}={}){
   if(policy===2)Object.assign(gas,{policy_schema:2,configured_gas_limit:'40000000',confirmed_block_gas_limit:'40000000',effective_gas_limit:'40000000',full_twenty_percent_headroom:true});
   s.draft={schema:policy,kind:'unsigned_transaction_draft',action:'claim',transaction:{from:owner,to:m.contracts.claim_router.address,value:'0x0',chainId:hex(m.chain_id),data:claimData(claims)},simulation:{succeeded:true,balance_overrides:false,gas_cap:policy===2?'40000000':'12000000',gas_estimate:'100000'},approvals_required:false,claim_operations:operations,network_gas:gas,prepared_at:4000,expires_at:4060,provenance:s.provenance,wallet_revalidation_required:true};
   s.simulations.set(s.draft.transaction.data,claimOutput(operations));
+  if(execution===1){
+    m.execution_price_version=1;m.lp_routing_version=3;
+    for(const role of ['liquidity','balancing_router'])g.set(role,'LP_ROUTING_VERSION()',[3]);
+    for(const role of ['oracle','contribution_pricing','liquidity','balancing_router','lp_position_executor','strategy','lp_balance_math'])g.set(role,'EXECUTION_PRICE_VERSION()',[1]);
+    g.set('liquidity','executionStrategy()',[BigInt(m.contracts.lp_balance_math.address)]);g.set('oracle','executionActive()',[0]);g.set('oracle','executionSourceRevision()',[2]);
+    s.provenance.execution_price_version=1;s.provenance.lp_routing_version=3;
+    s.provenance.lp_execution={version:3,execution_price_version:1,execution_price:{version:1,contracts:Object.fromEntries(['oracle','contribution_pricing','liquidity','balancing_router','lp_position_executor','strategy'].map(role=>[role,m.contracts[role].address])),execution_strategy:m.contracts.lp_balance_math.address,source_revision:2,context_active:false}};
+  }
   const profile=new Source10Profile(m,g.reader),baseReader=g.reader;
   s.api={manifest:m,clock:()=>s.now,native:profile,identity:async()=>{s.identityCalls++;if(s.identityHook)await s.identityHook();},protocol:async()=>({lifecycle:{new_economic_work_available_by_lifecycle:true},minting:{channel:'opensea',available:null,stage_eligibility:'unverified'},provenance:s.provenance}),nft:async(id,account)=>{if(id!==n.token_id||account!==n.owner)throw Error('Confirmed NFT owner changed');return n;},asset:symbol=>{const asset=m.input_assets.find(a=>a.symbol===symbol&&a.enabled);if(!asset)throw Error('Unreviewed contribution asset');return asset;},provenance:async p=>{assert.equal(p.block_hash,source10Block.blockHash);assert.equal(p.block_number,99);await profile.verify(source10Block);return source10Block;},request:async(path,payload)=>{s.requests.push({path,payload});if(path==='/v1/claims/plan')return s.plan;if(path==='/v1/transactions/prepare'||path==='/v1/activation/prepare')return s.draft;throw Error('Unexpected API request');}};
   s.api.reader={request:async request=>{
@@ -46,8 +54,8 @@ function fixture({policy=1,ceiling=300}={}){
   s.intent={action:'claim',account:owner,claims};return s;
 }
 
-function entry({asset='ETH',action='activate',approval=false,policy=1,ceiling=300}={}){
-  const s=fixture({ceiling}),m=s.m,source=s.api.asset(asset),amount=(action==='increase'?5n:100n)*U;
+function entry({asset='ETH',action='activate',approval=false,policy=1,ceiling=300,execution=0}={}){
+  const s=fixture({ceiling,execution}),m=s.m,source=s.api.asset(asset),amount=(action==='increase'?5n:100n)*U;
   s.n.position.activated=action==='increase';s.n.position.status=action==='increase'?'active':'dormant';
   const required=amount*97n/100n,tx={from:s.owner,to:approval?source.address:m.contracts.entry.address,value:!approval&&asset==='ETH'?hex(amount):'0x0',chainId:hex(m.chain_id),data:approval?'0x095ea7b3'+word(BigInt(m.contracts.entry.address))+word(amount):'0x6169e438'+word(s.n.token_id)+m.pool_id.slice(2)+word(BigInt(source.address))+word(amount)+word(99)+word(4060)+word(action==='increase'?1:0)+word(300)};
   s.termsPromise=s.api.native.entryPolicy(source10Block).then(terms=>{s.terms=terms;if(!approval)tx.data+=terms.fingerprint.slice(2);s.draft.contribution_policy=jsonPolicy(terms);s.simulations.set(tx.data,approval?'0x'+word(1):'0x');});
@@ -158,4 +166,31 @@ test('source10 activation policy2 never widens claim policy1 beyond12M',async()=
   const s=fixture();s.m.activation_policy_schema=2;s.m.limits.gas=16000000;
   const review=await prepareFresh(s.api,s.intent);assert.equal(review.signing_enabled,false);
   assert.ok(s.calls.filter(c=>['eth_call','eth_estimateGas'].includes(c.method)&&c.params[0]?.from).every(c=>c.params[0].gas===hex(12000000)));
+});
+
+for(const options of [{asset:'ETH'},{asset:'ZZZ',action:'increase'},{asset:'ZZZ',approval:true}])test('execution1 unsigned Entry review authenticates captured context graph '+JSON.stringify(options),async()=>{
+  const s=entry({...options,execution:1});await s.termsPromise;const r=await prepareFresh(s.api,s.intent);
+  assert.equal(r.signing_enabled,false);assert.equal(r.provenance.execution_price_version,1);assert.deepEqual(r.transaction,s.draft.transaction);
+});
+
+test('execution1 financial reviews reject mismatched or noncanonical context provenance',async()=>{
+  for(const change of [s=>delete s.provenance.execution_price_version,s=>s.provenance.execution_price_version=true,s=>s.provenance.lp_routing_version=2,
+    s=>s.provenance.lp_execution.version=2,s=>s.provenance.lp_execution.execution_price.context_active=true,s=>s.provenance.lp_execution.execution_price.source_revision=3,
+    s=>s.provenance.lp_execution.execution_price.source_revision='2',s=>s.provenance.lp_execution.execution_price.source_revision=Number.MAX_SAFE_INTEGER+1,
+    s=>s.provenance.lp_execution.execution_price.contracts.oracle=testAddress(999),s=>s.provenance.lp_execution.execution_price.contracts.extra=testAddress(999),
+    s=>s.provenance.lp_execution.execution_price.extra={},s=>s.provenance.lp_execution.execution_price.execution_strategy=testAddress(999)]){
+    const s=entry({execution:1});await s.termsPromise;change(s);await assert.rejects(prepareFresh(s.api,s.intent),/Execution-price/);
+  }
+});
+
+test('execution1 claims remain independent of the current source-kind revision and context availability',async()=>{
+  const s=fixture({execution:1});s.g.set('oracle','executionActive()',[2]);s.g.set('oracle','executionSourceRevision()',[1n<<64n]);
+  const r=await prepareFresh(s.api,s.intent);assert.equal(r.action,'claim');
+  const forbidden=[freshSelector('executionActive()'),freshSelector('executionSourceRevision()')];
+  assert.equal(s.g.calls.some(c=>c.method==='eth_call'&&forbidden.includes(c.params[0].data)),false);
+});
+
+test('historical unsigned reviews reject attached execution1 context proofs rather than silently adopting them',async()=>{
+  const s=entry();await s.termsPromise;s.provenance.lp_execution={execution_price:{version:1}};
+  await assert.rejects(prepareFresh(s.api,s.intent),/Historical review/);
 });

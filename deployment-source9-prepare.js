@@ -24,6 +24,8 @@ function profile(api){
   const source9=m.schema===4&&m.source_profile===9&&m.canonical_schema===FRESH_CANONICAL_SCHEMA&&!Object.hasOwn(m,'mint_integration_version');
   const source10=m.schema===5&&m.source_profile===10&&m.canonical_schema===SOURCE10_CANONICAL_SCHEMA&&m.mint_integration_version===2;
   if(!(source9||source10)||m.accounting_version!==7||m.routing_version!==3||m.review_policy_version!==2||m.pricing_version!==2||m.custody_version!==5||!api.native)fail('This review requires an explicit source9/V9 or source10/mint2/V10 deployment');
+  const execution=m.execution_price_version??0;
+  if(!Number.isSafeInteger(execution)||![0,1].includes(execution)||execution===1&&(!source10||m.lp_routing_version!==3)||execution===0&&m.lp_routing_version!==2)fail('Select a matching explicit execution-price and LP-routing profile');
   if(![1,2].includes(m.transaction_policy_schema))fail('Select an explicit reviewed transaction policy');
   if(m.activation_policy_schema!==undefined&&![1,2].includes(m.activation_policy_schema))fail('Select a supported explicit activation policy');
   return m;
@@ -32,6 +34,18 @@ function profile(api){
 function requireFresh(api,draft,action,{activation=false}={}){
   const now=Math.floor(api.clock()/1000),schema=activation?(api.manifest.activation_policy_schema??1):api.manifest.transaction_policy_schema;
   if(draft.schema!==schema||draft.action!==action||!integer(draft.prepared_at,now-120,now+30)||!integer(draft.expires_at,now+1,now+60)||draft.expires_at<=draft.prepared_at||draft.expires_at>draft.provenance.block_timestamp+api.manifest.max_age_seconds||draft.wallet_revalidation_required!==true)fail('Unsigned review expired or differs from the selected action');
+}
+
+async function executionReview(api,p,block){
+  const m=api.manifest,enabled=m.execution_price_version===1,proof=p?.lp_execution?.execution_price;
+  if(!enabled){if((p.execution_price_version??0)!==0||proof!==undefined)fail('Historical review cannot adopt execution-price evidence');return;}
+  const roles=['oracle','contribution_pricing','liquidity','balancing_router','lp_position_executor','strategy'];
+  if(p.execution_price_version!==1||p.lp_routing_version!==3||p.lp_execution?.version!==3||p.lp_execution?.execution_price_version!==1||
+    !object(proof)||Object.keys(proof).sort().join()!=='context_active,contracts,execution_strategy,source_revision,version'||proof.version!==1||proof.context_active!==false||
+    !integer(proof.source_revision,0,Number.MAX_SAFE_INTEGER)||proof.execution_strategy!==m.contracts.lp_balance_math.address||!object(proof.contracts)||
+    Object.keys(proof.contracts).sort().join()!==roles.slice().sort().join()||roles.some(role=>proof.contracts[role]!==m.contracts[role].address))fail('Execution-price review differs from the pinned context graph');
+  const observed=await api.native.executionPolicy(block);
+  if(observed.context_active!==false||observed.source_revision!==BigInt(proof.source_revision))fail('Execution-price source revision differs from the confirmed review');
 }
 
 async function poolMinimum(api,block){
@@ -196,6 +210,7 @@ export async function prepareFresh(api,intent){
   const block=await api.provenance(draft.provenance,{activation:Boolean(source),transaction:!source});
   requireFresh(api,draft,intent.action,{activation:Boolean(source)});
   if(source){
+    await executionReview(api,draft.provenance,block);
     const [bounds,loss,terms,pool]=await Promise.all([api.native.price(source,block),api.native.cap(block),api.native.entryPolicy(block),poolMinimum(api,block)]);
     const base=10n**BigInt(source.decimals),gross=amount*bounds.lower/base,upper=ceil(amount*bounds.upper,base),required=upper-upper*BigInt(loss)/10000n;
     const minimum=terms[intent.action==='increase'?'minimum_growth_usd_18':'minimum_activation_usd_18'];

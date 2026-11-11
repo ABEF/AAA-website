@@ -1,5 +1,16 @@
 The historical [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The source9 and source10 profiles read and prepare unsigned reviews even on Anvil; the shared signer remains unchanged. Public demo mode remains simulated.
 
+Optional source10 execution-price1 now requires explicit LP-routing3 and the
+same33 exact runtime roles, seven execution capabilities and fixed Math binding.
+Financial unsigned reviews authenticate inactive scope/source revision; healthy
+claims and holdings gain no live-Oracle dependency. Omitted/0 remains LP2 and
+source9 stays historical. [Reference execution and gas limits](https://github.com/ABEF/AAA/blob/main/docs/REFERENCE_SWAP_EXECUTION.md)
+records the contract guards and unchanged12M default; higher activation policy2
+needs separate review. Both public configurations/signing/served sites and
+existing local chains/journals remain unchanged.140 focused synthetic browser
+checks pass; this is compatibility evidence, not live/provider/gas qualification.
+
+
 Current demo writes use explicit `demo_policy:2`: native ETH or fixed ZZZ,
 one ETH/ZZZ contribution pool and a3%/97% illustrative contribution limit.
 Unversioned v7 saved events retain their original assets, pools, cent top-ups

@@ -135,3 +135,43 @@ test('ETH and fixed ZZZ still require reviewed token identity, admission and pos
   const t=source10ProfileFixture();t.set('activation_assets','isContributionAsset(address)',[0],testWord(0));await assert.rejects(t.profile.price(t.manifest.input_assets[0],source10Block),/admission/);
   const u=source10ProfileFixture();u.set('oracle','priceBounds(address)',[0,1,1],testWord(0));await assert.rejects(u.profile.price(u.manifest.input_assets[0],source10Block),/price bounds/);
 });
+
+function executionProfileFixture(){
+  const s=source10ProfileFixture();s.manifest.execution_price_version=1;s.manifest.lp_routing_version=3;
+  for(const role of ['liquidity','balancing_router'])s.set(role,'LP_ROUTING_VERSION()',[3]);
+  for(const role of ['oracle','contribution_pricing','liquidity','balancing_router','lp_position_executor','strategy','lp_balance_math'])s.set(role,'EXECUTION_PRICE_VERSION()',[1]);
+  s.set('liquidity','executionStrategy()',[BigInt(s.manifest.contracts.lp_balance_math.address)]);
+  s.set('oracle','executionActive()',[0]);s.set('oracle','executionSourceRevision()',[2]);
+  s.profile=new Source10Profile(s.manifest,s.reader);return s;
+}
+
+test('explicit execution1 selects routing3, keeps the same33pins and proves the fixed math child',async()=>{
+  const s=executionProfileFixture();await s.profile.verify(source10Block);
+  assert.equal(Object.keys(s.manifest.contracts).length,33);assert.equal(s.calls.filter(c=>c.method==='eth_getCode').length,33);
+  assert.ok(s.calls.some(c=>c.method==='eth_call'&&c.params[0].data===freshSelector('executionStrategy()')));
+  assert.equal(s.calls.some(c=>c.method==='eth_call'&&[freshSelector('executionActive()'),freshSelector('executionSourceRevision()')].includes(c.params[0].data)),false);
+});
+
+test('source10 execution capability is strict opt-in and cannot reinterpret the routing2 profile',()=>{
+  for(const change of [m=>m.execution_price_version=true,m=>m.execution_price_version='1',m=>m.execution_price_version=2,m=>m.lp_routing_version=2,m=>m.contracts.oracle.execution_price_version=1,m=>m.input_assets[0].execution_source={}]){
+    const s=executionProfileFixture();change(s.manifest);assert.throws(()=>new Source10Profile(s.manifest,s.reader));
+  }
+  const historical=source10ProfileFixture();historical.manifest.execution_price_version=0;assert.doesNotThrow(()=>new Source10Profile(historical.manifest,historical.reader));
+  historical.manifest.lp_routing_version=3;assert.throws(()=>new Source10Profile(historical.manifest,historical.reader));
+});
+
+test('each of seven execution capabilities and the exact existing math binding is authenticated',async()=>{
+  for(const role of ['oracle','contribution_pricing','liquidity','balancing_router','lp_position_executor','strategy','lp_balance_math']){
+    const s=executionProfileFixture();s.set(role,'EXECUTION_PRICE_VERSION()',[0]);await assert.rejects(s.profile.verify(source10Block),/execution-price capability/);
+  }
+  const s=executionProfileFixture();s.set('liquidity','executionStrategy()',[BigInt(testAddress(999))]);await assert.rejects(s.profile.verify(source10Block),/binding/);
+});
+
+test('financial context control checks never become ownership or claim availability dependencies',async()=>{
+  const s=executionProfileFixture();s.set('oracle','executionActive()',[1]);await s.profile.verify(source10Block);
+  await assert.rejects(s.profile.executionPolicy(source10Block),/active/);
+  s.set('oracle','executionActive()',[0]);assert.deepEqual(await s.profile.executionPolicy(source10Block),{source_revision:2n,context_active:false});
+  for(const [method,value] of [['executionActive()',2],['executionSourceRevision()',1n<<64n]]){
+    const t=executionProfileFixture();t.set('oracle',method,[value]);await assert.rejects(t.profile.executionPolicy(source10Block));
+  }
+});
