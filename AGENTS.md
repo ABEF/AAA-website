@@ -13,10 +13,12 @@ same33 exact runtime roles, seven execution capabilities and fixed Math binding.
 Financial unsigned reviews authenticate inactive scope/source revision; healthy
 claims and holdings gain no live-Oracle dependency. Omitted/0 remains LP2 and
 source9 stays historical. [Reference execution and gas limits](https://github.com/ABEF/AAA/blob/main/docs/REFERENCE_SWAP_EXECUTION.md)
-records the contract guards and unchanged12M default; higher activation policy2
-needs separate review. Both public configurations/signing/served sites and
-existing local chains/journals remain unchanged.140 focused synthetic browser
-checks pass; this is compatibility evidence, not live/provider/gas qualification.
+records the contract guards and unchanged12M default. The [current gas review](https://github.com/ABEF/AAA/blob/main/reports/gas-feasibility-20261111/REVIEW.md)
+reduces controlled activation/growth costs by about4.4–4.8%, still above12M,
+and records full maintenance plus dated32M chain execution parameters. Oracle
+has3bytes runtime headroom. Actual providers/fees/workloads and policy2 adoption
+remain unqualified. Website source/profile/signing/configuration is unchanged;
+140prior focused synthetic browser checks retain their original scope.
 
 
 Reviewed 2026-11-11. Read PROJECT_CONTEXT.md and the contract repository's current
