@@ -1,3 +1,10 @@
+Current demo writes use explicit `demo_policy:2`: native ETH or fixed ZZZ,
+one ETH/ZZZ contribution pool and a3%/97% illustrative contribution limit.
+Unversioned v7 saved events retain their original assets, pools, cent top-ups
+and LP-only claim meaning. The storage key, seed NFTs, artwork and balances are
+not reset or relabelled. Existing local/runtime profiles and stronger signed
+ceilings remain separate. Source changes do not update either served website.
+
 The NFT detail view omits the Previously claimed frame at the user's request.
 Keep 24h/all-time earnings and current Rewards to claim. Lifetime claim accounting
 remains intact; earnings include claimed and unclaimed rewards, not only payouts.

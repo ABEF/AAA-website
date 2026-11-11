@@ -1,5 +1,13 @@
 The historical [local API wallet rehearsal](DEPLOYMENT_API.md) supports typed submission/recovery only on local Anvil. The source9 and source10 profiles read and prepare unsigned reviews even on Anvil; the shared signer remains unchanged. Public demo mode remains simulated.
 
+Current demo writes use explicit `demo_policy:2`: native ETH or fixed ZZZ,
+one ETH/ZZZ contribution pool and a3%/97% illustrative contribution limit.
+Unversioned v7 saved events retain their original assets, pools, cent top-ups
+and LP-only claim meaning. The storage key, seed NFTs, artwork and balances are
+not reset or relabelled. Existing local/runtime profiles and stronger signed
+ceilings remain separate. Source changes do not update either served website.
+
+
 # ZZZ PoPL website
 
 A responsive website and collection application for ZZZ Collection — Proof of Permanent Liquidity. The artwork library uses eight colors, 58 allowed palettes, four circuit patterns, three rarities and four evolutions: 2,784 visual states. The original egg shapes, materials and textures, supplied logo and reference JPEGs are preserved.
@@ -251,8 +259,8 @@ Fresh source supports native ETH settlement for funded LP rewards; funded ZZZ
 LP rewards awaiting conversion remain separate and must never be relabelled ETH.
 Royalty4 instead pays original admitted currencies, without conversion or unwrap.
 Older TEST-1/TEST-2 fixtures retain their actual currencies and explicit runtime
-profiles. Fresh contributions accept native ETH/fixed ZZZ only; some preserved
-demo/legacy selectors still show USDG/USDC. Source documentation does not change
+profiles. Fresh contributions accept native ETH/fixed ZZZ only; preserved
+historical local selectors still show USDG/USDC; current demo writes use ETH/ZZZ. Source documentation does not change
 those running fixtures or enable their use in production. Actual conversion
 routes, feeds and matching website integration remain unqualified.
 

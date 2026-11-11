@@ -1,5 +1,13 @@
 # Website current project context
 
+Current demo writes use explicit `demo_policy:2`: native ETH or fixed ZZZ,
+one ETH/ZZZ contribution pool and a3%/97% illustrative contribution limit.
+Unversioned v7 saved events retain their original assets, pools, cent top-ups
+and LP-only claim meaning. The storage key, seed NFTs, artwork and balances are
+not reset or relabelled. Existing local/runtime profiles and stronger signed
+ceilings remain separate. Source changes do not update either served website.
+
+
 Reviewed 2026-11-09 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
 [environment procedures](SITE_ENVIRONMENTS.md) and the contract repository's
 [sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) before making changes.

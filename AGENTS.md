@@ -1,6 +1,6 @@
 # AAA / ZZZ PoPL website instructions
 
-Reviewed 2026-11-09. Read PROJECT_CONTEXT.md and the contract repository's current
+Reviewed 2026-11-11. Read PROJECT_CONTEXT.md and the contract repository's current
 AGENTS.md/README/Todo/operator guide. This is current guidance, not an append-only
 history. Previous memory files are backed up outside Git in the contract-side
 documentation-cleanup evidence directory; Git retains every earlier revision.
@@ -82,7 +82,8 @@ operator guide for current settings/claims/initial16 / reviewed64-ERC20 currency
   3%contribution/1%conversion/3%maintenance fresh defaults with governed10%ceilings,
   without widening independently reviewed200bps client ceilings or old fixtures,
   gas separate and caller minima retained. Actual independent prices/routes
-  remain unqualified. Existing example source copy still requires alignment.
+  remain unqualified. Current demo writes now use explicit demo_policy2, ETH/ZZZ
+  and one native pair; historical v7 replay/local runtimes remain separate.
 - Mint adds no LP or reward eligibility. Intended primary mint is OpenSea,
   buyer0.05ETH gross/net recipient proceeds after actual platform fee; current
   direct mint is not that integration. SeaDrop mint2/V10 is implemented in contract

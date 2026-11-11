@@ -2,7 +2,7 @@ import {localMode} from './local-client.js';
 import {createLocalView} from './local-view.js';
 import {browserMode,BrowserClient} from './browser-client.js';
 import {ARTWORKS,PALETTES,COLORWAYS,PATTERNS,COLOR_STYLES,RARITIES,EVOLUTIONS,findArtwork,getRarity,getColorway,artworkForNft,royaltyWeight,paletteTrait,preloadEvolutions,confirmedUpgrade,armUpgradeSound,queueUpgrade,preloadUpgradeSounds} from './artworks.js';
-import {DEMO_ADDRESS, STORAGE_KEY, LEVELS, getMintSupply, buildDemoCollection, replayEvents, getMetrics, getLevel, claimable, royaltyClaimable, rewardHistory, feeSplit, mintPreview, claimPreview, activatePreview, increasePreview, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
+import {DEMO_ADDRESS, STORAGE_KEY, CURRENT_DEMO_POLICY, CURRENT_FUNDING_ASSETS, CURRENT_CONTRIBUTION_POOL, CURRENT_CONTRIBUTION_LOSS_BPS, LEVELS, getMintSupply, getMetrics, getLevel, claimable, royaltyClaimable, rewardHistory, feeSplit, BASE_PROTOCOL_LIQUIDITY_USD, BASE_POOL_LIQUIDITY_USD, dollars} from './domain.js';
 import {WalletConnection, WalletDiscovery, walletError} from './wallet.js';
 // The local launcher keeps its existing isolated profile. The reviewed API
 // profile is a fixed build input, never selected through a URL or wallet data.
@@ -276,7 +276,7 @@ function renderMint() { updateWallet(); renderMintArt(); }
 function renderAll() { renderMetrics(); renderCollection(); renderPortfolio(); renderMint(); renderRarityShowcase(); renderArtGallery(); }
 function liquidityForm(nft, action) {
   const activation = action === 'activate';
-  return `<form class="liquidity-form" data-liquidity-form novalidate data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}"><option value="USDC">USDC</option><option value="ZZZ">ZZZ</option><option value="ETH">ETH</option><option value="USDG">USDG</option></select><label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'GROW ATTACHED LP · MINIMUM $5'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '5'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. Token quantities depend on their prices; no live quote is provided. Activation starts at $100; LP top-ups start at $5 in value. At least 99% must become added LP; network gas is separate.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${nftOperation(nft.id) || storageProblem ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p></form>`;
+  return `<form class="liquidity-form" data-liquidity-form novalidate data-nft-id="${nft.id}" data-action="${action}"><label class="input-label" for="funding-asset-${nft.id}">${activation ? 'ACTIVATE WITH' : 'GROW YOUR POSITION WITH'}</label><select name="fundingAsset" id="funding-asset-${nft.id}">${CURRENT_FUNDING_ASSETS.map(asset=>`<option value="${asset}">${asset}</option>`).join('')}</select><label class="input-label" for="liquidity-amount-${nft.id}">${activation ? 'ACTIVATION VALUE · MINIMUM $100' : 'GROW ATTACHED LP · MINIMUM $5'}</label><div class="amount-input"><span>$</span><input name="amount" id="liquidity-amount-${nft.id}" type="number" min="${activation ? '100' : '5'}" max="1000000" step="0.01" value="${activation ? '100' : '1000'}" required inputmode="decimal"><span>USD VALUE</span></div><p class="small-note">Amounts are USD-equivalent examples. Token quantities depend on their prices; no live quote is provided. Activation starts at $100; LP top-ups start at $5 in value. At least ${100-CURRENT_CONTRIBUTION_LOSS_BPS/100}% must become added LP; network gas is separate.</p><label class="checkbox-label"><input type="checkbox" name="consent" required><span>My contribution funds permanent LP attached to this NFT. Only funded rewards can be claimed; the LP principal cannot be redeemed. This preview moves no real assets.</span></label><button type="submit" class="button button-full" ${nftOperation(nft.id) || storageProblem ? 'disabled' : ''}>Preview ${activation ? 'activation' : 'LP addition'} ↗</button><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p></form>`;
 }
 
 function royaltyTrait(nft) {
@@ -386,12 +386,12 @@ async function runClaim(ids) {
 async function runLiquidity(form) {
   if (!wallet.state) return openWallet();
   const id=Number(form.dataset.nftId),action=form.dataset.action;
-  const amount=Number(form.elements.namedItem('amount').value),pool='ZZZ/WETH',fundingAsset=form.elements.namedItem('fundingAsset').value;
+  const amount=Number(form.elements.namedItem('amount').value),pool=CURRENT_CONTRIBUTION_POOL,fundingAsset=form.elements.namedItem('fundingAsset').value;
   const activityKey=nftKey(id);
   let completed=false;
   void armUpgradeSound();
   try {
-    await performPreview({type:action,id,amount,pool,fundingAsset},[nftKey(id)],()=>{
+    await performPreview({type:action,id,amount,pool,fundingAsset,demo_policy:CURRENT_DEMO_POLICY},[nftKey(id)],()=>{
       formFeedback(form,'Updating this example NFT… You can close this window and use your other NFTs.');
       form.setAttribute('aria-busy','true');form.querySelectorAll('input,select,button').forEach(n=>n.disabled=true);
       recordActivity(`PoPL #${id}: ${action==='activate'?'activation':'LP addition'} pending.`,false,activityKey);

@@ -1,12 +1,14 @@
-import {STORAGE_KEY,replayEvents,mintPreview,claimPreview,activatePreview,increasePreview,fundDemoRewards,DEMO_REWARD_ROUND} from './domain.js';
+import {STORAGE_KEY,replayEvents,mintPreview,claimPreview,activatePreview,increasePreview,activateCurrentPreview,increaseCurrentPreview,CURRENT_DEMO_POLICY,fundDemoRewards,DEMO_REWARD_ROUND} from './domain.js';
 
 export const RESET_KEY=`${STORAGE_KEY}:reset`;
 export function previewChange(collection,event) {
+  if (['activate','increase'].includes(event.type) && event.demo_policy !== undefined && event.demo_policy !== CURRENT_DEMO_POLICY) throw new Error('Unknown demo contribution policy.');
+  const current=event.demo_policy===CURRENT_DEMO_POLICY;
   switch(event.type) {
     case 'mint': return mintPreview(collection);
     case 'claim': return claimPreview(collection,event.ids,{scope:event.scope});
-    case 'activate': return activatePreview(collection,event);
-    case 'increase': return increasePreview(collection,event);
+    case 'activate': return (current?activateCurrentPreview:activatePreview)(collection,event);
+    case 'increase': return (current?increaseCurrentPreview:increasePreview)(collection,event);
     case 'fund-rewards': return fundDemoRewards(collection,event);
     default: throw new Error('Unknown preview action.');
   }

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {operationScope,refreshLabels,sameContribution} from '../local-view.js';
 import {findArtwork,evolutionArtworks} from '../artworks.js';
-import {FUNDING_ASSETS} from '../domain.js';
+import {CURRENT_FUNDING_ASSETS} from '../domain.js';
 const context={stale:true,busy:true,session:'session',account:'owner'};
 test('ordinary same-account refresh retains confirmed card values without updating every NFT',()=>{
   const scope={session:'session',account:'owner',action:'refresh',ids:[]};
@@ -45,6 +45,6 @@ test('four preloaded evolutions retain fixed identity and never mutate the selec
   for(const a of variants){assert.equal(a.paletteId,art.paletteId);assert.equal(a.pattern,art.pattern);assert.equal(a.rarity,art.rarity);}
   assert.equal(JSON.stringify(art),before);assert.deepEqual(evolutionArtworks({...art}),[]);
 });
-test('public selector keeps the four agreed choices with ETH representing native input',()=>{
-  assert.deepEqual([...FUNDING_ASSETS].sort(),['ETH','USDC','USDG','ZZZ']);
+test('current public selector exposes only native ETH and fixed ZZZ',()=>{
+  assert.deepEqual([...CURRENT_FUNDING_ASSETS].sort(),['ETH','ZZZ']);
 });

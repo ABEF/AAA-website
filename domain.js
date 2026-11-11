@@ -4,7 +4,12 @@ export const MIN_ACTIVATION_USD = 100;
 export const MIN_TOPUP_USD = 5;
 export const MAX_SUPPLY = 1000;
 export const RARITY_LIMITS = Object.freeze({commun:600,rare:300,legendary:100});
+// Historical v7 event/API vocabulary. Do not narrow it: old saved events replay here.
 export const FUNDING_ASSETS = ['USDC','ZZZ','ETH','USDG'];
+export const CURRENT_DEMO_POLICY = 2;
+export const CURRENT_FUNDING_ASSETS = Object.freeze(['ETH','ZZZ']);
+export const CURRENT_CONTRIBUTION_POOL = 'ZZZ/ETH';
+export const CURRENT_CONTRIBUTION_LOSS_BPS = 300;
 export const POOLS = ['ZZZ/WETH', 'ZZZ/USDC'];
 export const LEVELS = EVOLUTIONS.map(level => level.label);
 export const DEMO_ADDRESS = '0x4440000000000000000000000000000000000444';
@@ -181,14 +186,30 @@ export function mintPreview(collection) {
   return {collection:[...collection,nft], nft};
 }
 
-export function activatePreview(collection, {id, amount, pool, fundingAsset = 'USDC'}) {
+// Retained legacy entry point, used only for unversioned historical events.
+export function activatePreview(collection, contribution) {
+  return applyActivation(collection,contribution,POOLS);
+}
+function applyActivation(collection, {id, amount, pool, fundingAsset = 'USDC'}, pools) {
   const nft = collection.find(item => item.id === id);
   if (!nft || !nft.exampleOwned) throw new Error('This NFT is not in your example portfolio.');
   if (nft.lockedCents > 0) throw new Error('This NFT is already active.');
   if (!Number.isFinite(amount) || amount < MIN_ACTIVATION_USD || amount > 1000000) throw new Error('Enter an activation value from $100 to $1,000,000.');
   if (!FUNDING_ASSETS.includes(fundingAsset)) throw new Error('Choose USDC, ZZZ, ETH or USDG for the example contribution.');
-  if (!POOLS.includes(pool)) throw new Error('Choose a supported example pool.');
+  if (!pools.includes(pool)) throw new Error('Choose a supported example pool.');
   return {collection:collection.map(item => item.id === id ? {...item,pool,activationAsset:fundingAsset,lockedCents:cents(amount),rewards24hCents:0} : item), id};
+}
+
+function currentContribution(contribution) {
+  if (!CURRENT_FUNDING_ASSETS.includes(contribution.fundingAsset)) throw new Error('Choose ETH or ZZZ for the current example contribution.');
+  if (contribution.pool !== undefined && contribution.pool !== CURRENT_CONTRIBUTION_POOL) throw new Error('Choose the current ETH/ZZZ contribution pool.');
+  return {...contribution,pool:CURRENT_CONTRIBUTION_POOL};
+}
+export function activateCurrentPreview(collection, contribution) {
+  return applyActivation(collection,currentContribution(contribution),[CURRENT_CONTRIBUTION_POOL]);
+}
+export function increaseCurrentPreview(collection, contribution) {
+  return applyIncrease(collection,currentContribution(contribution),MIN_TOPUP_USD);
 }
 
 export function increasePreview(collection, contribution) {
@@ -237,9 +258,13 @@ export function replayEvents(events) {
       if (event.type === 'mint') collection = mintPreview(collection,event).collection;
       // Existing v7 claim events predate royalties and must retain their LP-only meaning.
       if (event.type === 'claim') collection = claimPreview(collection,event.ids,{scope:event.scope === undefined ? 'lp' : event.scope}).collection;
-      if (event.type === 'activate') collection = activatePreview(collection,event).collection;
-      // Retain old v7 contributions; new writes must pass the current $5 floor.
-      if (event.type === 'increase') collection = applyIncrease(collection,event,0.01).collection;
+      if (event.type === 'activate' || event.type === 'increase') {
+        if (event.demo_policy !== undefined && event.demo_policy !== CURRENT_DEMO_POLICY) throw new Error('Unknown demo contribution policy.');
+        const current = event.demo_policy === CURRENT_DEMO_POLICY;
+        if (event.type === 'activate') collection = (current ? activateCurrentPreview : activatePreview)(collection,event).collection;
+        // Unversioned v7 events retain old assets/pools and smaller-cent top-ups.
+        else collection = (current ? increaseCurrentPreview(collection,event) : applyIncrease(collection,event,0.01)).collection;
+      }
     } catch { /* Invalid or obsolete local demo events do not affect the source model. */ }
   }
   return collection;
