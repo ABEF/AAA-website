@@ -1,5 +1,20 @@
 # AAA / ZZZ PoPL website instructions
 
+[Metadata lifecycle source fixes](https://github.com/ABEF/AAA/blob/main/reports/metadata-lifecycle-fixes-20261116/REVIEW.md)
+align confirmed unavailable-value artwork with the contract's labelled Activated
+fallback. LP exited stays distinct from Dormant; dormant NFTs in a terminal
+collection say activation closed. Existing validated principal status distinguishes
+allocation/readiness/pending/paid/zero; malformed state stays generic LP exited.
+No principal or royalty rights change. A pending LP contribution keeps its own
+last confirmed artwork, or no artwork if no confirmed snapshot exists; other
+cards and claims are unaffected. Receipt/account/sequence gates remain.
+Thirteen new focused checks pass. No old browser suite is rerun. This is source
+publication only: shared browser signer remains byte-identical/Anvil-only, both
+public configurations stay null, served poplint/popldemo and existing local
+chains/journals/services are unchanged. Matching runtime/configuration rollout,
+actual browser/provider/OpenSea/content and operating acceptance remain open.
+
+
 The [complete remaining-findings review](https://github.com/ABEF/AAA/blob/main/reports/remaining-271-20261111/REVIEW.md)
 individually checks all271remaining records (plus39previously reviewed).
 Backend fixes bound initial keeper simulations and isolate each predecessor's
