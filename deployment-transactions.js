@@ -12,7 +12,7 @@ const freeze=value=>{if(value&&typeof value==='object'){Object.values(value).for
 export class DeploymentTransactions {
   constructor(api,session,{walletOptions={},onProgress=()=>{},onChange=()=>{}}={}){
     const m=api.manifest,origin=new URL(api.origin),rpc=new URL(m.rpc_url);
-    if(m.environment!=='rehearsal'||m.chain_id!==31337||origin.protocol!=='http:'||origin.hostname!=='127.0.0.1'||rpc.protocol!=='http:'||rpc.hostname!=='127.0.0.1')fail('Wallet submission is restricted to the isolated local Anvil rehearsal');
+    if(![1,2,3].includes(m.schema)||m.environment!=='rehearsal'||m.chain_id!==31337||origin.protocol!=='http:'||origin.hostname!=='127.0.0.1'||rpc.protocol!=='http:'||rpc.hostname!=='127.0.0.1')fail('Wallet submission is restricted to the isolated local Anvil rehearsal');
     this.api=api;this.session=session;this.options=walletOptions;this.onProgress=onProgress;this.onChange=onChange;
     this.wallet=null;this.provider=null;this.busy=false;this.handles=new WeakMap();this.last=null;
   }

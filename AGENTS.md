@@ -1,5 +1,16 @@
 # AAA / ZZZ PoPL website instructions
 
+The [whole-project audit](https://github.com/ABEF/AAA/blob/main/reports/whole-project-audit-20261116/REVIEW.md)
+closes a local coordinator entry-point gap: direct construction, as well as the
+UI, rejects source9/schema4, source10/schema5 and unknown signing profiles before
+provider access. Only existing schemas1–3 can construct the unchanged Anvil-only
+signer. This hardens an unsigned-profile boundary; it was not a demonstrated
+public-signing or fund-loss exploit. Five new focused checks pass. The maintained
+test command also includes the existing13 metadata lifecycle checks; those were
+not rerun. Both public configurations remain null. No site build/deployment,
+service/chain/journal change or heartbeat restart occurred. Actual matching
+runtime/provider/wallet/hosting/OpenSea acceptance remains open.
+
 [Metadata lifecycle source fixes](https://github.com/ABEF/AAA/blob/main/reports/metadata-lifecycle-fixes-20261116/REVIEW.md)
 align confirmed unavailable-value artwork with the contract's labelled Activated
 fallback. LP exited stays distinct from Dormant; dormant NFTs in a terminal
@@ -36,7 +47,7 @@ remain unqualified. Website source/profile/signing/configuration is unchanged;
 140prior focused synthetic browser checks retain their original scope.
 
 
-Reviewed 2026-11-11. Read PROJECT_CONTEXT.md and the contract repository's current
+Reviewed 2026-11-16. Read PROJECT_CONTEXT.md and the contract repository's current
 AGENTS.md/README/Todo/operator guide. This is current guidance, not an append-only
 history. Previous memory files are backed up outside Git in the contract-side
 documentation-cleanup evidence directory; Git retains every earlier revision.
