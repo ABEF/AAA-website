@@ -36,12 +36,17 @@ same33 exact runtime roles, seven execution capabilities and fixed Math binding.
 Financial unsigned reviews authenticate inactive scope/source revision; healthy
 claims and holdings gain no live-Oracle dependency. Omitted/0 remains LP2 and
 source9 stays historical. [Reference execution and gas limits](https://github.com/ABEF/AAA/blob/main/docs/REFERENCE_SWAP_EXECUTION.md)
-records the contract guards and unchanged12M default. The [current gas review](https://github.com/ABEF/AAA/blob/main/reports/gas-feasibility-20261111/REVIEW.md)
-reduces controlled activation/growth costs by about4.4–4.8%, still above12M,
-and records full maintenance plus dated32M chain execution parameters. Oracle
-has3bytes runtime headroom. Actual providers/fees/workloads and policy2 adoption
-remain unqualified. Website source/profile/signing/configuration is unchanged;
-140prior focused synthetic browser checks retain their original scope.
+records the contract guards and unchanged12M default. The [historical gas review](https://github.com/ABEF/AAA/blob/main/reports/gas-feasibility-20261111/REVIEW.md)
+retains its earlier12M failures and Oracle3-byte headroom at that source.
+[Current F6 evidence](https://github.com/ABEF/AAA/blob/main/reports/activation-final-six-20261118/REVIEW.md)
+passes13 controlled20M/full20% scenarios; Oracle runtime margin is1,170 bytes.
+The operator selected a32M/full20% contribution candidate; defaults12M and24M
+maintenance remain. Actual provider/complete-fee/max-state acceptance is open.
+The [whole-workload review](https://github.com/ABEF/AAA/blob/main/reports/whole-workload-review-20261119/REVIEW.md)
+adds backend verified ownership pages, but this website has not adopted them.
+New backend service.py source requires reviewed checkpoint rebuild/re-pin on
+consumer adoption. Website code/profile/signer/configuration and served sites
+remain unchanged;140 prior synthetic browser checks keep their original scope.
 
 
 Current demo writes use explicit `demo_policy:2`: native ETH or fixed ZZZ,
