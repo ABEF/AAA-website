@@ -1,5 +1,24 @@
 # Website current project context
 
+## Current project status — 20 November 2026
+
+Final production-pool selection is deferred by the operator. Existing integration
+addresses and recorded fees are references, not an approved launch selection.
+
+The [backend claim review](https://github.com/ABEF/AAA/blob/73658567cb605b58c992698e2103535e782269dd/reports/full-claim-admission-20261120/REVIEW.md)
+returns the first successful prefix and fully revalidates it. Its32-NFT/65-currency/
+26-API-pin evidence does not qualify this website's33-pin/source10 adoption,
+browser flows, production HTTP/providers or maximum-state workloads.
+The [117-response market review](https://github.com/ABEF/AAA/blob/5653dbd32c34b9af5d7a12222f4c11a1c24370e9/reports/market-route-qualification-20261120/REVIEW.md)
+qualifies no complete route or independent source pair. Read the
+[v3 scope correction](https://github.com/ABEF/AAA/blob/main/reports/market-route-qualification-20261120/ERRATA.md)
+for manual earned-conversion capability versus current graph/worker limits.
+
+These are documentation updates only. Shared signer and independently reviewed
+200bps client ceilings, both null public configurations, dist, served websites,
+Anvil/journals/checkpoints, services and the paused heartbeat remain unchanged.
+No browser suite, build, rollout or public signing is implied.
+
 The [whole-project audit](https://github.com/ABEF/AAA/blob/main/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
 UI, rejects source9/schema4, source10/schema5 and unknown signing profiles before
@@ -60,7 +79,7 @@ not reset or relabelled. Existing local/runtime profiles and stronger signed
 ceilings remain separate. Source changes do not update either served website.
 
 
-Reviewed 2026-11-11 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
+Reviewed 2026-11-20 (Europe/Paris). Read [AGENTS.md](AGENTS.md),
 [environment procedures](SITE_ENVIRONMENTS.md) and the contract repository's
 [sole Todo](https://github.com/ABEF/AAA/blob/main/TODO.md) before making changes.
 This is durable repository context, not global personal memory.
