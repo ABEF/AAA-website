@@ -252,26 +252,48 @@ export class DeploymentAPI {
       await this.identity();if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');return {protocol,inventory,nfts,page};
     }finally{if(this.active===controller)this.active=null;}
   }
+  _walletRead(inventory,signal){
+    const m=this.manifest,revision=this.revision;
+    if(!object(inventory))fail('Invalid complete wallet inventory');
+    const saved=clone(inventory),owner=saved.wallet,ids=saved.token_ids,anchor=saved.provenance;
+    if(saved.schema!==2||saved.chain_id!==m.chain_id||saved.available!==true||!ADDRESS.test(owner)||owner===ZERO||
+      saved.nft_contract!==m.contracts.nft.address||!integer(saved.count,0,1000)||!Array.isArray(ids)||ids.length!==saved.count||
+      (saved.complete!==undefined&&saved.complete!==true)||!object(anchor)||!integer(anchor.block_timestamp,1,Number.MAX_SAFE_INTEGER))fail('Invalid complete wallet inventory');
+    if(ids.some((id,i)=>raw(id)===0n||i&&raw(ids[i-1])>=raw(id)))fail('Wallet inventory must be ordered and unique');
+    const controller=new AbortController(),abort=()=>controller.abort(),expires=(anchor.block_timestamp+m.max_age_seconds)*1000;
+    const guard=()=>{
+      if(signal?.aborted||controller.signal.aborted||revision!==this.revision)fail('Wallet financial read was cancelled or superseded');
+      const now=this.clock();if(!Number.isFinite(now)||now>=expires||anchor.block_timestamp>Math.floor(now/1000)+30)fail('Confirmed wallet financial snapshot expired. Refresh holdings.');
+    };
+    guard();signal?.addEventListener('abort',abort,{once:true});const timer=setTimeout(abort,expires-this.clock());
+    return {inventory:saved,owner,ids,anchor,signal:controller.signal,guard,
+      start:async()=>{
+        guard();await this.provenance(anchor);guard();
+        const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ids.join(','))))].map(n=>n.toString(16).padStart(2,'0')).join('');guard();
+        if(saved.inventory_sha256!==undefined&&saved.inventory_sha256!==digest)fail('Wallet financial inventory digest differs');return digest;
+      },
+      finish:async()=>{await this.provenance(anchor);guard();await this.identity();guard();},
+      close:()=>{clearTimeout(timer);controller.abort();signal?.removeEventListener('abort',abort);}};
+  }
   async walletTotals(inventory,{signal}={}){
-    const owner=inventory.wallet,ids=inventory.token_ids,anchor=inventory.provenance;
-    if(inventory.available!==true||!ADDRESS.test(owner)||!Array.isArray(ids)||ids.length>1000||inventory.count!==ids.length||new Set(ids).size!==ids.length)fail('Invalid complete wallet inventory');
-    if(ids.some((id,i)=>raw(id)===0n||(i&&raw(ids[i-1])>=raw(id))))fail('Wallet inventory must be ordered and unique');
-    const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ids.join(','))))].map(n=>n.toString(16).padStart(2,'0')).join('');
-    let offset=0,lp=0n,eth=0n,lpAvailable=true,ethAvailable=true;
-    do{
-      if(signal?.aborted)fail('Wallet totals were cancelled');
-      const part=await this.request(`/v1/wallets/${owner}/summary/${anchor.block_number}/${offset}`,undefined,signal);
-      await this.provenance(part.provenance);
-      const expected=ids.slice(offset,offset+16),next=offset+expected.length<ids.length?offset+expected.length:null;
-      if(part.schema!==1||part.chain_id!==this.manifest.chain_id||part.wallet!==owner||part.nft_contract!==this.manifest.contracts.nft.address||
-        part.inventory_sha256!==digest||part.count!==ids.length||part.chunk_size!==16||part.offset!==offset||part.next_offset!==next||
-        JSON.stringify(part.token_ids)!==JSON.stringify(expected)||part.provenance.block_hash!==anchor.block_hash||part.provenance.block_number!==anchor.block_number)fail('Wallet summary differs from its complete confirmed inventory');
-      if(part.lp_usd_18===null)lpAvailable=false;else lp+=raw(part.lp_usd_18);
-      if(part.claimable_eth_wei===null)ethAvailable=false;else eth+=raw(part.claimable_eth_wei);
-      offset=next;
-    }while(offset!==null);
-    await this.provenance(anchor);if(signal?.aborted)fail('Wallet totals were cancelled');
-    return {available:true,count:ids.length,wallet:owner,lp_usd_18:lpAvailable?lp.toString():null,claimable_eth_wei:ethAvailable?eth.toString():null,provenance:anchor};
+    const read=this._walletRead(inventory,signal),{owner,ids,anchor}=read;
+    try{
+      const digest=await read.start();let offset=0,lp=0n,eth=0n,lpAvailable=true,ethAvailable=true;
+      do{
+        read.guard();const part=await this.request(`/v1/wallets/${owner}/summary/${anchor.block_number}/${offset}`,undefined,read.signal);read.guard();
+        const expected=ids.slice(offset,offset+16),next=offset+expected.length<ids.length?offset+expected.length:null;
+        if(part.schema!==1||part.chain_id!==this.manifest.chain_id||part.wallet!==owner||part.nft_contract!==this.manifest.contracts.nft.address||
+          part.inventory_sha256!==digest||part.count!==ids.length||part.chunk_size!==16||part.offset!==offset||part.next_offset!==next||
+          JSON.stringify(part.token_ids)!==JSON.stringify(expected)||part.provenance?.block_hash!==anchor.block_hash||part.provenance.block_number!==anchor.block_number||part.provenance.block_timestamp!==anchor.block_timestamp)fail('Wallet summary differs from its complete confirmed inventory');
+        await this.provenance(part.provenance);read.guard();
+        if(!ids.length&&[part.lp_usd_18,part.claimable_eth_wei].some(value=>value!==null&&raw(value)!==0n))fail('Empty wallet cannot have positive financial totals');
+        if(part.lp_usd_18===null)lpAvailable=false;else lp+=raw(part.lp_usd_18);
+        if(part.claimable_eth_wei===null)ethAvailable=false;else eth+=raw(part.claimable_eth_wei);
+        offset=next;
+      }while(offset!==null);
+      await read.finish();read.guard();
+      return {available:true,count:ids.length,wallet:owner,lp_usd_18:lpAvailable?lp.toString():null,claimable_eth_wei:ethAvailable?eth.toString():null,provenance:anchor};
+    }finally{read.close();}
   }
 
   validateEarnings(report,scope){
@@ -351,26 +373,24 @@ export class DeploymentAPI {
     await this.provenance(result.provenance);if(signal?.aborted)fail('Collection read cancelled');return result;
   }
   async walletEarnings(inventory,{signal}={}){
-    const {wallet:owner,token_ids:ids,provenance:anchor}=inventory;
-    if(inventory.available!==true||!ADDRESS.test(owner)||owner===ZERO||inventory.nft_contract!==this.manifest.contracts.nft.address||!Array.isArray(ids)||ids.length>1000||inventory.count!==ids.length||new Set(ids).size!==ids.length)fail('Invalid earnings inventory');
-    if(ids.some((id,i)=>raw(id)===0n||(i&&raw(ids[i-1])>=raw(id))))fail('Invalid ordered earnings inventory');
-    const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ids.join(','))))].map(n=>n.toString(16).padStart(2,'0')).join('');
-    const fields=['lp_individual','lp_collective','royalties'];let offset=0,result=null;
-    do{
-      if(signal?.aborted)fail('Earnings read cancelled');
-      const part=this.validateEarnings(await this.request(`/v1/wallets/${owner}/earnings/${anchor.block_number}/${offset}`,undefined,signal),'wallet_chunk');
-      await this.provenance(part.provenance);
-      const expected=ids.slice(offset,offset+16),next=offset+expected.length<ids.length?offset+expected.length:null;
-      if(part.wallet!==owner||part.nft_contract!==this.manifest.contracts.nft.address||part.inventory_sha256!==digest||part.count!==ids.length||part.chunk_size!==16||part.offset!==offset||part.next_offset!==next||JSON.stringify(part.token_ids)!==JSON.stringify(expected)||part.provenance.block_hash!==anchor.block_hash||part.provenance.block_number!==anchor.block_number||part.provenance.block_timestamp!==anchor.block_timestamp)fail('Earnings differ from complete confirmed holdings');
-      if(!ids.length&&['all_time','last_24h'].some(period=>part[period].some(row=>fields.some(k=>raw(row[k+'_raw'])!==0n))))fail('Empty holdings cannot have earnings');
-      if(!result)result=clone(part);
-      else for(const period of ['all_time','last_24h'])for(const row of result[period]){
-        const add=part[period].find(a=>a.asset===row.asset);
-        if(JSON.stringify(row.current_price)!==JSON.stringify(add.current_price))fail('Earnings price changed between chunks');
-        for(const field of fields)row[field+'_raw']=(raw(row[field+'_raw'])+raw(add[field+'_raw'])).toString();
-      }
-      offset=next;
-    }while(offset!==null);
+    const read=this._walletRead(inventory,signal),{owner,ids,anchor}=read;
+    try{
+      const digest=await read.start(),fields=['lp_individual','lp_collective','royalties'];let offset=0,result=null;
+      do{
+        read.guard();const response=await this.request(`/v1/wallets/${owner}/earnings/${anchor.block_number}/${offset}`,undefined,read.signal);read.guard();
+        const part=this.validateEarnings(response,'wallet_chunk');
+        const expected=ids.slice(offset,offset+16),next=offset+expected.length<ids.length?offset+expected.length:null;
+        if(part.wallet!==owner||part.nft_contract!==this.manifest.contracts.nft.address||part.inventory_sha256!==digest||part.count!==ids.length||part.chunk_size!==16||part.offset!==offset||part.next_offset!==next||JSON.stringify(part.token_ids)!==JSON.stringify(expected)||part.provenance.block_hash!==anchor.block_hash||part.provenance.block_number!==anchor.block_number||part.provenance.block_timestamp!==anchor.block_timestamp)fail('Earnings differ from complete confirmed holdings');
+        await this.provenance(part.provenance);read.guard();
+        if(!ids.length&&['all_time','last_24h'].some(period=>part[period].some(row=>fields.some(k=>raw(row[k+'_raw'])!==0n))))fail('Empty holdings cannot have earnings');
+        if(!result)result=clone(part);
+        else for(const period of ['all_time','last_24h'])for(const row of result[period]){
+          const add=part[period].find(a=>a.asset===row.asset);
+          if(JSON.stringify(row.current_price)!==JSON.stringify(add.current_price))fail('Earnings price changed between chunks');
+          for(const field of fields)row[field+'_raw']=(raw(row[field+'_raw'])+raw(add[field+'_raw'])).toString();
+        }
+        offset=next;
+      }while(offset!==null);
     // Sum exact earned raw amounts before USD rounding, never 63 rounded displays.
     for(const period of ['all_time','last_24h']){
       const values=Object.fromEntries(fields.map(k=>[k,0n]));
@@ -382,9 +402,10 @@ export class DeploymentAPI {
       }
       result[period+'_usd_at_current_price_18']=Object.fromEntries(fields.map(k=>[k,values[k]===null?null:values[k].toString()]));
     }
-    await this.provenance(anchor);if(signal?.aborted)fail('Earnings read cancelled');
-    delete result.offset;delete result.next_offset;delete result.chunk_size;
-    return {...result,scope:'wallet',token_ids:[...ids],inventory_sha256:digest};
+      await read.finish();read.guard();
+      delete result.offset;delete result.next_offset;delete result.chunk_size;
+      return {...result,scope:'wallet',token_ids:[...ids],inventory_sha256:digest};
+    }finally{read.close();}
   }
   asset(symbol){const a=this.manifest.input_assets.find(a=>a.symbol===symbol&&a.enabled);if(!a)fail('This contribution asset is not enabled');return a;}
   async price(asset,p){

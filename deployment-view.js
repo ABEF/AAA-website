@@ -124,6 +124,17 @@ export function earnedUSD(report,period,collection=false){
   if(!report?.available||!totals||fields.some(k=>totals[k]===null||totals[k]===undefined))return null;
   return fields.reduce((sum,k)=>sum+raw(totals[k]),0n).toString();
 }
+// Independent fixed-inventory financial branches: one request at a time each.
+export async function loadWalletFinancials(api,inventory,{signal,onTotals,onEarnings}={}){
+  const run=async(method,publish)=>{
+    let value=null,error=null,failed=false;
+    try{if(signal?.aborted)throw Error('Wallet financial read was cancelled');value=await api[method](inventory,{signal});}
+    catch(reason){failed=true;error=reason;}
+    if(!signal?.aborted)publish?.({value,error});
+    if(failed)throw error;return value;
+  };
+  return Promise.allSettled([run('walletTotals',onTotals),run('walletEarnings',onEarnings)]);
+}
 export function createDeploymentView(config){
   const link=document.createElement('link');link.rel='stylesheet';link.href='./local-view.css';document.head.append(link);
   const bar=document.createElement('div');bar.className='container local-status';bar.innerHTML='<span role="status">Checking reviewed deployment…</span><button type="button" class="text-link" data-deployment-refresh>Refresh ↻</button>';document.querySelector('main').before(bar);
@@ -216,13 +227,10 @@ export function createDeploymentView(config){
   }
   async function refreshTotals(data,current,owner){
     totalController?.abort();totalController=new AbortController();const controller=totalController;totalBusy=true;totals=null;earnings=null;earningsBusy=true;renderMetrics();
-    try{const result=await api.walletTotals(data.inventory,{signal:controller.signal});if(current===sequence&&owner===session.account&&!controller.signal.aborted)totals=result;}
-    catch{/* A partial or failed snapshot is never a portfolio total. */}
-    finally{if(totalController===controller){totalBusy=false;renderMetrics();}}
-    if(controller.signal.aborted||current!==sequence||owner!==session.account)return;
-    try{const result=await api.walletEarnings(data.inventory,{signal:controller.signal});if(current===sequence&&owner===session.account&&!controller.signal.aborted)earnings=result;}
-    catch{/* Missing history/prices must not hide healthy current balances or become zero. */}
-    finally{if(totalController===controller){earningsBusy=false;renderMetrics();}}
+    const currentRead=()=>totalController===controller&&current===sequence&&owner===session.account&&!controller.signal.aborted;
+    await loadWalletFinancials(api,data.inventory,{signal:controller.signal,
+      onTotals:({value})=>{if(currentRead()){totals=value;totalBusy=false;renderMetrics();}},
+      onEarnings:({value})=>{if(currentRead()){earnings=value;earningsBusy=false;renderMetrics();}}});
   }
   async function refreshCollection(){
     collectionController?.abort();const controller=new AbortController(),revision=++collectionSequence;collectionController=controller;collectionBusy=true;collection=null;collectionPositions=null;collectionPositionsBusy=true;collectionProgress='';collectionPage=0;collectionDetailSequence++;renderCollection();

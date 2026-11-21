@@ -13,3 +13,8 @@ deployment-view.js whitespace=cr-at-eol
 deployment-api.js -text whitespace=cr-at-eol
 tests/ownership-paging.test.mjs -text whitespace=cr-at-eol
 package.json -text whitespace=cr-at-eol
+
+# Preserve exact reviewed wallet-financial reader, tests and fixtures.
+deployment-view.js -text whitespace=cr-at-eol
+tests/wallet-financial-view.test.mjs -text whitespace=cr-at-eol
+tests/fixtures/wallet-view-20261121/** -text whitespace=cr-at-eol
