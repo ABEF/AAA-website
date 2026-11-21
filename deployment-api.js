@@ -1,5 +1,6 @@
 // Production API integration for reads and unsigned preparation only.
 // This module has no wallet submission, signer, private key or broadcast path.
+import {readCompactWallet,sharedReadGate} from './deployment-wallet-view.js';
 import {createChainReader} from './browser-wallet.js';
 import {FreshProfile,FRESH_ROLES,FRESH_VERSIONS,FRESH_CANONICAL_SCHEMA,validateFreshManifest} from './deployment-source9.js';
 import {Source10Profile,SOURCE10_ROLES,MINT_VERSIONS,SOURCE10_CANONICAL_SCHEMA,validateSource10Manifest} from './deployment-source10.js';
@@ -93,7 +94,7 @@ export async function jsonRequest(fetcher,url,body,{signal,timeout=30000,maxByte
     const chunks=[];let size=0;while(true){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maxBytes)fail('API response is too large');chunks.push(value);}
     const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength;}
     let data;try{data=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{fail('API returned invalid JSON');}
-    if(!r.ok){const error=new Error(r.status===429||r.status===503?'Service temporarily unavailable. Retry the read or review; no transaction was submitted.':'The API could not prepare this request. Refresh confirmed state.');error.status=r.status;throw error;}
+    if(!r.ok){const error=new Error(r.status===429||r.status===503?'Service temporarily unavailable. Retry the read or review; no transaction was submitted.':'The API could not prepare this request. Refresh confirmed state.');error.status=r.status;if(r.status===503&&data.error==='service_busy')error.apiCode='service_busy';throw error;}
     if(!object(data))fail('Invalid API response');return data;
   }finally{clearTimeout(timer);controller.abort();signal?.removeEventListener('abort',abort);if(reader)void reader.cancel().catch(()=>{});}
 }
@@ -101,9 +102,10 @@ export async function jsonRequest(fetcher,url,body,{signal,timeout=30000,maxByte
 export class DeploymentAPI {
   constructor(manifest,{origin=globalThis.location?.origin,fetcher=globalThis.fetch,reader,clock=()=>Date.now()}={}){
     this.manifest=validateDeployment(manifest,origin);this.origin=origin;this.fetcher=fetcher;this.clock=clock;
+    this.readGate=isAccounting7Profile(this.manifest)?sharedReadGate(origin+this.manifest.api_prefix):null;
     this.reader=reader||createChainReader(this.manifest.rpc_url,{fetcher});this.native=this.manifest.schema===5?new Source10Profile(this.manifest,this.reader):this.manifest.schema===4?new FreshProfile(this.manifest,this.reader):this.manifest.schema===3?new CurrentNativeProfile(this.manifest,this.reader):this.manifest.schema===2?new NativeProfile(this.manifest,this.reader):null;this.revision=0;this.active=null;
   }
-  request(path,body,signal){if(!/^\/v1\/[a-z0-9/_-]+$/.test(path))fail('Unsupported API path');return jsonRequest(this.fetcher,this.origin+this.manifest.api_prefix+path,body,{signal});}
+  request(path,body,signal){if(!/^\/v1\/[a-z0-9/_-]+$/.test(path))fail('Unsupported API path');const read=()=>jsonRequest(this.fetcher,this.origin+this.manifest.api_prefix+path,body,{signal});return body===undefined&&this.readGate?this.readGate.run(read,signal):read();}
   cancel(){this.revision++;this.active?.abort();this.active=null;}
   async identity(){
     const m=this.manifest,[chain,genesis,anchor]=await Promise.all([
@@ -232,7 +234,10 @@ export class DeploymentAPI {
   async portfolio(owner,page=0){
     if(!ADDRESS.test(owner)||owner===ZERO||!integer(page,0,124))fail('Invalid wallet request');this.cancel();const revision=this.revision,controller=new AbortController();this.active=controller;
     try{
-      const protocol=await this.protocol(controller.signal),inventory=isAccounting7Profile(this.manifest)?await this.walletInventory(owner,protocol.provenance,{signal:controller.signal,lifecycle:protocol.lifecycle}):await this.snapshot(await this.request('/v1/wallets/'+owner+'/nfts',undefined,controller.signal));
+      const protocol=await this.protocol(controller.signal);
+      if(protocol.wallet_view_profile!==undefined&&protocol.wallet_view_profile!==1)fail('Unsupported wallet view profile');
+      const financials=isAccounting7Profile(this.manifest)&&protocol.wallet_view_profile===1?await this.walletView(owner,protocol.provenance,{signal:controller.signal,lifecycle:protocol.lifecycle}):null;
+      const inventory=financials?financials.inventory:isAccounting7Profile(this.manifest)?await this.walletInventory(owner,protocol.provenance,{signal:controller.signal,lifecycle:protocol.lifecycle}):await this.snapshot(await this.request('/v1/wallets/'+owner+'/nfts',undefined,controller.signal));
       if(this.native&&inventory.provenance?.accounting_version!==this.manifest.accounting_version)fail('Wallet inventory omitted its native accounting profile');
       if(inventory.available!==true||inventory.wallet!==owner||inventory.nft_contract!==this.manifest.contracts.nft.address||
         !Array.isArray(inventory.token_ids)||inventory.token_ids.length>1000||inventory.count!==inventory.token_ids.length||new Set(inventory.token_ids).size!==inventory.count)fail('Invalid complete wallet inventory');
@@ -249,7 +254,9 @@ export class DeploymentAPI {
       })));
       if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');
       if(isAccounting7Profile(this.manifest))await this.provenance(inventory.provenance);
-      await this.identity();if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');return {protocol,inventory,nfts,page};
+      await this.identity();if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');
+      if(financials){const now=this.clock(),stamp=inventory.provenance.block_timestamp;if(!Number.isFinite(now)||now>=(stamp+this.manifest.max_age_seconds)*1000||stamp>Math.floor(now/1000)+30)fail('Confirmed wallet financial snapshot expired. Refresh holdings.');}
+      return {protocol,inventory,nfts,page,...(financials?{financials}: {})};
     }finally{if(this.active===controller)this.active=null;}
   }
   _walletRead(inventory,signal){
@@ -296,7 +303,8 @@ export class DeploymentAPI {
     }finally{read.close();}
   }
 
-  validateEarnings(report,scope){
+  walletView(owner,anchor,options={}){return readCompactWallet(this,owner,anchor,options,{raw,fail,clone,integer,object,ADDRESS,HASH,DIGEST});}
+  validateEarnings(report,scope,assets=this.manifest.reward_assets){
     if(report.schema!==1||report.chain_id!==this.manifest.chain_id||report.available!==true||report.scope!==scope||
       report.claims_and_conversions_are_income!==false||report.unprocessed_revenue_included!==false||
       report.clock!=='on-chain processing/allocation time'||
@@ -305,9 +313,9 @@ export class DeploymentAPI {
     const fields=scope==='collection'?['lp_processed','lp_owner_allocated','lp_collective_allocated','lp_compounding_allocated','lp_buyback_allocated','lp_collective_quarantined','royalties_received','royalties_allocated','royalties_quarantined']:['lp_individual','lp_collective','royalties'];
     for(const period of ['all_time','last_24h']){
       const rows=report[period],seen=new Set(),totals=Object.fromEntries(fields.map(k=>[k,0n]));
-      if(!Array.isArray(rows)||rows.length!==this.manifest.reward_assets.length)fail('Incomplete earnings currencies');
+      if(!Array.isArray(rows)||rows.length!==assets.length)fail('Incomplete earnings currencies');
       for(const row of rows){
-        const asset=this.manifest.reward_assets.find(a=>a.address===row.asset),price=row.current_price;
+        const asset=assets.find(a=>a.address===row.asset),price=row.current_price;
         if(!asset||seen.has(row.asset)||row.decimals!==asset.decimals||row.symbol!==asset.symbol||typeof price?.available!=='boolean'||!object(row.usd_at_current_price_18))fail('Invalid earnings currency');seen.add(row.asset);
         const mark=price.available?raw(price.usd_per_token_18):null;
         if(mark===0n||mark!==null&&mark>10n**36n||mark===null&&price.usd_per_token_18!==null)fail('Invalid earnings price');

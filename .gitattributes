@@ -18,3 +18,8 @@ package.json -text whitespace=cr-at-eol
 deployment-view.js -text whitespace=cr-at-eol
 tests/wallet-financial-view.test.mjs -text whitespace=cr-at-eol
 tests/fixtures/wallet-view-20261121/** -text whitespace=cr-at-eol
+
+# Exact compact-wallet source, new checks and producer fixtures.
+deployment-wallet-view.js -text whitespace=cr-at-eol
+tests/compact-wallet-view.test.mjs -text whitespace=cr-at-eol
+tests/fixtures/compact-wallet-20261121/** -text whitespace=cr-at-eol

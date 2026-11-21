@@ -228,6 +228,9 @@ export function createDeploymentView(config){
   async function refreshTotals(data,current,owner){
     totalController?.abort();totalController=new AbortController();const controller=totalController;totalBusy=true;totals=null;earnings=null;earningsBusy=true;renderMetrics();
     const currentRead=()=>totalController===controller&&current===sequence&&owner===session.account&&!controller.signal.aborted;
+    if(data.financials){
+      if(currentRead()){totals=data.financials.totals;earnings=data.financials.earnings;totalBusy=false;earningsBusy=false;renderMetrics();}return;
+    }
     await loadWalletFinancials(api,data.inventory,{signal:controller.signal,
       onTotals:({value})=>{if(currentRead()){totals=value;totalBusy=false;renderMetrics();}},
       onEarnings:({value})=>{if(currentRead()){earnings=value;earningsBusy=false;renderMetrics();}}});

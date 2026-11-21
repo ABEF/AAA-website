@@ -2,45 +2,21 @@
 
 ## Current project status - 21 November 2026
 
-Current source9/source10 captures wallet financial inputs before asynchronous
-work, rechecks cancellation/expiry after final proofs, and loads LP/funded-ETH
-and24h/all-time earnings independently. Each branch keeps one16-ID request at a
-time; complete matching chunks are required before its metric is published.
-A failed branch does not hide a healthy complete result from the other branch.
+[Compact wallet reads](https://github.com/ABEF/AAA/blob/main/reports/compact-wallet-20261121/REVIEW.md) combine verified ownership, LP/funded ETH and
+four-currency earnings pages without changing exact accounting or limits.
+Controlled1,000-NFT/three-currency journeys need64 API reads instead190 before
+cards; sixteen NFTs with66 fully priced descriptors finish17 currency pages,
+with at most904 RPC reads per request. Legacy all-currency wires stay explicit.
+Current-profile GETs are paced1second apart; complete NFT/currency coverage,
+raw-first USD rounding, full86,400-second history and final proofs remain.
+Very large NFT-by-currency combinations can still exceed freshness: complete
+ownership/totals may remain usable while earnings is explicitly unavailable.
+Real provider/host/freshness and full normal F6/V10 acceptance remain open.
 
-[Current qualification](https://github.com/ABEF/AAA/blob/main/reports/wallet-view-20261121/REVIEW.md) records83 distinct NEW JS passes across explicit
-78+3+2 stages. The initial3 missing-fixture failures are retained; only those3 were
-rerun after new producer data became available. No historical test body or earlier passing Node method
-was rerun. New production-handler/SQLite/exact-replay journeys cover1/17/1,000
-holdings with three currencies and literal independent raw/USD arithmetic.
-Producer data is synthetic V9; separate controlled source9/source10 constructor,
-native-reader and NFT-validator compositions retain their own scope.
-
-Ownership still requires every coherent16-ID page. Financial totals/history use
-that captured block; individual cards keep independently confirmed latest reads.
-The claimable header remains ETH-only: pending ZZZ LP and original token royalty
-claims are excluded and separately shown per NFT. Earnings preserve raw original
-currencies, full86,400-second history, current NFT ownership and raw-first USD
-rounding. Claims/conversions/imports create no income.
-
-Two additional empty-wallet contradictions reproduce then pass after a single
-consumer refusal: empty verified holdings cannot report positive LP or ETH.
-Earlier81 passing methods are not repeated.
-
-Default1,000-NFT HTTP is BLOCKED:190 minimum reads need178seconds under1/s
-burst12 admission, exceeding the maximum120s snapshot age before latency or
-cards. Controlled DTO results do not qualify that path. Keep all limits and
-review a bounded lower-request-count API strategy before full acceptance.
-
-65-currency/16-NFT earnings correctly refuses at1,024 reads. Its royalty claimable
-reads alone need1,040 calls; bounded financial selection and actual provider/
-host/freshness/full normal F6/V10 qualification remain open. No limit is raised.
-
-Both public configurations remain null, shared signer byte-identical/Anvil-only,
-and source9/source10 unsigned. No site build/rollout, served popldemo/current3
-poplint, dist overlay, services, chain, journal/checkpoint or paused heartbeat
-changes. Pool selection is deferred; actual feeds/routes/providers/fees,
-authorities/OpenSea/VRF and independent release approval remain open.
+Changed backend helpers enter checkpoint semantic identity: preserve original
+checkpoint/review/raw DB/journal bytes; explicitly rebuild/review/re-pin for
+separately authorized adoption. No running site/service/chain, signer/public
+configuration, gas/resource limit, economic right or paused heartbeat changes.
 
 The [whole-project audit](https://github.com/ABEF/AAA/blob/main/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
