@@ -8,3 +8,8 @@ assets/nfts/sources/*.webp binary
 
 # Preserve existing Windows line endings in this view.
 deployment-view.js whitespace=cr-at-eol
+
+# Preserve exact reviewed ownership-reader and focused-check bytes.
+deployment-api.js -text whitespace=cr-at-eol
+tests/ownership-paging.test.mjs -text whitespace=cr-at-eol
+package.json -text whitespace=cr-at-eol

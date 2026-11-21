@@ -1,23 +1,32 @@
 # AAA / ZZZ PoPL website instructions
 
-## Current project status — 20 November 2026
+## Current project status - 21 November 2026
 
-Final production-pool selection is deferred by the operator. Existing integration
-addresses and recorded fees are references, not an approved launch selection.
+Current source9/schema4 and source10/schema5 now adopt the fixed-block ownership
+page API. Collect every contiguous16-ID page (up to63 for1,000 NFTs), with at most
+two in flight, before publishing a complete inventory. Exact owner/chain/NFT/
+configuration/profile/block/history/count/digest checks, captured lifecycle,
+cancellation, expiry and final canonical revalidation fail closed. Legacy
+schemas1-3 retain their complete endpoint; there is no page-failure fallback.
 
-The [backend claim review](https://github.com/ABEF/AAA/blob/73658567cb605b58c992698e2103535e782269dd/reports/full-claim-admission-20261120/REVIEW.md)
-returns the first successful prefix and fully revalidates it. Its32-NFT/65-currency/
-26-API-pin evidence does not qualify this website's33-pin/source10 adoption,
-browser flows, production HTTP/providers or maximum-state workloads.
-The [117-response market review](https://github.com/ABEF/AAA/blob/5653dbd32c34b9af5d7a12222f4c11a1c24370e9/reports/market-route-qualification-20261120/REVIEW.md)
-qualifies no complete route or independent source pair. Read the
-[v3 scope correction](https://github.com/ABEF/AAA/blob/main/reports/market-route-qualification-20261120/ERRATA.md)
-for manual earned-conversion capability versus current graph/worker limits.
+[Focused evidence](https://github.com/ABEF/AAA/blob/main/reports/ownership-paging-20261121/REVIEW.md) records69 NEW passing checks, including one real
+constructor/native-reader/NFT-validator composition with saved synthetic DTOs.
+Other wire cases use explicit graph/card seams. No unchanged test body, browser
+suite, full-wallet financial workload, build or live HTTP/provider test was run.
+The8-card display remains separate; cards retain independently confirmed latest
+snapshots while inventory and wallet totals/history bind one fixed block.
 
-These are documentation updates only. Shared signer and independently reviewed
-200bps client ceilings, both null public configurations, dist, served websites,
-Anvil/journals/checkpoints, services and the paused heartbeat remain unchanged.
-No browser suite, build, rollout or public signing is implied.
+Both public configurations remain null, shared signer byte-identical and
+Anvil-only, and source9/source10 unsigned. No served popldemo/current3 poplint,
+dist overlay, chain, journal/checkpoint, service or paused heartbeat changes.
+Matching deployment/API/history/configuration and source adoption still require
+separate review and rollout; a successful page fixture is not operating approval.
+
+Final production-pool selection remains deferred. Earlier backend claim evidence
+does not qualify the33-pin browser consumer, and the117-response market review
+qualifies no complete route or independent source pair. Authorities, OpenSea/VRF,
+complete fees, actual providers/hosting and independent audit remain open.
+Production remains NOT APPROVED.
 
 The [whole-project audit](https://github.com/ABEF/AAA/blob/main/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
@@ -65,10 +74,9 @@ passes13 controlled20M/full20% scenarios; Oracle runtime margin is1,170 bytes.
 The operator selected a32M/full20% contribution candidate; defaults12M and24M
 maintenance remain. Actual provider/complete-fee/max-state acceptance is open.
 The [whole-workload review](https://github.com/ABEF/AAA/blob/main/reports/whole-workload-review-20261119/REVIEW.md)
-adds backend verified ownership pages, but this website has not adopted them.
+established the backend verified-page wire. Current source9/source10 now adopt it; all pages and the complete digest must validate before holdings are published.
 New backend service.py source requires reviewed checkpoint rebuild/re-pin on
-consumer adoption. Website code/profile/signer/configuration and served sites
-remain unchanged;140 prior synthetic browser checks keep their original scope.
+consumer rollout. This read-only adoption changes no backend semantic-source identity; earlier140 synthetic browser checks retain their original source scope, while the69 NEW ownership checks are separate. Shared signer/configuration and served sites remain unchanged.
 
 
 Reviewed 2026-11-20. Read PROJECT_CONTEXT.md and the contract repository's current

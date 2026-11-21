@@ -174,10 +174,65 @@ export class DeploymentAPI {
     return n;
   }
   async nft(id,owner,signal){if(raw(id)===0n||!ADDRESS.test(owner)||owner===ZERO)fail('Invalid NFT request');const n=await this.snapshot(await this.request('/v1/nfts/'+id,undefined,signal));this.validateNFT(n,id,owner);if(isAccounting7Profile(this.manifest))validateFreshNFT(n,this.manifest,await this.native.metadataPolicy({blockHash:n.provenance.block_hash,requireCanonical:true}));return n;}
+  async walletInventory(owner,anchor,{signal,lifecycle}={}){
+    const m=this.manifest,revision=this.revision;
+    if(!isAccounting7Profile(m)||!ADDRESS.test(owner)||owner===ZERO||!object(anchor)||anchor.accounting_version!==m.accounting_version)fail('Invalid paged wallet request');
+    anchor=clone(anchor);if(lifecycle!==undefined){if(!object(lifecycle))fail('Invalid wallet lifecycle anchor');lifecycle=clone(lifecycle);}
+    const ordered=value=>Array.isArray(value)?value.map(ordered):object(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])])):value;
+    const sameLifecycle=(left,right)=>JSON.stringify(ordered(left))===JSON.stringify(ordered(right));
+    const controller=new AbortController(),abort=()=>controller.abort();
+    if(signal?.aborted)controller.abort();else signal?.addEventListener('abort',abort,{once:true});
+    const active=()=>{if(controller.signal.aborted||revision!==this.revision)fail('Wallet inventory changed, expired or was cancelled. Refresh confirmed holdings.');};
+    let timer;
+    try{
+      active();await this.provenance(anchor);active();
+      const remaining=(anchor.block_timestamp+m.max_age_seconds)*1000-this.clock();
+      if(remaining<=0)fail('Confirmed wallet inventory expired. Refresh your holdings.');
+      timer=setTimeout(abort,remaining);
+      const readPage=async(offset,first)=>{
+        active();const part=await this.request(`/v1/wallets/${owner}/nfts/${anchor.block_number}/${offset}`,undefined,controller.signal);active();
+        const p=part.provenance,h=part.history;
+        if(part.schema!==1||part.kind!=='fixed_block_wallet_inventory_page'||part.chain_id!==m.chain_id||part.available!==true||
+          part.wallet!==owner||part.nft_contract!==m.contracts.nft.address||!integer(part.count,0,1000)||
+          part.offset!==offset||part.chunk_size!==16||!integer(part.verified_count,0,16)||!DIGEST.test(part.inventory_sha256)||
+          !Array.isArray(part.token_ids)||part.token_ids.length!==part.verified_count||!object(part.lifecycle)||
+          typeof part.lifecycle.new_economic_work_available_by_lifecycle!=='boolean')fail('Invalid wallet ownership page');
+        const length=Math.min(16,part.count-offset),next=offset+length<part.count?offset+length:null;
+        if(length<0||(offset>=part.count&&!(offset===0&&part.count===0))||part.verified_count!==length||
+          part.next_offset!==next||part.complete!==(offset===0&&length===part.count))fail('Incomplete wallet ownership page');
+        if(!object(p)||p.block_number!==anchor.block_number||p.block_hash!==anchor.block_hash||p.block_timestamp!==anchor.block_timestamp||
+          p.configuration_sha256!==m.projection_sha256||p.accounting_version!==m.accounting_version||
+          p.finality!=='confirmation_depth_only'||p.protocol_finalized!==false||p.eip1898_require_canonical!==true)fail('Wallet ownership pages differ from the confirmed snapshot');
+        if(!object(h)||h.available!==true||!integer(h.from_block,0,anchor.block_number)||!HASH.test(h.start_block_hash)||!HASH.test(h.start_parent_hash)||
+          h.through_block!==anchor.block_number||h.block_hash!==anchor.block_hash||!integer(h.indexer_next_block,1,Number.MAX_SAFE_INTEGER)||
+          h.indexer_next_block<=anchor.block_number)fail('Wallet ownership history is incomplete');
+        if((lifecycle!==undefined&&!sameLifecycle(part.lifecycle,lifecycle))||(first&&!sameLifecycle(part.lifecycle,first.lifecycle)))fail('Wallet lifecycle changed between ownership pages');
+        if(first&&(part.count!==first.count||part.inventory_sha256!==first.inventory_sha256||
+          h.from_block!==first.history.from_block||h.start_block_hash!==first.history.start_block_hash||h.start_parent_hash!==first.history.start_parent_hash))fail('Wallet ownership inventory changed between pages');
+        for(let i=0;i<part.token_ids.length;i++)if(raw(part.token_ids[i])===0n||i&&raw(part.token_ids[i-1])>=raw(part.token_ids[i]))fail('Wallet ownership IDs must be ordered and unique');
+        await this.provenance(p);active();return part;
+      };
+      const first=await readPage(0),ids=[...first.token_ids];
+      // Bounded pairs retain offset order even when the later page arrives first.
+      for(let offset=16;offset<first.count;offset+=32){
+        active();const offsets=[offset,...(offset+16<first.count?[offset+16]:[])];
+        const parts=await Promise.all(offsets.map(value=>readPage(value,first)));active();
+        for(const part of parts)ids.push(...part.token_ids);
+      }
+      if(ids.length!==first.count||ids.some((id,i)=>i&&raw(ids[i-1])>=raw(id)))fail('Incomplete or repeated wallet ownership IDs');
+      const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(ids.join(','))))].map(n=>n.toString(16).padStart(2,'0')).join('');active();
+      if(digest!==first.inventory_sha256)fail('Wallet ownership inventory digest differs');
+      await this.provenance(anchor);active();await this.identity();active();
+      // This is a consumer-assembled complete inventory, not a relabeled page.
+      return {schema:2,chain_id:m.chain_id,available:true,wallet:owner,nft_contract:m.contracts.nft.address,
+        count:ids.length,token_ids:ids,complete:true,inventory_sha256:digest,
+        provenance:first.provenance,history:first.history,lifecycle:first.lifecycle};
+    }finally{clearTimeout(timer);controller.abort();signal?.removeEventListener('abort',abort);}
+  }
   async portfolio(owner,page=0){
     if(!ADDRESS.test(owner)||owner===ZERO||!integer(page,0,124))fail('Invalid wallet request');this.cancel();const revision=this.revision,controller=new AbortController();this.active=controller;
     try{
-      const protocol=await this.protocol(controller.signal),inventory=await this.snapshot(await this.request('/v1/wallets/'+owner+'/nfts',undefined,controller.signal));
+      const protocol=await this.protocol(controller.signal),inventory=isAccounting7Profile(this.manifest)?await this.walletInventory(owner,protocol.provenance,{signal:controller.signal,lifecycle:protocol.lifecycle}):await this.snapshot(await this.request('/v1/wallets/'+owner+'/nfts',undefined,controller.signal));
       if(this.native&&inventory.provenance?.accounting_version!==this.manifest.accounting_version)fail('Wallet inventory omitted its native accounting profile');
       if(inventory.available!==true||inventory.wallet!==owner||inventory.nft_contract!==this.manifest.contracts.nft.address||
         !Array.isArray(inventory.token_ids)||inventory.token_ids.length>1000||inventory.count!==inventory.token_ids.length||new Set(inventory.token_ids).size!==inventory.count)fail('Invalid complete wallet inventory');
@@ -193,6 +248,7 @@ export class DeploymentAPI {
         return n;
       })));
       if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');
+      if(isAccounting7Profile(this.manifest))await this.provenance(inventory.provenance);
       await this.identity();if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');return {protocol,inventory,nfts,page};
     }finally{if(this.active===controller)this.active=null;}
   }
