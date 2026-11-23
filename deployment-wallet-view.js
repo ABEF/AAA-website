@@ -6,17 +6,28 @@ const wait=(ms,signal)=>new Promise((resolve,reject)=>{
   if(signal?.aborted)abort();else signal?.addEventListener('abort',abort,{once:true});
 });
 export class WalletReadGate {
-  constructor({clock=()=>performance.now(),sleep=wait}={}){this.clock=clock;this.sleep=sleep;this.next=0;this.tail=Promise.resolve();this.queued=0;}
+  constructor({clock=()=>performance.now(),sleep=wait}={}){this.clock=clock;this.sleep=sleep;this.next=0;this.lastClock=null;this.tail=Promise.resolve();this.queued=0;}
   run(work,signal){
     if(this.queued>=32)return Promise.reject(Error('Too many wallet reads. Finish or cancel the current read.'));
     this.queued++;
     const job=this.tail.then(async()=>{
       if(signal?.aborted)throw Error('Wallet read cancelled');
       let now=this.clock();if(!Number.isFinite(now))throw Error('Wallet read clock unavailable');
-      if(now<this.next)await this.sleep(this.next-now,signal);
+      if(this.lastClock!==null&&now<this.lastClock)throw Error('Wallet read scheduler clock differs');
+      this.lastClock=now;
+      // Timers may wake early. Preserve the actual deadline, without spinning on
+      // a broken injected clock or accepting a shorter start interval.
+      for(let waits=0;now<this.next;waits++){
+        if(waits>=8)throw Error('Wallet read scheduler clock differs');
+        const previous=now;await this.sleep(Math.ceil(this.next-now),signal);
+        if(signal?.aborted)throw Error('Wallet read cancelled');
+        now=this.clock();
+        if(!Number.isFinite(now)||now<=previous)throw Error('Wallet read scheduler clock differs');
+        this.lastClock=now;
+      }
       if(signal?.aborted)throw Error('Wallet read cancelled');
-      now=this.clock();if(!Number.isFinite(now)||now<this.next)throw Error('Wallet read scheduler clock differs');
-      this.next=now+1000;return work();
+      const next=now+1000;if(!Number.isFinite(next)||next<=now)throw Error('Wallet read scheduler clock differs');
+      this.next=next;return work();
     }).finally(()=>{this.queued--;});
     this.tail=job.catch(()=>{});return job;
   }

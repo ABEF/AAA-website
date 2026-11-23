@@ -257,7 +257,7 @@ export class DeploymentAPI {
       await this.identity();if(revision!==this.revision||controller.signal.aborted)fail('Wallet or page changed; older results were discarded');
       if(financials){const now=this.clock(),stamp=inventory.provenance.block_timestamp;if(!Number.isFinite(now)||now>=(stamp+this.manifest.max_age_seconds)*1000||stamp>Math.floor(now/1000)+30)fail('Confirmed wallet financial snapshot expired. Refresh holdings.');}
       return {protocol,inventory,nfts,page,...(financials?{financials}: {})};
-    }finally{if(this.active===controller)this.active=null;}
+    }finally{controller.abort();if(this.active===controller)this.active=null;}
   }
   _walletRead(inventory,signal){
     const m=this.manifest,revision=this.revision;
