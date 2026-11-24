@@ -3,17 +3,19 @@
 ## Current project status - 21 November 2026
 
 [Wallet checkpoint follow-through](https://github.com/ABEF/AAA/blob/main/reports/wallet-latency-20261123/REVIEW.md)
-removes repeated backend tree walks and full accounting decode from history-only
-reads. Full artifact admission, exact rights and all guards remain.28 distinct
-NEW backend methods pass in explicit stages; no old test bodies run.
+now completes the controlled Ubuntu source9/V9 1,000-NFT/three-currency full view:
+80GETs/37assertions, eight cards,98.834s elapsed and3.982s freshness margin.
+This narrow synthetic pass does not qualify real providers/load or full F6/V10.
+28 distinct NEW backend methods retain their explicit source/stage scopes.
 
-Final1,000-NFT HTTP and corrected unsealed history runs await approved Ubuntu
-source upload. Earlier expiry/capture-bound failures remain; the unused late-tip
-alternative stays unused. Full normal F6/V10/provider/operating acceptance is open.
+A new unsealed F6 fixture completes44 setup transactions/39 instances and actual
+NFT-contract creation code proof. Full history export/reload remains refused;
+its precise cause is unrecorded. Original failures and all bounds stay preserved.
+All5existing service states match before-upload observations; all5ownedlabs stop.
 
-Backend checkpoint1/2/3 adoption needs explicit source-matching rebuild/review/
-re-pin. Website code, signer, null public configurations, live sites/services,
-existing chains/journals and paused heartbeat remain unchanged.
+Checkpoint1/2/3 adoption still needs new matching reviewed artifacts. Website
+code/build/signing, null public configurations, existing sites/chains/journals and
+user-paused heartbeat remain unchanged. No public transaction or sealing.
 
 The [whole-project audit](https://github.com/ABEF/AAA/blob/main/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
