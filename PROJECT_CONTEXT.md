@@ -2,27 +2,18 @@
 
 ## Current project status - 21 November 2026
 
-[Isolated wallet-stack rehearsal](https://github.com/ABEF/AAA/blob/main/reports/wallet-stack-20261123/REVIEW.md) fixes an early timer-wakeup
-error and adds a bounded immutable ABI-selector cache. Fourteen NEW JS and nine NEW
-Python checks pass; no unchanged test bodies run. Actual Ubuntu API workers,
-Nginx and the source9 reader pass the 17-NFT financial journey, cancellation,
-restart, two independent concurrent contexts and genuine expiry checks.
+[Wallet checkpoint follow-through](https://github.com/ABEF/AAA/blob/main/reports/wallet-latency-20261123/REVIEW.md)
+removes repeated backend tree walks and full accounting decode from history-only
+reads. Full artifact admission, exact rights and all guards remain.28 distinct
+NEW backend methods pass in explicit stages; no old test bodies run.
 
-The full 1,000-NFT/three-currency portfolio remains UNQUALIFIED: the optimization
-advances 58→70 GET attempts, but visible-card/history work still exceeds 120s
-freshness. The separate restored F6/V10 graph cannot serve its required historical
-NFT-creation proof. Preserve both refusals; no guard or limit is relaxed.
-Current inventory: 182 Python files/2,002 named definitions/278 lambdas; frozen
-F6 Solidity 61/dependencies 39/controls 4 and 1,021 ABI rows remain unchanged.
+Final1,000-NFT HTTP and corrected unsealed history runs await approved Ubuntu
+source upload. Earlier expiry/capture-bound failures remain; the unused late-tip
+alternative stays unused. Full normal F6/V10/provider/operating acceptance is open.
 
-HTTP outcomes retain their earlier source stages; the later sibling-read cleanup
-has five separate unit checks. The journeys were not rerun.
-
-Changed abi.py enters checkpoint semantic identity. Preserve original checkpoint,
-review, raw DB and journal bytes; explicitly rebuild/review/re-pin for separately
-authorized adoption. All five owned private-network labs stopped. Existing sites,
-services, Anvil8902, signer/null public configurations and paused heartbeat stay
-unchanged. Actual F6/V10/provider/market/production operating approval stays open.
+Backend checkpoint1/2/3 adoption needs explicit source-matching rebuild/review/
+re-pin. Website code, signer, null public configurations, live sites/services,
+existing chains/journals and paused heartbeat remain unchanged.
 
 The [whole-project audit](https://github.com/ABEF/AAA/blob/main/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
