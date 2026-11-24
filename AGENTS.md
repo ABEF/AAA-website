@@ -1,6 +1,6 @@
 # AAA / ZZZ PoPL website instructions
 
-## Current project status - 23 November 2026
+## Current project status - 24 November 2026
 
 [Wallet checkpoint follow-through](https://github.com/ABEF/AAA/blob/main/reports/wallet-latency-20261123/REVIEW.md)
 now completes the controlled Ubuntu source9/V9 1,000-NFT/three-currency full view:
@@ -8,10 +8,12 @@ now completes the controlled Ubuntu source9/V9 1,000-NFT/three-currency full vie
 This narrow synthetic pass does not qualify real providers/load or full F6/V10.
 28 distinct NEW backend methods retain their explicit source/stage scopes.
 
-A new unsealed F6 fixture completes44 setup transactions/39 instances and actual
-NFT-contract creation code proof. Full history export/reload remains refused;
-its precise cause is unrecorded. Original failures and all bounds stay preserved.
-All5existing service states match before-upload observations; all5ownedlabs stop.
+The unsealed F6 fixture proves genuine NFT-contract creation history. Its original
+export guard is unrecorded. [Targeted recovery diagnosis](https://github.com/ABEF/AAA/blob/main/reports/history-export-20261124/REVIEW.md)
+now replays44 captured setup envelopes/39 instances and proves a new size refusal:
+25,625,277 declared bytes exceed16MiB. Diagnostics are fixed; full export/reload
+remains blocked with limits and production sources unchanged. No unchanged tests
+rerun. Five existing service states remain; all seven owned labs stop.
 
 Checkpoint1/2/3 adoption still needs new matching reviewed artifacts. Website
 code/build/signing, null public configurations, existing sites/chains/journals and
