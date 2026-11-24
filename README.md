@@ -17,12 +17,21 @@ now completes the controlled Ubuntu source9/V9 1,000-NFT/three-currency full vie
 This narrow synthetic pass does not qualify real providers/load or full F6/V10.
 28 distinct NEW backend methods retain their explicit source/stage scopes.
 
-The unsealed F6 fixture proves genuine NFT-contract creation history. Its original
-export guard is unrecorded. [Targeted recovery diagnosis](https://github.com/ABEF/AAA/blob/main/reports/history-export-20261124/REVIEW.md)
-now replays44 captured setup envelopes/39 instances and proves a new size refusal:
-25,625,277 declared bytes exceed16MiB. Diagnostics are fixed; full export/reload
-remains blocked with limits and production sources unchanged. No unchanged tests
-rerun. Five existing service states remain; all seven owned labs stop.
+[Ubuntu recovery and operating follow-through](https://github.com/ABEF/AAA/blob/main/reports/ubuntu-complete-20261124/REVIEW.md)
+completes full export/reload for the NEW unsealed constructor fixture:45headers,
+44receipts,39runtimes/112bindings and NFT creation proof match. The explicitly
+approved snapshot profile is isolated32MiB dump[true] response/capture,
+16MiB compressed/128MiB expanded; defaults/production limits are unchanged.
+The separate old graph's missing history and original failed exports remain.
+
+Real stock Ubuntu keeper/Cast harvest, same-journal interruption/recovery and a
+fresh healthy cycle have finite proofs; diagnostics/indexer/history restore are
+separately scoped. Exact1000-NFT multi-epoch checkpoint import/restore preserves
+the full86400s window and raw accounting, with explicit synthetic getter seams.
+Preflight routing and post-recovery cadence fixes change keeper health identity,
+not checkpoint semantic identity. Future installer ownership/type guards improve.
+No website code/build/signing/configuration/served-site or existing service change.
+Full F6/V10 consumer, actual provider/market and operating approval remain open.
 
 Checkpoint1/2/3 adoption still needs new matching reviewed artifacts. Website
 code/build/signing, null public configurations, existing sites/chains/journals and
