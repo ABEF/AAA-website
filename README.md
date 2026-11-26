@@ -9,7 +9,16 @@ not rerun. Both public configurations remain null. No site build/deployment,
 service/chain/journal change or heartbeat restart occurred. Actual matching
 runtime/provider/wallet/hosting/OpenSea acceptance remains open.
 
-## Current project status - 21 November 2026
+## Current project status - 26 November 2026
+
+The [26 November keeper audit](https://github.com/ABEF/AAA/blob/843e02d70f67f0dce3253cafc19f808fbcc0eb27/reports/keeper-full-audit-20261126/REVIEW.md)
+publishes late recovery-anchor checks and bounded utility capture.12 new anchor
+checks pass; ten utility methods retain passing logs with an interrupted
+producer explicitly documented. Isolated Ubuntu c810 passes startup-limit
+recovery/healthy idle in1,652RPC with zero keeper-signed submissions. c809's
+single Linux pass is reused in c810 without executing its body. Existing services/journals and paused heartbeat
+remain. This backend evidence changes no website source/build/signer/configuration
+or served site and does not qualify the full F6/V10 consumer.
 
 [Wallet checkpoint follow-through](https://github.com/ABEF/AAA/blob/main/reports/wallet-latency-20261123/REVIEW.md)
 now completes the controlled Ubuntu source9/V9 1,000-NFT/three-currency full view:
