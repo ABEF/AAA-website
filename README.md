@@ -1,4 +1,6 @@
-The [whole-project audit](https://github.com/ABEF/AAA/blob/main/reports/whole-project-audit-20261116/REVIEW.md)
+The [current project review](https://github.com/ABEF/AAA/blob/main/reports/CURRENT_REVIEW.md) and [current findings](https://github.com/ABEF/AAA/blob/main/docs/AUDIT_FINDINGS.md) own the cross-project assessment. Historical evidence below remains pinned to its original Git revision; it does not approve this consumer or a live rollout.
+
+The [whole-project audit](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
 UI, rejects source9/schema4, source10/schema5 and unknown signing profiles before
 provider access. Only existing schemas1–3 can construct the unchanged Anvil-only
@@ -20,13 +22,13 @@ single Linux pass is reused in c810 without executing its body. Existing service
 remain. This backend evidence changes no website source/build/signer/configuration
 or served site and does not qualify the full F6/V10 consumer.
 
-[Wallet checkpoint follow-through](https://github.com/ABEF/AAA/blob/main/reports/wallet-latency-20261123/REVIEW.md)
+[Wallet checkpoint follow-through](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/wallet-latency-20261123/REVIEW.md)
 now completes the controlled Ubuntu source9/V9 1,000-NFT/three-currency full view:
 80GETs/37assertions, eight cards,98.834s elapsed and3.982s freshness margin.
 This narrow synthetic pass does not qualify real providers/load or full F6/V10.
 28 distinct NEW backend methods retain their explicit source/stage scopes.
 
-[Ubuntu recovery and operating follow-through](https://github.com/ABEF/AAA/blob/main/reports/ubuntu-complete-20261124/REVIEW.md)
+[Ubuntu recovery and operating follow-through](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/ubuntu-complete-20261124/REVIEW.md)
 completes full export/reload for the NEW unsealed constructor fixture:45headers,
 44receipts,39runtimes/112bindings and NFT creation proof match. The explicitly
 approved snapshot profile is isolated32MiB dump[true] response/capture,
@@ -46,7 +48,7 @@ Checkpoint1/2/3 adoption still needs new matching reviewed artifacts. Website
 code/build/signing, null public configurations, existing sites/chains/journals and
 user-paused heartbeat remain unchanged. No public transaction or sealing.
 
-[Metadata lifecycle source fixes](https://github.com/ABEF/AAA/blob/main/reports/metadata-lifecycle-fixes-20261116/REVIEW.md)
+[Metadata lifecycle source fixes](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/metadata-lifecycle-fixes-20261116/REVIEW.md)
 align confirmed unavailable-value artwork with the contract's labelled Activated
 fallback. LP exited stays distinct from Dormant; dormant NFTs in a terminal
 collection say activation closed. Existing validated principal status distinguishes
@@ -60,7 +62,7 @@ public configurations stay null, served poplint/popldemo and existing local
 chains/journals/services are unchanged. Matching runtime/configuration rollout,
 actual browser/provider/OpenSea/content and operating acceptance remain open.
 
-The [complete remaining-findings review](https://github.com/ABEF/AAA/blob/main/reports/remaining-271-20261111/REVIEW.md)
+The [complete remaining-findings review](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/remaining-271-20261111/REVIEW.md)
 individually checks all271remaining records (plus39previously reviewed).
 Backend fixes bound initial keeper simulations and isolate each predecessor's
 execution profile; strict offline catalogue admission preserves all existing
@@ -73,13 +75,13 @@ same33 exact runtime roles, seven execution capabilities and fixed Math binding.
 Financial unsigned reviews authenticate inactive scope/source revision; healthy
 claims and holdings gain no live-Oracle dependency. Omitted/0 remains LP2 and
 source9 stays historical. [Reference execution and gas limits](https://github.com/ABEF/AAA/blob/main/docs/REFERENCE_SWAP_EXECUTION.md)
-records the contract guards and unchanged12M default. The [historical gas review](https://github.com/ABEF/AAA/blob/main/reports/gas-feasibility-20261111/REVIEW.md)
+records the contract guards and unchanged12M default. The [historical gas review](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/gas-feasibility-20261111/REVIEW.md)
 retains its earlier12M failures and Oracle3-byte headroom at that source.
-[Current F6 evidence](https://github.com/ABEF/AAA/blob/main/reports/activation-final-six-20261118/REVIEW.md)
+[Current F6 evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/activation-final-six-20261118/REVIEW.md)
 passes13 controlled20M/full20% scenarios; Oracle runtime margin is1,170 bytes.
 The operator selected a32M/full20% contribution candidate; defaults12M and24M
 maintenance remain. Actual provider/complete-fee/max-state acceptance is open.
-The [whole-workload review](https://github.com/ABEF/AAA/blob/main/reports/whole-workload-review-20261119/REVIEW.md)
+The [whole-workload review](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/whole-workload-review-20261119/REVIEW.md)
 established the backend verified-page wire. Current source9/source10 now adopt it; all pages and the complete digest must validate before holdings are published.
 New backend service.py source requires reviewed checkpoint rebuild/re-pin on
 consumer rollout. This read-only adoption changes no backend semantic-source identity; earlier140 synthetic browser checks retain their original source scope, while the69 NEW ownership checks are separate. Shared signer/configuration and served sites remain unchanged. The later83-check wallet-financial qualification adds captured reads and independent complete metrics; the earlier ownership/140-check evidence is not rerun or relabeled.
@@ -115,7 +117,7 @@ Its33 browser runtime pins include SeaDrop, the mint helper, predeployed metadat
 renderer and fixed NFT canonical companion, with independent canonical-block
 getter checks. Direct Entry3/review2 and royalty4/reporting5 remain unchanged.
 The prior source9 consumer retains manifest schema4/canonicalV9/schema16 and29pins;
-its fixtures and saved reviews are not relabeled. See [scope and evidence](https://github.com/ABEF/AAA/blob/main/reports/v10-website-20261109/REVIEW.md). Both profiles read physical LP legs, governed contribution minima and
+its fixtures and saved reviews are not relabeled. See [scope and evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/v10-website-20261109/REVIEW.md). Both profiles read physical LP legs, governed contribution minima and
 cosmetic thresholds, exact whole-unit rewards and terminal principal separately.
 Original-currency royalties stay separate from fixed-ZZZ LP rewards awaiting ETH
 conversion. Optional transaction policy2 and bounded claim planning remain unsigned.
@@ -129,12 +131,12 @@ configuration exports remain null, and the shared signer is unchanged. The serve
 poplint artifact remains historical current3 and unconfigured; popldemo remains
 the existing simulation. Source8/accounting6/V8 and earlier manifests, runtimes
 and journals retain their own identities. The separate
-[controlled Entry3 rehearsal](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+[controlled Entry3 rehearsal](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/source9-actual-entry-20261109/REVIEW.md)
 records actual ETH/ZZZ activation and unsigned HTTP/RPC reviews on an owned fork.
 It uses separately seeded external liquidity and controlled USD feeds/VRF;
 it does not qualify public market depth, independent feeds, extension signing or
 production operation. Actual services, wallets and rollout remain open. Keep the
-[original source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
+[original source9 review](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/source9-website-20261109/REVIEW.md)
 and [API profile](DEPLOYMENT_API.md) at their own evidence scopes.
 
 ## Published demo
@@ -142,7 +144,7 @@ and [API profile](DEPLOYMENT_API.md) at their own evidence scopes.
 The public site remains a simulation; historical local browser-signing
 rehearsals are separate profiles. Preserve the existing port8902 setup and its
 original deployments/journals; this documentation does not start or relabel it. The reviewed API adapter is disabled in the public build.
-[Publication checks](https://github.com/ABEF/AAA/blob/main/reports/deployment-adapter/PUBLICATION.md)
+[Publication checks](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/deployment-adapter/PUBLICATION.md)
 record the current server/public bytes and remaining production boundaries.
 
 ## Reviewed API integration - 2026-10-21
@@ -155,7 +157,7 @@ and verifies reviewed deployment/config/runtime/calldata/LP/gas bounds.
 **The shipped `deployment-config.js` remains `DEPLOYMENT = null`.** The public
 site continues to simulate financial actions; the existing local browser signer
 is unchanged. The new adapter has no send/sign method. See [operator setup](DEPLOYMENT_API.md)
-and [focused evidence](https://github.com/ABEF/AAA/blob/main/reports/deployment-adapter/VERIFICATION.md).
+and [focused evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/deployment-adapter/VERIFICATION.md).
 Actual public signer integration, extension acceptance and live service/route/feed
 qualification remain open.
 
@@ -166,7 +168,7 @@ and a deployment-pinned read-only RPC for simulation, balances and confirmation.
 Mint, exact approval, activation, LP growth and claims share this boundary.
 Approval never changes LP or artwork; confirmed Entry execution and current
 on-chain position data are required. Recover saved hashes without resubmitting.
-See [scoped evidence](https://github.com/ABEF/AAA/blob/main/reports/browser-wallet/CHAIN_READER.md).
+See [scoped evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/browser-wallet/CHAIN_READER.md).
 The enabled signing profile remains local; production deployment/RPC/route/fee
 qualification and actual extension acceptance are still required.
 
@@ -388,7 +390,7 @@ include LP individual/collective shares and royalties at the confirmed current
 prices, including earlier owners' history. They are separate from claimable ETH.
 Missing chunks or nonzero-component prices mean unavailable, not zero. See the
 [operator definitions](https://github.com/ABEF/AAA/blob/main/docs/EARNINGS_HISTORY.md#current-holdings-totals)
-and [scoped evidence](https://github.com/ABEF/AAA/blob/main/reports/wallet-earnings/VERIFICATION.md).
+and [scoped evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/wallet-earnings/VERIFICATION.md).
 
 ## Confirmed collection explorer
 

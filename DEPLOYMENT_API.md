@@ -62,7 +62,7 @@ and up to65 admitted royalty currencies form at most66 distinct descriptors;
 this is separate from the router's32-entry claim count. A reviewed300bps
 contribution ceiling permits the new3% default; an independently reviewed200bps
 ceiling still rejects300. Gas-policy1/2 selectors remain independent and neither
-enables signing. [Profile procedure](https://github.com/ABEF/AAA/blob/main/docs/SOURCE10_WEBSITE_PROFILE.md) and [source evidence](https://github.com/ABEF/AAA/blob/main/reports/v10-website-20261109/REVIEW.md)
+enables signing. [Profile procedure](https://github.com/ABEF/AAA/blob/main/docs/SOURCE10_WEBSITE_PROFILE.md) and [source evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/v10-website-20261109/REVIEW.md)
 do not qualify actual dependencies, browser signing or a public rollout.
 
 ## Preserved source9/V9 profile
@@ -131,10 +131,10 @@ bytes with the contract repository's
 creation is exclusive and temporary history/configuration paths bind each
 generated artifact's identities. That historical JSON file and its Entry3 unit
 drafts retain their synthetic scope. See the
-[original source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md)
+[original source9 review](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/source9-website-20261109/REVIEW.md)
 for its exact source bindings and retained limits.
 
-The separate [actual Entry3 rehearsal and handoff](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+The separate [actual Entry3 rehearsal and handoff](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/source9-actual-entry-20261109/REVIEW.md)
 records confirmed ETH/ZZZ activation and real backend/website unsigned reviews on
 an owned fork. External depth was separately seeded; USD feeds and VRF were
 controlled dependencies. Preserve the original depth/gas failures and the exact
@@ -162,7 +162,7 @@ npm run build
 from mocked byte-level RPC fixtures. Reproduce them using the contract repository's
 `tests_python/export_website_api_fixtures.py --output <external-json-path>`.
 Fixtures and headless browser checks do not prove live service or extension
-compatibility. [Evidence](https://github.com/ABEF/AAA/blob/main/reports/deployment-adapter/VERIFICATION.md)
+compatibility. [Evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/deployment-adapter/VERIFICATION.md)
 records 57 focused checks and eight isolated browser scenarios.
 
 The historical shared signer expansion was rejected by automatic approval review and was not

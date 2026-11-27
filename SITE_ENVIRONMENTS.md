@@ -28,7 +28,7 @@ The [local source10 candidate](https://github.com/ABEF/AAA/blob/main/docs/SOURCE
 source_profile10, mint_integration_version2 and accounting7/canonicalV10. It
 independently authenticates33 runtimes and same-block immutable bindings, including
 the SeaDrop/helper, predeployed renderer and NFT canonical companion. It remains
-unsigned even on Anvil; mutable OpenSea eligibility is unverified. [Source evidence](https://github.com/ABEF/AAA/blob/main/reports/v10-website-20261109/REVIEW.md)
+unsigned even on Anvil; mutable OpenSea eligibility is unverified. [Source evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/v10-website-20261109/REVIEW.md)
 is separate from an installed configuration, hosted service or authorized rollout.
 
 The served artifact uses schema3/accounting3/governance2/fee1/pricing2/routing2/
@@ -52,8 +52,8 @@ the existing shared signer bytes and its historical profiles are unchanged.
 
 The original35 handler DTOs across nine public methods and Entry3 unit drafts
 retain their synthetic RPC/dependency scope in the
-[source9 review](https://github.com/ABEF/AAA/blob/main/reports/source9-website-20261109/REVIEW.md).
-Separate [actual Entry3 evidence](https://github.com/ABEF/AAA/blob/main/reports/source9-actual-entry-20261109/REVIEW.md)
+[source9 review](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/source9-website-20261109/REVIEW.md).
+Separate [actual Entry3 evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/source9-actual-entry-20261109/REVIEW.md)
 records confirmed ETH/ZZZ activation and unsigned HTTP/RPC composition on an
 owned fork with separately seeded external depth and controlled USD feeds/VRF.
 It does not qualify public market depth, independent feeds, extension signing or

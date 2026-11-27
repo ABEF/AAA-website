@@ -8,7 +8,7 @@ Legacy missing chainId resolves only through replay-protected EIP-155 v; typed
 missing IDs fail closed. Approval never changes LP or artwork; Entry receipt plus
 confirmed on-chain position remains required for activation/growth presentation.
 
-[Evidence](https://github.com/ABEF/AAA/blob/main/reports/browser-wallet/CHAIN_READER.md): 232 distinct website and 43 backend cases;
+[Evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/browser-wallet/CHAIN_READER.md): 232 distinct website and 43 backend cases;
 read-only recovery of the actual successful nonce-36 mint, exact-node CSP/CORS,
 syntax/build and preservation of all 13 NFTs/LP/session after web-only restart.
 Anvil 10988 was not reset. No signing/public transaction/server deployment or
@@ -188,7 +188,7 @@ Pons funding, production VRF, wallet-provider signing, receipt reorg/replacement
 recovery or production hosting. No public server deployment accompanies this work.
 
 Checks: 13 local-client cases, 47 existing domain/artwork cases, syntax/static
-checks and a static build. The [contract evidence](https://github.com/ABEF/AAA/blob/main/reports/local-website/VERIFICATION.md)
+checks and a static build. The [contract evidence](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/local-website/VERIFICATION.md)
 records server/confirmation checks and actual local receipts. Release remains
 NOT APPROVED. For new behavior, update this guide and the contract operator manual,
 central Todo and feature/evidence reference together.
