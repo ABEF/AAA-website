@@ -142,6 +142,7 @@ export class DeploymentAPI {
     for(const role of ['access','nft','vault','claim_router',...(this.manifest.schema===5?['seadrop_mint','seadrop']:[])])if(p.contracts?.[role]!==this.manifest.contracts[role].address)fail('Protocol contract binding changed');
     if(!object(p.lifecycle)||typeof p.lifecycle.new_economic_work_available_by_lifecycle!=='boolean'||typeof p.minting?.available_by_controls!=='boolean')fail('Missing canonical lifecycle');
     if(this.manifest.schema===5&&(p.minting.channel!=='opensea'||p.minting.direct_transaction_preparation_supported!==false||p.minting.available!==null||p.minting.stage_eligibility!=='unverified'||typeof p.minting.paused!=='boolean'||p.minting.available_by_controls!==(!p.minting.paused&&p.lifecycle.new_economic_work_available_by_lifecycle)))fail('OpenSea mint channel or eligibility observation differs');
+    if(p.fixed_block_nft_view_profile!==undefined&&(p.fixed_block_nft_view_profile!==1||!isAccounting7Profile(this.manifest)))fail('Unsupported fixed-block NFT view profile');
     return p;
   }
   async readiness(signal){if(this.manifest.schema===5)fail('Use OpenSea; direct mint readiness is unavailable for this profile');const r=await this.snapshot(await this.request('/v1/mint-readiness',undefined,signal));if(r.nft!==this.manifest.contracts.nft.address||!integer(r.minted,0,1000)||typeof r.new_minting_stopped!=='boolean')fail('Invalid mint readiness');return r;}
@@ -176,6 +177,35 @@ export class DeploymentAPI {
     return n;
   }
   async nft(id,owner,signal){if(raw(id)===0n||!ADDRESS.test(owner)||owner===ZERO)fail('Invalid NFT request');const n=await this.snapshot(await this.request('/v1/nfts/'+id,undefined,signal));this.validateNFT(n,id,owner);if(isAccounting7Profile(this.manifest))validateFreshNFT(n,this.manifest,await this.native.metadataPolicy({blockHash:n.provenance.block_hash,requireCanonical:true}));return n;}
+  _fixedNFTSuffix(anchor,signal){
+    const m=this.manifest;
+    if(!isAccounting7Profile(m)||!object(anchor)||anchor.configuration_sha256!==m.projection_sha256||anchor.accounting_version!==m.accounting_version||
+      !integer(anchor.block_number,Math.max(1,m.deployment_block),Number.MAX_SAFE_INTEGER)||!HASH.test(anchor.block_hash)||anchor.block_hash===ZERO_HASH||
+      !integer(anchor.block_timestamp,1,Number.MAX_SAFE_INTEGER))fail('Invalid fixed-block NFT anchor');
+    const now=this.clock();if(signal?.aborted||!Number.isFinite(now)||now>=(anchor.block_timestamp+m.max_age_seconds)*1000||anchor.block_timestamp>Math.floor(now/1000)+30)fail('Fixed-block NFT read expired or was cancelled');
+    return '/at/'+anchor.block_number+'/'+anchor.block_hash;
+  }
+  _fixedNFTSnapshot(value,anchor,{nft=false}={}){
+    this._fixedNFTSuffix(anchor);const p=value?.provenance;
+    if(!object(p)||p.block_number!==anchor.block_number||p.block_hash!==anchor.block_hash||p.block_timestamp!==anchor.block_timestamp||
+      p.configuration_sha256!==this.manifest.projection_sha256||p.finality!=='confirmation_depth_only'||
+      (nft&&(p.accounting_version!==this.manifest.accounting_version||p.protocol_finalized!==false||p.eip1898_require_canonical!==true)))fail('Fixed-block NFT snapshot differs from the captured anchor');
+  }
+  async nftAt(id,owner,anchor,signal){
+    if(raw(id)===0n||!ADDRESS.test(owner)||owner===ZERO)fail('Invalid NFT request');
+    const suffix=this._fixedNFTSuffix(anchor,signal),n=await this.request('/v1/nfts/'+id+suffix,undefined,signal);
+    this._fixedNFTSnapshot(n,anchor,{nft:true});await this.snapshot(n);this.validateNFT(n,id,owner);
+    validateFreshNFT(n,this.manifest,await this.native.metadataPolicy({blockHash:anchor.block_hash,requireCanonical:true}));this._fixedNFTSuffix(anchor,signal);return n;
+  }
+  async nftEarningsAt(id,owner,anchor,signal){
+    if(raw(id)===0n||!ADDRESS.test(owner)||owner===ZERO)fail('Invalid NFT earnings request');
+    const suffix=this._fixedNFTSuffix(anchor,signal);let earned;
+    try{earned=await this.request('/v1/nfts/'+id+'/earnings'+suffix,undefined,signal);}
+    catch(error){if(error?.status!==429&&error?.status!==503)throw error;this._fixedNFTSuffix(anchor,signal);await this.provenance(anchor);this._fixedNFTSuffix(anchor,signal);return {available:false,reason:'Complete earnings at this position snapshot are temporarily unavailable.'};}
+    this._fixedNFTSnapshot(earned,anchor);
+    if(earned.schema!==1||earned.chain_id!==this.manifest.chain_id||earned.scope!=='nft'||earned.token_id!==id||earned.owner!==owner)fail('Fixed-block earnings identity differs');
+    this.validateEarnings(earned,'nft');await this.provenance(earned.provenance);this._fixedNFTSuffix(anchor,signal);return earned;
+  }
   async walletInventory(owner,anchor,{signal,lifecycle}={}){
     const m=this.manifest,revision=this.revision;
     if(!isAccounting7Profile(m)||!ADDRESS.test(owner)||owner===ZERO||!object(anchor)||anchor.accounting_version!==m.accounting_version)fail('Invalid paged wallet request');
@@ -245,6 +275,10 @@ export class DeploymentAPI {
       const ids=inventory.token_ids.slice(page*8,page*8+8),nfts=[];
       // Two in-flight cards, eight per page. Never request 1,000 projections at once.
       for(let i=0;i<ids.length;i+=2)nfts.push(...await Promise.all(ids.slice(i,i+2).map(async id=>{
+        if(protocol.fixed_block_nft_view_profile===1){
+          const n=await this.nftAt(id,owner,inventory.provenance,controller.signal);
+          n.earnings=await this.nftEarningsAt(id,owner,inventory.provenance,controller.signal);return n;
+        }
         const n=await this.nft(id,owner,controller.signal);
         try{const earned=await this.request('/v1/nfts/'+id+'/earnings',undefined,controller.signal);
           if(earned.schema!==1||earned.chain_id!==this.manifest.chain_id||earned.scope!=='nft'||earned.token_id!==id||earned.owner!==owner||earned.provenance?.block_hash!==n.provenance.block_hash)fail('Earnings snapshot differs');

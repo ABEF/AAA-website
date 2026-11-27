@@ -22,6 +22,19 @@ override, new transaction budget, signer, public config or automatic adoption.
 Source/fixture checks are scoped in the contract's sole current review. Do not
 rerun unchanged suites or relabel synthetic DTOs as current runtime acceptance.
 
+## Fixed-block NFT/card capability
+
+When protocol advertises exact `fixed_block_nft_view_profile:1`, source9/source10
+portfolio detail and earnings must use the same captured confirmed wallet block
+number/hash. Preserve exact response anchors, configuration/accounting/owner
+identity, native/metadata proofs, full86400s and final canonical/depth/120s checks.
+Do not infer support, accept unknown selectors or retry fixed-route failures
+against latest state. Request-stage429/503 alone may produce honest earnings
+unavailability after live anchor checks; malformed/successful wrong snapshots,
+cancellation and expiry remain fatal. Ordinary action preparation stays fresh
+and separate from captured display rights. Existing omitted-capability latest
+behavior remains historical; new source/checkpoints do not adopt themselves.
+
 ## Historical source-scoped evidence — 26 November 2026
 
 The [26 November keeper audit](https://github.com/ABEF/AAA/blob/843e02d70f67f0dce3253cafc19f808fbcc0eb27/reports/keeper-full-audit-20261126/REVIEW.md)

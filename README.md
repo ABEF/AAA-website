@@ -11,6 +11,20 @@ identities/checkpoints and provider support for the pinned read-only creation
 call. Profile1 remains default. Source publication changes no running site or
 signer. [Read profile and limits](https://github.com/ABEF/AAA/blob/main/docs/SOURCE9_WEBSITE_PROFILE.md#complete-wallet-reads).
 
+## Coherent NFT cards and earnings
+
+Explicit protocol capability `fixed_block_nft_view_profile:1` binds each source9/source10
+portfolio card and its earnings to the captured wallet block number and hash.
+Newer confirmed blocks do not mix ownership, LP or claim history into that view.
+Exact canonical/depth/configuration/owner checks, the full24-hour window and the
+120-second maximum remain. Unknown capabilities and failed fixed routes never
+fall back to latest state. Only a request-stage429/503 may leave card earnings
+honestly unavailable, followed by the same final live checks. Action preparation
+still reads fresh latest state separately.
+
+Adoption requires matching reviewed backend, consumer, proxy and source-bound
+checkpoint configuration. Publishing source changes no site, signer or service.
+
 The [whole-project audit](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
 UI, rejects source9/schema4, source10/schema5 and unknown signing profiles before

@@ -28,3 +28,6 @@ tests/fixtures/compact-wallet-20261121/** -text whitespace=cr-at-eol
 tests/wallet-aggregate-view.test.mjs -text whitespace=cr-at-eol
 tests/wallet-aggregate-producer.test.mjs -text whitespace=cr-at-eol
 tests/fixtures/wallet-aggregate-20261127/** -text whitespace=cr-at-eol
+
+# Exact reviewed fixed-block card source-check bytes.
+tests/fixed-block-cards.test.mjs -text whitespace=cr-at-eol
