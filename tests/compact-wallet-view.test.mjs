@@ -408,7 +408,7 @@ test('NEW producer portfolio capability and UI branch reuse compact financials w
   const begin=source.indexOf('if(data.financials){'),end=source.indexOf('await loadWalletFinancials',begin),branch=source.slice(begin,end);
   assert.ok(begin>=0&&end>begin);assert.match(branch,/totals=data\.financials\.totals/);assert.match(branch,/earnings=data\.financials\.earnings/);
   assert.match(branch,/renderMetrics\(\);\}return;/);
-  capability=2;await assert.rejects(api.portfolio(OWNER),/Unsupported wallet view profile/);
+  capability=3;await assert.rejects(api.portfolio(OWNER),/Unsupported wallet view profile/);
   assert.equal(paths.filter(path=>path.includes('/view/')).length,1);
 });
 

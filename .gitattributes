@@ -23,3 +23,8 @@ tests/fixtures/wallet-view-20261121/** -text whitespace=cr-at-eol
 deployment-wallet-view.js -text whitespace=cr-at-eol
 tests/compact-wallet-view.test.mjs -text whitespace=cr-at-eol
 tests/fixtures/compact-wallet-20261121/** -text whitespace=cr-at-eol
+
+# Exact reviewed aggregate-wallet checks and actual producer DTO fixture.
+tests/wallet-aggregate-view.test.mjs -text whitespace=cr-at-eol
+tests/wallet-aggregate-producer.test.mjs -text whitespace=cr-at-eol
+tests/fixtures/wallet-aggregate-20261127/** -text whitespace=cr-at-eol

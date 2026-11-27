@@ -1,6 +1,6 @@
 // Production API integration for reads and unsigned preparation only.
 // This module has no wallet submission, signer, private key or broadcast path.
-import {readCompactWallet,sharedReadGate} from './deployment-wallet-view.js';
+import {readAggregateWallet,readCompactWallet,sharedReadGate} from './deployment-wallet-view.js';
 import {createChainReader} from './browser-wallet.js';
 import {FreshProfile,FRESH_ROLES,FRESH_VERSIONS,FRESH_CANONICAL_SCHEMA,validateFreshManifest} from './deployment-source9.js';
 import {Source10Profile,SOURCE10_ROLES,MINT_VERSIONS,SOURCE10_CANONICAL_SCHEMA,validateSource10Manifest} from './deployment-source10.js';
@@ -235,8 +235,8 @@ export class DeploymentAPI {
     if(!ADDRESS.test(owner)||owner===ZERO||!integer(page,0,124))fail('Invalid wallet request');this.cancel();const revision=this.revision,controller=new AbortController();this.active=controller;
     try{
       const protocol=await this.protocol(controller.signal);
-      if(protocol.wallet_view_profile!==undefined&&protocol.wallet_view_profile!==1)fail('Unsupported wallet view profile');
-      const financials=isAccounting7Profile(this.manifest)&&protocol.wallet_view_profile===1?await this.walletView(owner,protocol.provenance,{signal:controller.signal,lifecycle:protocol.lifecycle}):null;
+      if(protocol.wallet_view_profile!==undefined&&![1,2].includes(protocol.wallet_view_profile))fail('Unsupported wallet view profile');
+      const financials=isAccounting7Profile(this.manifest)&&[1,2].includes(protocol.wallet_view_profile)?await this.walletView(owner,protocol.provenance,{signal:controller.signal,lifecycle:protocol.lifecycle,profile:protocol.wallet_view_profile}):null;
       const inventory=financials?financials.inventory:isAccounting7Profile(this.manifest)?await this.walletInventory(owner,protocol.provenance,{signal:controller.signal,lifecycle:protocol.lifecycle}):await this.snapshot(await this.request('/v1/wallets/'+owner+'/nfts',undefined,controller.signal));
       if(this.native&&inventory.provenance?.accounting_version!==this.manifest.accounting_version)fail('Wallet inventory omitted its native accounting profile');
       if(inventory.available!==true||inventory.wallet!==owner||inventory.nft_contract!==this.manifest.contracts.nft.address||
@@ -303,7 +303,14 @@ export class DeploymentAPI {
     }finally{read.close();}
   }
 
-  walletView(owner,anchor,options={}){return readCompactWallet(this,owner,anchor,options,{raw,fail,clone,integer,object,ADDRESS,HASH,DIGEST});}
+  walletView(owner,anchor,options={}){
+    const profile=options.profile===undefined?1:options.profile;if(![1,2].includes(profile))fail('Unsupported wallet view profile');
+    return (profile===2?readAggregateWallet:readCompactWallet)(this,owner,anchor,options,{raw,fail,clone,integer,object,ADDRESS,HASH,DIGEST});
+  }
+  walletAggregate(owner,blockNumber,assetOffset=0,signal){
+    if(!isAccounting7Profile(this.manifest)||!ADDRESS.test(owner)||owner===ZERO||!integer(blockNumber,this.manifest.deployment_block,Number.MAX_SAFE_INTEGER)||!integer(assetOffset,0,this.manifest.reward_assets.length-1)||assetOffset%4)fail('Invalid aggregate wallet cursor');
+    return this.request(`/v1/wallets/${owner}/aggregate/${blockNumber}/${assetOffset}`,undefined,signal);
+  }
   validateEarnings(report,scope,assets=this.manifest.reward_assets){
     if(report.schema!==1||report.chain_id!==this.manifest.chain_id||report.available!==true||report.scope!==scope||
       report.claims_and_conversions_are_income!==false||report.unprocessed_revenue_included!==false||

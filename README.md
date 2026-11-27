@@ -1,5 +1,16 @@
 The [current project review](https://github.com/ABEF/AAA/blob/main/reports/CURRENT_REVIEW.md) and [current findings](https://github.com/ABEF/AAA/blob/main/docs/AUDIT_FINDINGS.md) own the cross-project assessment. Historical evidence below remains pinned to its original Git revision; it does not approve this consumer or a live rollout.
 
+## Optional wallet aggregate reads
+
+The local source9/source10 read consumer supports explicit `wallet_view_profile:2`:
+independent16-NFT ownership/LP/claimable pages plus four-currency whole-wallet
+earnings pages. This removes the NFT/currency HTTP cross-product while preserving
+exact units, the full24-hour history, canonical/freshness checks and existing
+limits. Adoption needs reviewed backend `wallet_read_batch:1`, matching source
+identities/checkpoints and provider support for the pinned read-only creation
+call. Profile1 remains default. Source publication changes no running site or
+signer. [Read profile and limits](https://github.com/ABEF/AAA/blob/main/docs/SOURCE9_WEBSITE_PROFILE.md#complete-wallet-reads).
+
 The [whole-project audit](https://github.com/ABEF/AAA/blob/fdd599c7698d0e1c0709a4a8b50130e5557ba508/reports/whole-project-audit-20261116/REVIEW.md)
 closes a local coordinator entry-point gap: direct construction, as well as the
 UI, rejects source9/schema4, source10/schema5 and unknown signing profiles before
@@ -11,7 +22,7 @@ not rerun. Both public configurations remain null. No site build/deployment,
 service/chain/journal change or heartbeat restart occurred. Actual matching
 runtime/provider/wallet/hosting/OpenSea acceptance remains open.
 
-## Current project status - 26 November 2026
+## Historical source-scoped evidence — 26 November 2026
 
 The [26 November keeper audit](https://github.com/ABEF/AAA/blob/843e02d70f67f0dce3253cafc19f808fbcc0eb27/reports/keeper-full-audit-20261126/REVIEW.md)
 publishes late recovery-anchor checks and bounded utility capture.12 new anchor

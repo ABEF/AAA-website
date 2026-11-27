@@ -1,10 +1,28 @@
+# AAA / ZZZ PoPL website instructions
+
 ## Current assessment and archive policy — 27 November 2026
 
 The contract [current review](https://github.com/ABEF/AAA/blob/main/reports/CURRENT_REVIEW.md) and [findings](https://github.com/ABEF/AAA/blob/main/docs/AUDIT_FINDINGS.md) own cross-project status. Historical narratives below are source-scoped evidence available at their exact Git revision. The current checkout keeps one report and one findings register plus necessary machine evidence; this replaces older blanket instructions to keep every historical report checked out. Keep all website signing/configuration, runtime/profile, journal and no-rollout boundaries below.
 
-# AAA / ZZZ PoPL website instructions
 
-## Current project status - 26 November 2026
+
+## Wallet aggregate read capability
+
+Keep default/explicit `wallet_view_profile:1` behavior separate from opt-in2.
+Capability2 requires reviewed backend `wallet_read_batch:1` and exact matching
+projection/checkpoint identities; never infer it from URLs, old payloads or HTTP
+failure. Browser schema/source labels and29/33 runtime pins do not change.
+Verify every16-ID ownership/summary page and every four-currency whole-wallet
+earnings page at one canonical inventory/block; partial income stays unavailable.
+Preserve raw units, full86,400s, one-second request starts/32queued, final identity
+and expiry checks. Isolated transport/explicit earnings-unavailable may preserve
+independent LP/ETH totals; integrity, history, work and canonical failures remain
+fatal. The pinned constructor read uses STATICCALL only; no deployment, state
+override, new transaction budget, signer, public config or automatic adoption.
+Source/fixture checks are scoped in the contract's sole current review. Do not
+rerun unchanged suites or relabel synthetic DTOs as current runtime acceptance.
+
+## Historical source-scoped evidence — 26 November 2026
 
 The [26 November keeper audit](https://github.com/ABEF/AAA/blob/843e02d70f67f0dce3253cafc19f808fbcc0eb27/reports/keeper-full-audit-20261126/REVIEW.md)
 publishes late recovery-anchor checks and bounded utility capture.12 new anchor

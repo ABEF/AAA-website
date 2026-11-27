@@ -1,6 +1,21 @@
 # Website current project context
 
-## Current project status - 26 November 2026
+## Current wallet-read source boundary
+
+Optional wallet-view capability2 is implemented locally for the existing
+source9/source10 unsigned consumers. It separates16-ID ownership/summary pages
+from four-currency whole-wallet earnings instead of an NFT/currency HTTP grid.
+Exact current-holdings rights, full86,400s history, independent LP/ETH totals,
+canonical completeness and existing limits remain. The backend opt-in and
+matching checkpoint/configuration/provider qualification are separate adoption
+work. No current3/popldemo build, site, service, Anvil or journal changed; the
+shared signer stays Anvil-only and both public configurations stay null.
+Use [the current report](https://github.com/ABEF/AAA/blob/main/reports/CURRENT_REVIEW.md)
+for verification scopes and [the read profile](https://github.com/ABEF/AAA/blob/main/docs/SOURCE9_WEBSITE_PROFILE.md#complete-wallet-reads)
+for the capability, ephemeral read-tool and failure contracts. Historical source
+evidence below retains its original dates and does not qualify this new path.
+
+## Historical source-scoped evidence — 26 November 2026
 
 The [26 November keeper audit](https://github.com/ABEF/AAA/blob/843e02d70f67f0dce3253cafc19f808fbcc0eb27/reports/keeper-full-audit-20261126/REVIEW.md)
 publishes late recovery-anchor checks and bounded utility capture.12 new anchor
